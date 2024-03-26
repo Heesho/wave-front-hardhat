@@ -29,7 +29,7 @@ let tokenFactory, meme1, meme2;
 let factory, multicall, router;
 let base;
 
-describe("local: test0", function () {
+describe.only("local: test0", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -348,65 +348,111 @@ describe("local: test0", function () {
       .borrow(await meme1.getAccountCredit(user0.address));
   });
 
-  /*
-
-
-
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme0.address, user0.address);
+    let res = await multicall.getAccountData(meme1.address, user0.address);
     console.log(res);
   });
 
   it("User0 tries to transfer and tries to sell", async function () {
     console.log("******************************************************");
     await expect(
-      meme0.connect(user0).transfer(user1.address, one)
-    ).to.be.revertedWith("Meme__OutstandingDebt");
+      meme1.connect(user0).transfer(user1.address, one)
+    ).to.be.revertedWith("Token__CollateralRequirement");
   });
 
   it("User0 tries to sell meme0", async function () {
     console.log("******************************************************");
-    await meme0
+    await meme1
       .connect(user0)
-      .approve(router.address, await meme0.balanceOf(user0.address));
+      .approve(router.address, await meme1.balanceOf(user0.address));
     await expect(
       router
         .connect(user0)
         .sell(
-          meme0.address,
-          await meme0.balanceOf(user0.address),
+          meme1.address,
+          await meme1.balanceOf(user0.address),
           0,
           1904422437
         )
-    ).to.be.revertedWith("Meme__OutstandingDebt");
+    ).to.be.revertedWith("Token__CollateralRequirement");
   });
 
-  it("User0 repays some WETH for meme0", async function () {
+  it("User0 repays some WETH for meme1", async function () {
     console.log("******************************************************");
-    await base.connect(user0).approve(meme0.address, one);
-    await meme0.connect(user0).repay(one);
+    await base.connect(user0).approve(meme1.address, one);
+    await meme1.connect(user0).repay(one);
   });
 
   it("User0 tries to transfer and tries to sell", async function () {
     console.log("******************************************************");
-    await expect(
-      meme0.connect(user0).transfer(user1.address, one)
-    ).to.be.revertedWith("Meme__OutstandingDebt");
+    meme1.connect(user0).transfer(user1.address, one);
   });
 
   it("User0 repays all WETH", async function () {
     console.log("******************************************************");
     await base
       .connect(user0)
-      .approve(meme0.address, await meme0.account_Debt(user0.address));
-    await meme0.connect(user0).repay(await meme0.account_Debt(user0.address));
+      .approve(meme1.address, await meme1.account_Debt(user0.address));
+    await meme1.connect(user0).repay(await meme1.account_Debt(user0.address));
   });
 
   it("User0 transfers meme0", async function () {
     console.log("******************************************************");
-    await meme0.connect(user0).transfer(user1.address, one);
+    await meme1.connect(user0).transfer(user1.address, one);
   });
 
-  */
+  it("Invariants Meme1", async function () {
+    console.log("******************************************************");
+    const reserveBase = await meme1.reserveBase();
+    const reserveToken = await meme1.reserveToken();
+    const totalSupply = await meme1.totalSupply();
+    const maxSupply = await meme1.maxSupply();
+    const baseBalance = await base.balanceOf(meme1.address);
+    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const maxReserve = reserveToken.add(totalSupply);
+    const remainingBase = reserveBase
+      .add(initialBase)
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("Base Balance: ", baseBalance);
+    console.log("Reserve Base: ", reserveBase);
+    expect(baseBalance).to.be.at.least(reserveBase);
+
+    console.log("Max Reserve: ", maxReserve);
+    console.log("Max Supply: ", maxSupply);
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining Base: ", remainingBase);
+    console.log("Initial Base: ", initialBase);
+    expect(remainingBase).to.be.at.least(initialBase);
+  });
+
+  it("Invariants Meme2", async function () {
+    console.log("******************************************************");
+    const reserveBase = await meme2.reserveBase();
+    const reserveToken = await meme2.reserveToken();
+    const totalSupply = await meme2.totalSupply();
+    const maxSupply = await meme2.maxSupply();
+    const baseBalance = await base.balanceOf(meme2.address);
+    const initialBase = await meme2.RESERVE_VIRTUAL_BASE();
+    const maxReserve = reserveToken.add(totalSupply);
+    const remainingBase = reserveBase
+      .add(initialBase)
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("Base Balance: ", baseBalance);
+    console.log("Reserve Base: ", reserveBase);
+    expect(baseBalance).to.be.at.least(reserveBase);
+
+    console.log("Max Reserve: ", maxReserve);
+    console.log("Max Supply: ", maxSupply);
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining Base: ", remainingBase);
+    console.log("Initial Base: ", initialBase);
+    expect(remainingBase).to.be.at.least(initialBase);
+  });
 });
