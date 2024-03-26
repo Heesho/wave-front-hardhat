@@ -99,7 +99,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     uint256 public constant PRECISION = 1e18;
     uint256 public constant RESERVE_VIRTUAL_BASE = 1000 * PRECISION;
     uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION;
-    uint256 public constant FEE = 100;
+    uint256 public constant FEE = 200;
     uint256 public constant FEE_AMOUNT = 2000;
     uint256 public constant STATUS_FEE = 1000;
     uint256 public constant STATUS_MAX_LENGTH = 140;
@@ -214,7 +214,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             IERC20(base).transfer(provider, feeAmount);
             emit Token__ProviderFee(provider, feeAmount);
             feeBase -= feeAmount;
-        } 
+        }
         IERC20(base).transfer(statusHolder, feeAmount);
         emit Token__StatusFee(statusHolder, feeAmount);
         IERC20(base).transfer(IWaveFrontFactory(waveFrontFactory).treasury(), feeAmount);
