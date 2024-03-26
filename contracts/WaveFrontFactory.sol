@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ITokenFactory {
-    function createToken(string memory name, string memory symbol, string memory uri, address base) external returns (address);
+    function createToken(string memory name, string memory symbol, string memory uri, address base, address account) external returns (address);
 }
 
 interface IToken {
@@ -73,7 +73,7 @@ contract WaveFrontFactory is Ownable {
         if (bytes(name).length > NAME_MAX_LENGTH) revert WaveFrontFactory__NameLimitExceeded();
         if (bytes(symbol).length > SYMBOL_MAX_LENGTH) revert WaveFrontFactory__SymbolLimitExceeded();
 
-        address token = ITokenFactory(tokenFactory).createToken(name, symbol, uri, base);
+        address token = ITokenFactory(tokenFactory).createToken(name, symbol, uri, base, account);
         address preToken = IToken(token).preToken();
         index_Token[index] = token;
         token_Index[token] = index;

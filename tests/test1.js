@@ -401,4 +401,60 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await meme1.connect(user0).transfer(user1.address, one);
   });
+
+  it("Invariants Meme1", async function () {
+    console.log("******************************************************");
+    const reserveBase = await meme1.reserveBase();
+    const reserveToken = await meme1.reserveToken();
+    const totalSupply = await meme1.totalSupply();
+    const maxSupply = await meme1.maxSupply();
+    const baseBalance = await base.balanceOf(meme1.address);
+    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const maxReserve = reserveToken.add(totalSupply);
+    const remainingBase = reserveBase
+      .add(initialBase)
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("Base Balance: ", baseBalance);
+    console.log("Reserve Base: ", reserveBase);
+    expect(baseBalance).to.be.at.least(reserveBase);
+
+    console.log("Max Reserve: ", maxReserve);
+    console.log("Max Supply: ", maxSupply);
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining Base: ", remainingBase);
+    console.log("Initial Base: ", initialBase);
+    expect(remainingBase).to.be.at.least(initialBase);
+  });
+
+  it("Invariants Meme2", async function () {
+    console.log("******************************************************");
+    const reserveBase = await meme2.reserveBase();
+    const reserveToken = await meme2.reserveToken();
+    const totalSupply = await meme2.totalSupply();
+    const maxSupply = await meme2.maxSupply();
+    const baseBalance = await base.balanceOf(meme2.address);
+    const initialBase = await meme2.RESERVE_VIRTUAL_BASE();
+    const maxReserve = reserveToken.add(totalSupply);
+    const remainingBase = reserveBase
+      .add(initialBase)
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    //
+
+    console.log("Base Balance: ", baseBalance);
+    console.log("Reserve Base: ", reserveBase);
+    expect(baseBalance).to.be.at.least(reserveBase);
+
+    console.log("Max Reserve: ", maxReserve);
+    console.log("Max Supply: ", maxSupply);
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining Base: ", remainingBase);
+    console.log("Initial Base: ", initialBase);
+    expect(remainingBase).to.be.at.least(initialBase);
+  });
 });

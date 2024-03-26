@@ -109,7 +109,6 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     address public immutable fees;
     address public immutable waveFrontFactory;
     address public immutable preToken;
-    string public uri;
 
     uint256 public maxSupply = INITIAL_SUPPLY;
     bool public open = false;
@@ -127,6 +126,10 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     // borrowing
     uint256 public totalDebt;
     mapping(address => uint256) public account_Debt;
+
+    string public uri;
+    string public status;
+    address public statusHolder;
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -165,11 +168,13 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
-    constructor(string memory _name, string memory _symbol, string memory _uri, address _base, address _waveFrontFactory)
+    constructor(string memory _name, string memory _symbol, string memory _uri, address _base, address _waveFrontFactory, address _statusHolder)
         ERC20(_name, _symbol)
         ERC20Permit(_name)
     {
-        uri = _uri; 
+        uri = _uri;
+        status = "Input status here";
+        statusHolder = _statusHolder;
         waveFrontFactory = _waveFrontFactory;
         base = _base;
         fees = address(new TokenFeesFP(_base));
@@ -293,6 +298,7 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     function donate(uint256 amount) 
         external 
+        nonReentrant
         notZeroInput(amount)
     {
         IERC20(base).transferFrom(msg.sender, address(this), amount);
@@ -397,10 +403,11 @@ contract TokenFactoryFP {
         string memory name,
         string memory symbol,
         string memory uri,
-        address base
+        address base,
+        address statusHolder
     ) external returns (address) {
 
-        lastToken = address(new TokenFP(name, symbol, uri, base, msg.sender));
+        lastToken = address(new TokenFP(name, symbol, uri, base, msg.sender, statusHolder));
         emit TokenFactory__TokenCreated(lastToken);
 
         return lastToken;

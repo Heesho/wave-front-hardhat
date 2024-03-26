@@ -289,6 +289,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     function donate(uint256 amount) 
         external 
+        nonReentrant
         notZeroInput(amount)
     {
         IERC20(base).transferFrom(msg.sender, address(this), amount);
