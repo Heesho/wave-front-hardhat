@@ -29,7 +29,7 @@ let tokenFactory, meme1, meme2;
 let factory, multicall, router;
 let base;
 
-describe("local: test0", function () {
+describe.only("local: test0", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -41,7 +41,7 @@ describe("local: test0", function () {
     console.log("- BASE Initialized");
 
     const tokenFactoryArtifact = await ethers.getContractFactory(
-      "TokenFactory"
+      "TokenFactoryFP"
     );
     tokenFactory = await tokenFactoryArtifact.deploy();
     console.log("- TokenFactory Initialized");
@@ -80,7 +80,7 @@ describe("local: test0", function () {
     await router
       .connect(user0)
       .createToken("Meme 1", "MEME1", "http/ipfs.com", { value: ten });
-    meme1 = await ethers.getContractAt("Token", await factory.index_Token(1));
+    meme1 = await ethers.getContractAt("TokenFP", await factory.index_Token(1));
     console.log("Meme1 Created");
   });
 
@@ -89,7 +89,7 @@ describe("local: test0", function () {
     await router
       .connect(user0)
       .createToken("Meme 2", "MEME2", "http/ipfs.com", { value: ten });
-    meme2 = await ethers.getContractAt("Token", await factory.index_Token(2));
+    meme2 = await ethers.getContractAt("TokenFP", await factory.index_Token(2));
     console.log("Meme0 Created");
   });
 
@@ -348,65 +348,57 @@ describe("local: test0", function () {
       .borrow(await meme1.getAccountCredit(user0.address));
   });
 
-  /*
-
-
-
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme0.address, user0.address);
+    let res = await multicall.getAccountData(meme1.address, user0.address);
     console.log(res);
   });
 
   it("User0 tries to transfer and tries to sell", async function () {
     console.log("******************************************************");
     await expect(
-      meme0.connect(user0).transfer(user1.address, one)
-    ).to.be.revertedWith("Meme__OutstandingDebt");
+      meme1.connect(user0).transfer(user1.address, one)
+    ).to.be.revertedWith("Token__CollateralRequirement");
   });
 
   it("User0 tries to sell meme0", async function () {
     console.log("******************************************************");
-    await meme0
+    await meme1
       .connect(user0)
-      .approve(router.address, await meme0.balanceOf(user0.address));
+      .approve(router.address, await meme1.balanceOf(user0.address));
     await expect(
       router
         .connect(user0)
         .sell(
-          meme0.address,
-          await meme0.balanceOf(user0.address),
+          meme1.address,
+          await meme1.balanceOf(user0.address),
           0,
           1904422437
         )
-    ).to.be.revertedWith("Meme__OutstandingDebt");
+    ).to.be.revertedWith("Token__CollateralRequirement");
   });
 
-  it("User0 repays some WETH for meme0", async function () {
+  it("User0 repays some WETH for meme1", async function () {
     console.log("******************************************************");
-    await base.connect(user0).approve(meme0.address, one);
-    await meme0.connect(user0).repay(one);
+    await base.connect(user0).approve(meme1.address, one);
+    await meme1.connect(user0).repay(one);
   });
 
   it("User0 tries to transfer and tries to sell", async function () {
     console.log("******************************************************");
-    await expect(
-      meme0.connect(user0).transfer(user1.address, one)
-    ).to.be.revertedWith("Meme__OutstandingDebt");
+    meme1.connect(user0).transfer(user1.address, one);
   });
 
   it("User0 repays all WETH", async function () {
     console.log("******************************************************");
     await base
       .connect(user0)
-      .approve(meme0.address, await meme0.account_Debt(user0.address));
-    await meme0.connect(user0).repay(await meme0.account_Debt(user0.address));
+      .approve(meme1.address, await meme1.account_Debt(user0.address));
+    await meme1.connect(user0).repay(await meme1.account_Debt(user0.address));
   });
 
   it("User0 transfers meme0", async function () {
     console.log("******************************************************");
-    await meme0.connect(user0).transfer(user1.address, one);
+    await meme1.connect(user0).transfer(user1.address, one);
   });
-
-  */
 });

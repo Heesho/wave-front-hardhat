@@ -6,12 +6,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./FixedPointMathLib.sol";
 
 interface IWaveFrontFactory {
     function treasury() external view returns (address);
 }
 
-contract PreToken is ReentrancyGuard {
+contract PreTokenFP is ReentrancyGuard {
+    using FixedPointMathLib for uint256;
+
     uint256 public constant DURATION = 3600;
     
     address public immutable base;
@@ -53,9 +56,9 @@ contract PreToken is ReentrancyGuard {
         if (ended) revert PreToken__Concluded();
         ended = true;
         IERC20(base).approve(token, totalBaseContributed);
-        Token(token).buy(totalBaseContributed, 0, 0, address(this), address(0));
+        TokenFP(token).buy(totalBaseContributed, 0, 0, address(this), address(0));
         totalTokenBalance = IERC20(token).balanceOf(address(this));
-        Token(token).openMarket();
+        TokenFP(token).openMarket();
         emit PreToken__MarketOpened(token, totalTokenBalance, totalBaseContributed);
     }
 
@@ -64,14 +67,14 @@ contract PreToken is ReentrancyGuard {
         uint256 contribution = account_BaseContributed[account];
         if (contribution == 0) revert PreToken__NotEligible();
         account_BaseContributed[account] = 0;
-        uint256 tokenAmount = totalTokenBalance * contribution / totalBaseContributed;
+        uint256 tokenAmount = totalTokenBalance.mulWadDown(contribution).divWadDown(totalBaseContributed);
         IERC20(token).transfer(account, tokenAmount);
         emit PreToken__Redeemed(account, tokenAmount);
     }
     
 }
 
-contract TokenFees {
+contract TokenFeesFP {
 
     address internal immutable base;
     address internal immutable token;
@@ -88,7 +91,8 @@ contract TokenFees {
 
 }
 
-contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
+contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
+    using FixedPointMathLib for uint256;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
@@ -168,8 +172,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         uri = _uri; 
         waveFrontFactory = _waveFrontFactory;
         base = _base;
-        fees = address(new TokenFees(_base));
-        preToken = address(new PreToken(_base));
+        fees = address(new TokenFeesFP(_base));
+        preToken = address(new PreTokenFP(_base));
     }
 
     function buy(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) 
@@ -180,9 +184,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         if (!open && msg.sender != preToken) revert Token__MarketNotOpen();
 
-        uint256 feeBase = amountIn * FEE / DIVISOR;
+        uint256 feeBase = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
         uint256 newReserveBase = RESERVE_VIRTUAL_BASE + reserveBase + amountIn - feeBase;
-        uint256 newReserveToken = (RESERVE_VIRTUAL_BASE + reserveBase) * reserveToken / newReserveBase;
+        uint256 newReserveToken = (RESERVE_VIRTUAL_BASE + reserveBase).mulWadUp(reserveToken).divWadUp(newReserveBase);
         uint256 amountOut = reserveToken - newReserveToken;
 
         if (amountOut < minAmountOut) revert Token__SlippageToleranceExceeded();
@@ -193,7 +197,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__Buy(msg.sender, to, amountIn, amountOut);
 
         IERC20(base).transferFrom(msg.sender, address(this), amountIn);
-        uint256 feeAmount = feeBase * FEE_AMOUNT / DIVISOR;
+        uint256 feeAmount = feeBase.mulWadDown(FEE_AMOUNT).divWadDown(DIVISOR);
         if (provider != address(0)) {
             IERC20(base).transfer(provider, feeAmount);
             emit Token__ProviderFee(provider, feeAmount);
@@ -213,9 +217,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         notZeroInput(amountIn)
         notExpired(expireTimestamp) 
     {
-        uint256 feeToken = amountIn * FEE / DIVISOR;
+        uint256 feeToken = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
         uint256 newReserveToken = reserveToken + amountIn - feeToken;
-        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + reserveBase) * reserveToken / newReserveToken;
+        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + reserveBase).mulWadUp(reserveToken).divWadUp(newReserveToken);
         uint256 amountOut = RESERVE_VIRTUAL_BASE + reserveBase - newReserveBase;
 
         if (amountOut < minAmountOut) revert Token__SlippageToleranceExceeded();
@@ -265,7 +269,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         if (claimedBase > 0) {
             claimableBase[account] = 0;
 
-            TokenFees(fees).claimFeesFor(account, claimedBase);
+            TokenFeesFP(fees).claimFeesFor(account, claimedBase);
 
             emit Token__Claim(account, claimedBase);
         }
@@ -276,7 +280,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         notZeroInput(amount)
     {
         if (maxSupply > reserveToken) {
-            uint256 reserveBurn = reserveToken * amount / (maxSupply - reserveToken);
+            uint256 reserveBurn = reserveToken.mulWadDown(amount).divWadDown(maxSupply - reserveToken);
             reserveToken -= reserveBurn;
             maxSupply -= (amount + reserveBurn);
             emit Token__ReserveBurn(reserveBurn);
@@ -305,7 +309,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     function _updateBase(uint256 amount) internal {
         IERC20(base).transfer(fees, amount);
         totalFeesBase += amount;
-        uint256 _ratio = amount * 1e18 / totalSupply();
+        uint256 _ratio = amount.mulWadDown(1e18).divWadDown(totalSupply());
         if (_ratio > 0) {
             indexBase += _ratio;
         }
@@ -320,7 +324,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             supplyIndexBase[recipient] = _indexBase;
             uint256 _deltaBase = _indexBase - _supplyIndexBase;
             if (_deltaBase > 0) {
-                uint256 _share = _supplied * _deltaBase / 1e18;
+                uint256 _share = _supplied.mulWadDown(_deltaBase).divWadDown(1e18);
                 claimableBase[recipient] += _share;
             }
         } else {
@@ -364,26 +368,26 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
     function getMarketPrice() external view returns (uint256) {
-        return ((RESERVE_VIRTUAL_BASE + reserveBase) * PRECISION) / reserveToken;
+        return ((RESERVE_VIRTUAL_BASE + reserveBase).mulWadDown(PRECISION)).divWadDown(reserveToken);
     }
 
     function getFloorPrice() external view returns (uint256) {
-        return (RESERVE_VIRTUAL_BASE * PRECISION) / maxSupply;
+        return (RESERVE_VIRTUAL_BASE.mulWadDown(PRECISION)).divWadDown(maxSupply);
     }
 
     function getAccountCredit(address account) public view returns (uint256) {
         if (balanceOf(account) == 0) return 0;
-        return ((RESERVE_VIRTUAL_BASE * maxSupply / (maxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
+        return ((RESERVE_VIRTUAL_BASE.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
     }
 
     function getAccountTransferrable(address account) public view returns (uint256) {
         if (account_Debt[account] == 0) return balanceOf(account);
-        return balanceOf(account) - (maxSupply - (RESERVE_VIRTUAL_BASE * maxSupply / (account_Debt[account] + RESERVE_VIRTUAL_BASE)));
+        return balanceOf(account) - (maxSupply - (RESERVE_VIRTUAL_BASE.mulWadUp(maxSupply).divWadUp(account_Debt[account] + RESERVE_VIRTUAL_BASE)));
     }
 
 }
 
-contract TokenFactory {
+contract TokenFactoryFP {
     
     address public lastToken;
 
@@ -396,7 +400,7 @@ contract TokenFactory {
         address base
     ) external returns (address) {
 
-        lastToken = address(new Token(name, symbol, uri, base, msg.sender));
+        lastToken = address(new TokenFP(name, symbol, uri, base, msg.sender));
         emit TokenFactory__TokenCreated(lastToken);
 
         return lastToken;
