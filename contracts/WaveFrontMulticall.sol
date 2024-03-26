@@ -22,6 +22,8 @@ interface IToken {
     function preToken() external view returns (address);
     function fees() external view returns (address);
     function uri() external view returns (string memory);
+    function status() external view returns (string memory);
+    function statusHolder() external view returns (address);
     function reserveBase() external view returns (uint256);
     function RESERVE_VIRTUAL_BASE() external view returns (uint256);
     function reserveToken() external view returns (uint256);
@@ -57,6 +59,8 @@ contract WaveFrontMulticall {
         string name;
         string symbol;
         string uri;
+        string status;
+        address statusHolder;
 
         bool marketOpen;
         uint256 marketOpenTimestamp;
@@ -118,6 +122,8 @@ contract WaveFrontMulticall {
         tokenData.name = IERC20Metadata(tokenData.token).name();
         tokenData.symbol = IERC20Metadata(tokenData.token).symbol();
         tokenData.uri = IToken(tokenData.token).uri();
+        tokenData.status = IToken(tokenData.token).status();
+        tokenData.statusHolder = IToken(tokenData.token).statusHolder();
 
         tokenData.marketOpen = IPreToken(tokenData.preToken).ended();
         tokenData.marketOpenTimestamp = IPreToken(tokenData.preToken).endTimestamp();

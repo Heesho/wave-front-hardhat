@@ -32,6 +32,8 @@ interface IBase {
 
 contract WaveFrontRouter {
 
+    uint256 public constant STATUS_UPDATE_FEE = 10 * 1e18;
+
     address public immutable base;
     address public immutable factory;
 
@@ -140,6 +142,12 @@ contract WaveFrontRouter {
         uint256 tokenBalance = IERC20(token).balanceOf(address(this));
         IERC20(token).transfer(msg.sender, tokenBalance);
         emit WaveFrontRouter__Redeemed(token, msg.sender, tokenBalance);
+    }
+
+    function updateStatus(address token, string memory status) external {
+        IERC20(token).transferFrom(msg.sender, address(this), STATUS_UPDATE_FEE);
+        IToken(token).updateStatus(msg.sender, status);
+        emit WaveFrontRouter__StatusUpdated(token, msg.sender, status);
     }
 
     // Function to receive Ether. msg.data must be empty

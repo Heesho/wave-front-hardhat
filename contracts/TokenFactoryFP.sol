@@ -101,6 +101,8 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION;
     uint256 public constant FEE = 100;
     uint256 public constant FEE_AMOUNT = 2000;
+    uint256 public constant STATUS_FEE = 1000;
+    uint256 public constant STATUS_MAX_LENGTH = 140;
     uint256 public constant DIVISOR = 10000;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
@@ -140,6 +142,8 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error Token__NotAuthorized();
     error Token__CollateralRequirement();
     error Token__CreditLimit();
+    error Token__StatusRequired();
+    error Token__StatusLimitExceeded();
 
     /*----------  EVENTS ------------------------------------------------*/
 
@@ -153,6 +157,8 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Token__ReserveBurn(uint256 amountToken);
     event Token__Borrow(address indexed account, uint256 amountBase);
     event Token__Repay(address indexed account, uint256 amountBase);
+    event Token__StatusFee(address indexed account, uint256 amountBase);
+    event Token__StatusUpated(address indexed account, string status);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -208,9 +214,11 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             emit Token__ProviderFee(provider, feeAmount);
             feeBase -= feeAmount;
         } 
+        IERC20(base).transfer(statusHolder, feeAmount);
+        emit Token__StatusFee(statusHolder, feeAmount);
         IERC20(base).transfer(IWaveFrontFactory(waveFrontFactory).treasury(), feeAmount);
         emit Token__ProtocolFee(IWaveFrontFactory(waveFrontFactory).treasury(), feeAmount);
-        feeBase -= feeAmount;
+        feeBase -= (2* feeAmount);
 
         _mint(to, amountOut);
         _updateBase(feeBase); 
@@ -278,6 +286,16 @@ contract TokenFP is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
             emit Token__Claim(account, claimedBase);
         }
+    }
+
+    function updateStatus(address account, string memory _status) external {
+        if (!open) revert Token__MarketNotOpen();
+        if (bytes(_status).length == 0) revert Token__StatusRequired();
+        if (bytes(_status).length > STATUS_MAX_LENGTH) revert Token__StatusLimitExceeded();
+        burn(STATUS_FEE);
+        status = _status;
+        statusHolder = account;
+        emit Token__StatusUpated(account, _status);
     }
 
     function burn(uint256 amount) 
