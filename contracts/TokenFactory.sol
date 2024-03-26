@@ -142,6 +142,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error Token__NotAuthorized();
     error Token__CollateralRequirement();
     error Token__CreditLimit();
+    error Token__InvalidAccount();
     error Token__StatusRequired();
     error Token__StatusLimitExceeded();
 
@@ -288,8 +289,12 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
     }
 
-    function updateStatus(address account, string memory _status) external {
+    function updateStatus(address account, string memory _status)
+        external
+        nonReentrant 
+    {
         if (!open) revert Token__MarketNotOpen();
+        if (account == address(0)) revert Token__InvalidAccount();
         if (bytes(_status).length == 0) revert Token__StatusRequired();
         if (bytes(_status).length > STATUS_MAX_LENGTH) revert Token__StatusLimitExceeded();
         burn(STATUS_FEE);
