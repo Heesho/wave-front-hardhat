@@ -1,0 +1,33 @@
+type OwnershipTransferred @entity(immutable: true) {
+  id: Bytes!
+  previousOwner: Bytes! # address
+  newOwner: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type WaveFrontFactory__MinAmountInUpdated @entity(immutable: true) {
+  id: Bytes!
+  minAmountIn: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type WaveFrontFactory__TokenCreated @entity(immutable: true) {
+  id: Bytes!
+  index: BigInt! # uint256
+  token: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type WaveFrontFactory__TreasuryUpdated @entity(immutable: true) {
+  id: Bytes!
+  treasury: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

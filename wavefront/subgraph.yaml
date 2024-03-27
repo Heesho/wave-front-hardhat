@@ -1,0 +1,35 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: WaveFrontFactory
+    network: mumbai
+    source:
+      address: "0x8Fa71D106880549D4AD4f187c8561d630926254a"
+      abi: WaveFrontFactory
+      startBlock: 47558267
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - OwnershipTransferred
+        - WaveFrontFactory__MinAmountInUpdated
+        - WaveFrontFactory__TokenCreated
+        - WaveFrontFactory__TreasuryUpdated
+      abis:
+        - name: WaveFrontFactory
+          file: ./abis/WaveFrontFactory.json
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: WaveFrontFactory__MinAmountInUpdated(uint256)
+          handler: handleWaveFrontFactory__MinAmountInUpdated
+        - event: WaveFrontFactory__TokenCreated(uint256,address)
+          handler: handleWaveFrontFactory__TokenCreated
+        - event: WaveFrontFactory__TreasuryUpdated(address)
+          handler: handleWaveFrontFactory__TreasuryUpdated
+      file: ./src/wave-front-factory.ts
