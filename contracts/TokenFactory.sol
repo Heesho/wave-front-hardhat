@@ -159,7 +159,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Token__Borrow(address indexed account, uint256 amountBase);
     event Token__Repay(address indexed account, uint256 amountBase);
     event Token__StatusFee(address indexed account, uint256 amountBase);
-    event Token__StatusUpated(address indexed account, string status);
+    event Token__StatusUpdated(address indexed account, string status);
     event Token__Donation(address indexed account, uint256 amountBase);
 
     /*----------  MODIFIERS  --------------------------------------------*/
@@ -307,7 +307,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         burn(STATUS_FEE);
         status = _status;
         statusHolder = account;
-        emit Token__StatusUpated(account, _status);
+        emit Token__StatusUpdated(account, _status);
     }
 
     function burn(uint256 amount) 

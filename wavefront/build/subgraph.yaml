@@ -2,7 +2,7 @@ specVersion: 1.0.0
 indexerHints:
   prune: auto
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: WaveFrontFactory
@@ -19,13 +19,13 @@ dataSources:
         - Directory
       abis:
         - name: WaveFrontFactory
-          file: ./abis/WaveFrontFactory.json
+          file: WaveFrontFactory\abis\WaveFrontFactory.json
         - name: Token
-          file: ./abis/Token.json
+          file: WaveFrontFactory\abis\Token.json
         - name: PreToken
-          file: ./abis/PreToken.json
+          file: WaveFrontFactory\abis\PreToken.json
         - name: WaveFrontMulticall
-          file: ./abis/WaveFrontMulticall.json
+          file: WaveFrontFactory\abis\WaveFrontMulticall.json
       eventHandlers:
         - event: WaveFrontFactory__TokenCreated(uint256,address)
           handler: handleWaveFrontFactory__TokenCreated
@@ -35,7 +35,7 @@ dataSources:
           handler: handleWaveFrontFactory__MinAmountInUpdated
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransferred
-      file: ./src/wavefront-factory.ts
+      file: WaveFrontFactory\WaveFrontFactory.wasm
 templates:
   - kind: ethereum/contract
     name: Token
@@ -46,7 +46,7 @@ templates:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/token.ts
+      file: templates\Token\Token.wasm
       entities:
         - Directory
         - Token
@@ -60,9 +60,9 @@ templates:
         - Account
       abis:
         - name: Token
-          file: ./abis/Token.json
+          file: Token\abis\Token.json
         - name: WaveFrontMulticall
-          file: ./abis/WaveFrontMulticall.json
+          file: Token\abis\WaveFrontMulticall.json
       eventHandlers:
         - event: Token__Buy(indexed address,indexed address,uint256,uint256)
           handler: handleToken__Buy
@@ -99,7 +99,7 @@ templates:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/pre-token.ts
+      file: templates\PreToken\PreToken.wasm
       entities:
         - Directory
         - Token
@@ -113,9 +113,9 @@ templates:
         - Account
       abis:
         - name: PreToken
-          file: ./abis/PreToken.json
+          file: PreToken\abis\PreToken.json
         - name: WaveFrontMulticall
-          file: ./abis/WaveFrontMulticall.json
+          file: PreToken\abis\WaveFrontMulticall.json
       eventHandlers:
         - event: PreToken__Contributed(indexed address,uint256)
           handler: handlePreToken__Contributed

@@ -82,23 +82,23 @@ let token, preToken, TokenFees;
 async function getContracts() {
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x1C44891f934bAe60F6fa6614cb0E9F33509F5c0a"
+    "0xCD645F4bE804B0ac10045Bfab265E56c0C0Be4B3"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x8Fa71D106880549D4AD4f187c8561d630926254a"
+    "0x9Fa5b54Df8c48b1f448D63007122baC30cAC26f7"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x49311efF1026B43381fe3993Dd73eD4C6369783d"
+    "0xC9Fce24eD05bb773935859e5CCb037CB7e78a459"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0xe242e31046c90a4C47cFF218f3C839F66130e401"
+    "0x690D4601F99d7d5AB2A72af821d037E9A37168df"
   );
   token = await ethers.getContractAt(
     "contracts/TokenFactory.sol:Token",
-    "0xFF972f6E2Efe7512fE62C7c789cA4A3eCa48e29b"
+    "0x3d9dF7B0474Fe29E769082A2686d2B8aC5d1313f"
   );
   console.log("Contracts Retrieved");
 }
@@ -219,11 +219,11 @@ async function verifyRouter() {
 
 async function deployToken() {
   console.log("Starting Token Deployment");
-  await router.createToken(meme3.name, meme3.symbol, meme3.uri, {
+  await router.createToken(meme1.name, meme1.symbol, meme1.uri, {
     value: ethers.utils.parseEther("0.01"),
     gasPrice: ethers.gasPrice,
   });
-  token = await factory.index_Token(meme3.index);
+  token = await factory.index_Token(meme1.index);
   await sleep(5000);
   console.log("Token Deployed at:", token);
 }
@@ -297,19 +297,19 @@ async function main() {
   // 3. Deploy Token
   //===================================================================
 
-  console.log("Starting Token Delpoyment");
-  await deployToken();
-  console.log("Token Deployed");
+  // console.log("Starting Token Delpoyment");
+  // await deployToken();
+  // console.log("Token Deployed");
 
   //===================================================================
   // 4. Verify Token
   //===================================================================
 
-  // console.log("Starting Token Verification");
-  // await verifyToken(wallet.address);
-  // await verifyPreToken();
-  // await verifyTokenFees();
-  // console.log("Token Verified");
+  console.log("Starting Token Verification");
+  await verifyToken(wallet.address);
+  await verifyPreToken();
+  await verifyTokenFees();
+  console.log("Token Verified");
 
   //===================================================================
   // 4. Transactions
