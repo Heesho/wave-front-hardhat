@@ -160,6 +160,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Token__Repay(address indexed account, uint256 amountBase);
     event Token__StatusFee(address indexed account, uint256 amountBase);
     event Token__StatusUpated(address indexed account, string status);
+    event Token__Donation(address indexed account, uint256 amountBase);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -332,6 +333,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         IERC20(base).transferFrom(msg.sender, address(this), amount);
         _updateBase(amount);
+        emit Token__Donation(msg.sender, amount);
     }
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/

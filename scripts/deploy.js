@@ -82,23 +82,23 @@ let token, preToken, TokenFees;
 async function getContracts() {
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0xb1bc19652d5F6eC5E9Bb19087dDBaD84fCd12d0A"
+    "0x1C44891f934bAe60F6fa6614cb0E9F33509F5c0a"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x9478AFffC100826423dFf0049c2b1644A8971E6E"
+    "0x8Fa71D106880549D4AD4f187c8561d630926254a"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x658c6396A0CE820C2c1D91caA514314C744A70eC"
+    "0x49311efF1026B43381fe3993Dd73eD4C6369783d"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0xB056EdF63C1990B8F7646BdD72a9854104ef5aCb"
+    "0xe242e31046c90a4C47cFF218f3C839F66130e401"
   );
   token = await ethers.getContractAt(
     "contracts/TokenFactory.sol:Token",
-    "0xbaDD4c59755261a96de7e8A11555fb1922ee97f5"
+    "0xFF972f6E2Efe7512fE62C7c789cA4A3eCa48e29b"
   );
   console.log("Contracts Retrieved");
 }
@@ -219,11 +219,11 @@ async function verifyRouter() {
 
 async function deployToken() {
   console.log("Starting Token Deployment");
-  await router.createToken(meme2.name, meme2.symbol, meme2.uri, {
+  await router.createToken(meme3.name, meme3.symbol, meme3.uri, {
     value: ethers.utils.parseEther("0.01"),
     gasPrice: ethers.gasPrice,
   });
-  token = await factory.index_Token(meme1.index);
+  token = await factory.index_Token(meme3.index);
   await sleep(5000);
   console.log("Token Deployed at:", token);
 }
@@ -297,9 +297,9 @@ async function main() {
   // 3. Deploy Token
   //===================================================================
 
-  // console.log("Starting Token Delpoyment");
-  // await deployToken();
-  // console.log("Token Deployed");
+  console.log("Starting Token Delpoyment");
+  await deployToken();
+  console.log("Token Deployed");
 
   //===================================================================
   // 4. Verify Token
