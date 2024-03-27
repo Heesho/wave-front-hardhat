@@ -28,12 +28,12 @@ contract WaveFrontFactory is Ownable {
     address public immutable base;
     address public treasury;
     address public tokenFactory;
-    uint256 public minAmountIn = 0.1 ether;
+    uint256 public minAmountIn = 0.01 ether;
 
     uint256 public index = 1;
-    mapping(uint256=>address) public index_Token;
-    mapping(address=>uint256) public token_Index;
-    mapping(string=>uint256) public symbol_Index;
+    mapping(uint256 => address) public index_Token;
+    mapping(address => uint256) public token_Index;
+    mapping(string => uint256) public symbol_Index;
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -103,9 +103,5 @@ contract WaveFrontFactory is Ownable {
         minAmountIn = _minAmountIn;
         emit WaveFrontFactory__MinAmountInUpdated(_minAmountIn);
     }
-
-    /*----------  VIEW FUNCTIONS  ---------------------------------------*/
-
-
 
 }

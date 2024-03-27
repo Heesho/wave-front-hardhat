@@ -175,7 +175,14 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
-    constructor(string memory _name, string memory _symbol, string memory _uri, address _base, address _waveFrontFactory, address _statusHolder)
+    constructor(
+        string memory _name, 
+        string memory _symbol, 
+        string memory _uri, 
+        address _base, 
+        address _waveFrontFactory, 
+        address _statusHolder
+    )
         ERC20(_name, _symbol)
         ERC20Permit(_name)
     {

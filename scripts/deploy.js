@@ -6,7 +6,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===================================================================*/
 /*===========================  SETTINGS  ============================*/
 
-const BASE_ADDRESS = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889"; // BASE Token Address (eg WETH on zkEVM)
+const BASE_ADDRESS = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889"; // BASE Token Address (eg WMATIC on Mumbai)
 const TREASURY_ADDRESS = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712"; // Treasury Address
 
 const meme1 = {
@@ -80,34 +80,26 @@ let token, preToken, TokenFees;
 /*===========================  CONTRACT DATA  =======================*/
 
 async function getContracts() {
-  // tokenFactory = await ethers.getContractAt(
-  //   "contracts/TokenFactory.sol:TokenFactory",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
-  // factory = await ethers.getContractAt(
-  //   "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
-  // multicall = await ethers.getContractAt(
-  //   "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
-  // router = await ethers.getContractAt(
-  //   "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
-  // token = await ethers.getContractAt(
-  //   "contracts/TokenFactory.sol:Token",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
-  // preToken = await ethers.getContractAt(
-  //   "contracts/TokenFactory.sol:PreToken",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
-  // TokenFees = await ethers.getContractAt(
-  //   "contracts/TokenFactory.sol:TokenFees",
-  //   "0x0000000000000000000000000000000000000000"
-  // );
+  tokenFactory = await ethers.getContractAt(
+    "contracts/TokenFactory.sol:TokenFactory",
+    "0xb1bc19652d5F6eC5E9Bb19087dDBaD84fCd12d0A"
+  );
+  factory = await ethers.getContractAt(
+    "contracts/WaveFrontFactory.sol:WaveFrontFactory",
+    "0x9478AFffC100826423dFf0049c2b1644A8971E6E"
+  );
+  multicall = await ethers.getContractAt(
+    "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
+    "0x658c6396A0CE820C2c1D91caA514314C744A70eC"
+  );
+  router = await ethers.getContractAt(
+    "contracts/WaveFrontRouter.sol:WaveFrontRouter",
+    "0xB056EdF63C1990B8F7646BdD72a9854104ef5aCb"
+  );
+  token = await ethers.getContractAt(
+    "contracts/TokenFactory.sol:Token",
+    "0xbaDD4c59755261a96de7e8A11555fb1922ee97f5"
+  );
   console.log("Contracts Retrieved");
 }
 
@@ -227,13 +219,13 @@ async function verifyRouter() {
 
 async function deployToken() {
   console.log("Starting Token Deployment");
-  await router.createToken(meme7.name, meme7.symbol, meme7.uri, {
-    value: ethers.utils.parseEther("0.1"),
+  await router.createToken(meme2.name, meme2.symbol, meme2.uri, {
+    value: ethers.utils.parseEther("0.01"),
     gasPrice: ethers.gasPrice,
   });
-  token = await factory.getTokenByIndex(meme7.index);
+  token = await factory.index_Token(meme1.index);
   await sleep(5000);
-  console.log("Token Deployed at:", token.address);
+  console.log("Token Deployed at:", token);
 }
 
 async function verifyToken(wallet) {
@@ -264,7 +256,7 @@ async function verifyPreToken() {
 }
 
 async function verifyTokenFees() {
-  console.log("Starting TOkenFees Verification");
+  console.log("Starting TokenFees Verification");
   await hre.run("verify:verify", {
     address: await token.fees(),
     contract: "contracts/TokenFactory.sol:TokenFees",
@@ -296,7 +288,7 @@ async function main() {
   // 2. Verify System
   //===================================================================
 
-  console.log("Starting System Verificatrion Deployment");
+  // console.log("Starting System Verificatrion Deployment");
   // await verifyFactory();
   // await verifyMulticall();
   // await verifyRouter();
@@ -307,7 +299,7 @@ async function main() {
 
   // console.log("Starting Token Delpoyment");
   // await deployToken();
-  // console.log("Meme Deployed");
+  // console.log("Token Deployed");
 
   //===================================================================
   // 4. Verify Token
@@ -329,7 +321,7 @@ async function main() {
   // );
 
   // contribute
-  // await router.contribute(meme.address, {
+  // await router.contribute(token.address, {
   //   value: ethers.utils.parseEther("0.01"),
   // });
 
