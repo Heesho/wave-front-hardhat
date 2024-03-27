@@ -48,7 +48,7 @@ contract WaveFrontRouter {
     event WaveFrontRouter__Contributed(address indexed token, address indexed account, uint256 amount);
     event WaveFrontRouter__Redeemed(address indexed token, address indexed account, uint256 amount);
     event WaveFrontRouter__MarketOpened(address indexed token, uint256 totalBaseContributed, uint256 totalTokenBalance);
-    
+
     constructor(address _factory, address _base) {
         factory = _factory;
         base = _base;

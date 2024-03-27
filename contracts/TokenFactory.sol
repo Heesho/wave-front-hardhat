@@ -291,9 +291,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     function updateStatus(address account, string memory _status)
         external
-        nonReentrant 
+        nonReentrant
     {
-        if (!open) revert Token__MarketNotOpen();
         if (account == address(0)) revert Token__InvalidAccount();
         if (bytes(_status).length == 0) revert Token__StatusRequired();
         if (bytes(_status).length > STATUS_MAX_LENGTH) revert Token__StatusLimitExceeded();
@@ -330,12 +329,16 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
-    function openMarket() external {
+    function openMarket() 
+        external 
+    {
         if (msg.sender != preToken) revert Token__NotAuthorized();
         open = true;
     }
 
-    function _updateBase(uint256 amount) internal {
+    function _updateBase(uint256 amount) 
+        internal 
+    {
         IERC20(base).transfer(fees, amount);
         totalFeesBase += amount;
         uint256 _ratio = amount.mulWadDown(1e18).divWadDown(totalSupply());
@@ -345,7 +348,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__Fees(msg.sender, amount, 0);
     }
     
-    function _updateFor(address recipient) internal {
+    function _updateFor(address recipient) 
+        internal 
+    {
         uint256 _supplied = balanceOf(recipient);
         if (_supplied > 0) {
             uint256 _supplyIndexBase = supplyIndexBase[recipient];
@@ -396,20 +401,36 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
-    function getMarketPrice() external view returns (uint256) {
+    function getMarketPrice()
+        external
+        view
+        returns (uint256) 
+    {
         return ((RESERVE_VIRTUAL_BASE + reserveBase).mulWadDown(PRECISION)).divWadDown(reserveToken);
     }
 
-    function getFloorPrice() external view returns (uint256) {
+    function getFloorPrice() 
+        external 
+        view 
+        returns (uint256) 
+    {
         return (RESERVE_VIRTUAL_BASE.mulWadDown(PRECISION)).divWadDown(maxSupply);
     }
 
-    function getAccountCredit(address account) public view returns (uint256) {
+    function getAccountCredit(address account) 
+        public 
+        view 
+        returns (uint256) 
+    {
         if (balanceOf(account) == 0) return 0;
         return ((RESERVE_VIRTUAL_BASE.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
     }
 
-    function getAccountTransferrable(address account) public view returns (uint256) {
+    function getAccountTransferrable(address account) 
+        public 
+        view 
+        returns (uint256) 
+    {
         if (account_Debt[account] == 0) return balanceOf(account);
         return balanceOf(account) - (maxSupply - (RESERVE_VIRTUAL_BASE.mulWadUp(maxSupply).divWadUp(account_Debt[account] + RESERVE_VIRTUAL_BASE)));
     }
@@ -428,11 +449,12 @@ contract TokenFactory {
         string memory uri,
         address base,
         address statusHolder
-    ) external returns (address) {
-
+    ) 
+        external 
+        returns (address) 
+    {
         lastToken = address(new Token(name, symbol, uri, base, msg.sender, statusHolder));
         emit TokenFactory__TokenCreated(lastToken);
-
         return lastToken;
     }
 }

@@ -43,11 +43,13 @@ contract WaveFrontFactory is Ownable {
     error WaveFrontFactory__NameLimitExceeded();
     error WaveFrontFactory__SymbolLimitExceeded();
     error WaveFrontFactory__InsufficientAmountIn();
+    error WaveFrontFactory__InvalidAddress();
 
     /*----------  EVENTS ------------------------------------------------*/
     
     event WaveFrontFactory__TokenCreated(uint256 index, address token);
     event WaveFrontFactory__TreasuryUpdated(address treasury);
+    event WaveFrontFactory__MinAmountInUpdated(uint256 minAmountIn);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -92,12 +94,18 @@ contract WaveFrontFactory is Ownable {
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
     function setTreasury(address _treasury) external onlyOwner {
+        if (_treasury == address(0)) revert WaveFrontFactory__InvalidAddress();
         treasury = _treasury;
         emit WaveFrontFactory__TreasuryUpdated(_treasury);
     }
 
     function setMinAmountIn(uint256 _minAmountIn) external onlyOwner {
         minAmountIn = _minAmountIn;
+        emit WaveFrontFactory__MinAmountInUpdated(_minAmountIn);
     }
+
+    /*----------  VIEW FUNCTIONS  ---------------------------------------*/
+
+
 
 }
