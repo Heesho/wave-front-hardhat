@@ -102,16 +102,16 @@ export class EIP712DomainChanged__Params {
   }
 }
 
-export class Token__Borrow extends ethereum.Event {
-  get params(): Token__Borrow__Params {
-    return new Token__Borrow__Params(this);
+export class Meme__Borrow extends ethereum.Event {
+  get params(): Meme__Borrow__Params {
+    return new Meme__Borrow__Params(this);
   }
 }
 
-export class Token__Borrow__Params {
-  _event: Token__Borrow;
+export class Meme__Borrow__Params {
+  _event: Meme__Borrow;
 
-  constructor(event: Token__Borrow) {
+  constructor(event: Meme__Borrow) {
     this._event = event;
   }
 
@@ -124,16 +124,16 @@ export class Token__Borrow__Params {
   }
 }
 
-export class Token__Burn extends ethereum.Event {
-  get params(): Token__Burn__Params {
-    return new Token__Burn__Params(this);
+export class Meme__Burn extends ethereum.Event {
+  get params(): Meme__Burn__Params {
+    return new Meme__Burn__Params(this);
   }
 }
 
-export class Token__Burn__Params {
-  _event: Token__Burn;
+export class Meme__Burn__Params {
+  _event: Meme__Burn;
 
-  constructor(event: Token__Burn) {
+  constructor(event: Meme__Burn) {
     this._event = event;
   }
 
@@ -141,21 +141,21 @@ export class Token__Burn__Params {
     return this._event.parameters[0].value.toAddress();
   }
 
-  get amountToken(): BigInt {
+  get amountMeme(): BigInt {
     return this._event.parameters[1].value.toBigInt();
   }
 }
 
-export class Token__Buy extends ethereum.Event {
-  get params(): Token__Buy__Params {
-    return new Token__Buy__Params(this);
+export class Meme__Buy extends ethereum.Event {
+  get params(): Meme__Buy__Params {
+    return new Meme__Buy__Params(this);
   }
 }
 
-export class Token__Buy__Params {
-  _event: Token__Buy;
+export class Meme__Buy__Params {
+  _event: Meme__Buy;
 
-  constructor(event: Token__Buy) {
+  constructor(event: Meme__Buy) {
     this._event = event;
   }
 
@@ -176,16 +176,16 @@ export class Token__Buy__Params {
   }
 }
 
-export class Token__Claim extends ethereum.Event {
-  get params(): Token__Claim__Params {
-    return new Token__Claim__Params(this);
+export class Meme__Claim extends ethereum.Event {
+  get params(): Meme__Claim__Params {
+    return new Meme__Claim__Params(this);
   }
 }
 
-export class Token__Claim__Params {
-  _event: Token__Claim;
+export class Meme__Claim__Params {
+  _event: Meme__Claim;
 
-  constructor(event: Token__Claim) {
+  constructor(event: Meme__Claim) {
     this._event = event;
   }
 
@@ -198,16 +198,16 @@ export class Token__Claim__Params {
   }
 }
 
-export class Token__Donation extends ethereum.Event {
-  get params(): Token__Donation__Params {
-    return new Token__Donation__Params(this);
+export class Meme__Donation extends ethereum.Event {
+  get params(): Meme__Donation__Params {
+    return new Meme__Donation__Params(this);
   }
 }
 
-export class Token__Donation__Params {
-  _event: Token__Donation;
+export class Meme__Donation__Params {
+  _event: Meme__Donation;
 
-  constructor(event: Token__Donation) {
+  constructor(event: Meme__Donation) {
     this._event = event;
   }
 
@@ -220,16 +220,16 @@ export class Token__Donation__Params {
   }
 }
 
-export class Token__Fees extends ethereum.Event {
-  get params(): Token__Fees__Params {
-    return new Token__Fees__Params(this);
+export class Meme__Fees extends ethereum.Event {
+  get params(): Meme__Fees__Params {
+    return new Meme__Fees__Params(this);
   }
 }
 
-export class Token__Fees__Params {
-  _event: Token__Fees;
+export class Meme__Fees__Params {
+  _event: Meme__Fees;
 
-  constructor(event: Token__Fees) {
+  constructor(event: Meme__Fees) {
     this._event = event;
   }
 
@@ -241,21 +241,21 @@ export class Token__Fees__Params {
     return this._event.parameters[1].value.toBigInt();
   }
 
-  get amountToken(): BigInt {
+  get amountMeme(): BigInt {
     return this._event.parameters[2].value.toBigInt();
   }
 }
 
-export class Token__ProtocolFee extends ethereum.Event {
-  get params(): Token__ProtocolFee__Params {
-    return new Token__ProtocolFee__Params(this);
+export class Meme__ProtocolFee extends ethereum.Event {
+  get params(): Meme__ProtocolFee__Params {
+    return new Meme__ProtocolFee__Params(this);
   }
 }
 
-export class Token__ProtocolFee__Params {
-  _event: Token__ProtocolFee;
+export class Meme__ProtocolFee__Params {
+  _event: Meme__ProtocolFee;
 
-  constructor(event: Token__ProtocolFee) {
+  constructor(event: Meme__ProtocolFee) {
     this._event = event;
   }
 
@@ -268,16 +268,16 @@ export class Token__ProtocolFee__Params {
   }
 }
 
-export class Token__ProviderFee extends ethereum.Event {
-  get params(): Token__ProviderFee__Params {
-    return new Token__ProviderFee__Params(this);
+export class Meme__ProviderFee extends ethereum.Event {
+  get params(): Meme__ProviderFee__Params {
+    return new Meme__ProviderFee__Params(this);
   }
 }
 
-export class Token__ProviderFee__Params {
-  _event: Token__ProviderFee;
+export class Meme__ProviderFee__Params {
+  _event: Meme__ProviderFee;
 
-  constructor(event: Token__ProviderFee) {
+  constructor(event: Meme__ProviderFee) {
     this._event = event;
   }
 
@@ -290,16 +290,16 @@ export class Token__ProviderFee__Params {
   }
 }
 
-export class Token__Repay extends ethereum.Event {
-  get params(): Token__Repay__Params {
-    return new Token__Repay__Params(this);
+export class Meme__Repay extends ethereum.Event {
+  get params(): Meme__Repay__Params {
+    return new Meme__Repay__Params(this);
   }
 }
 
-export class Token__Repay__Params {
-  _event: Token__Repay;
+export class Meme__Repay__Params {
+  _event: Meme__Repay;
 
-  constructor(event: Token__Repay) {
+  constructor(event: Meme__Repay) {
     this._event = event;
   }
 
@@ -312,34 +312,34 @@ export class Token__Repay__Params {
   }
 }
 
-export class Token__ReserveBurn extends ethereum.Event {
-  get params(): Token__ReserveBurn__Params {
-    return new Token__ReserveBurn__Params(this);
+export class Meme__ReserveBurn extends ethereum.Event {
+  get params(): Meme__ReserveBurn__Params {
+    return new Meme__ReserveBurn__Params(this);
   }
 }
 
-export class Token__ReserveBurn__Params {
-  _event: Token__ReserveBurn;
+export class Meme__ReserveBurn__Params {
+  _event: Meme__ReserveBurn;
 
-  constructor(event: Token__ReserveBurn) {
+  constructor(event: Meme__ReserveBurn) {
     this._event = event;
   }
 
-  get amountToken(): BigInt {
+  get amountMeme(): BigInt {
     return this._event.parameters[0].value.toBigInt();
   }
 }
 
-export class Token__Sell extends ethereum.Event {
-  get params(): Token__Sell__Params {
-    return new Token__Sell__Params(this);
+export class Meme__Sell extends ethereum.Event {
+  get params(): Meme__Sell__Params {
+    return new Meme__Sell__Params(this);
   }
 }
 
-export class Token__Sell__Params {
-  _event: Token__Sell;
+export class Meme__Sell__Params {
+  _event: Meme__Sell;
 
-  constructor(event: Token__Sell) {
+  constructor(event: Meme__Sell) {
     this._event = event;
   }
 
@@ -360,16 +360,16 @@ export class Token__Sell__Params {
   }
 }
 
-export class Token__StatusFee extends ethereum.Event {
-  get params(): Token__StatusFee__Params {
-    return new Token__StatusFee__Params(this);
+export class Meme__StatusFee extends ethereum.Event {
+  get params(): Meme__StatusFee__Params {
+    return new Meme__StatusFee__Params(this);
   }
 }
 
-export class Token__StatusFee__Params {
-  _event: Token__StatusFee;
+export class Meme__StatusFee__Params {
+  _event: Meme__StatusFee;
 
-  constructor(event: Token__StatusFee) {
+  constructor(event: Meme__StatusFee) {
     this._event = event;
   }
 
@@ -382,16 +382,16 @@ export class Token__StatusFee__Params {
   }
 }
 
-export class Token__StatusUpdated extends ethereum.Event {
-  get params(): Token__StatusUpdated__Params {
-    return new Token__StatusUpdated__Params(this);
+export class Meme__StatusUpdated extends ethereum.Event {
+  get params(): Meme__StatusUpdated__Params {
+    return new Meme__StatusUpdated__Params(this);
   }
 }
 
-export class Token__StatusUpdated__Params {
-  _event: Token__StatusUpdated;
+export class Meme__StatusUpdated__Params {
+  _event: Meme__StatusUpdated;
 
-  constructor(event: Token__StatusUpdated) {
+  constructor(event: Meme__StatusUpdated) {
     this._event = event;
   }
 
@@ -430,7 +430,7 @@ export class Transfer__Params {
   }
 }
 
-export class Token__checkpointsResultValue0Struct extends ethereum.Tuple {
+export class Meme__checkpointsResultValue0Struct extends ethereum.Tuple {
   get fromBlock(): BigInt {
     return this[0].toBigInt();
   }
@@ -440,7 +440,7 @@ export class Token__checkpointsResultValue0Struct extends ethereum.Tuple {
   }
 }
 
-export class Token__eip712DomainResult {
+export class Meme__eip712DomainResult {
   value0: Bytes;
   value1: string;
   value2: string;
@@ -508,9 +508,9 @@ export class Token__eip712DomainResult {
   }
 }
 
-export class Token extends ethereum.SmartContract {
-  static bind(address: Address): Token {
-    return new Token("Token", address);
+export class Meme extends ethereum.SmartContract {
+  static bind(address: Address): Meme {
+    return new Meme("Meme", address);
   }
 
   CLOCK_MODE(): string {
@@ -793,7 +793,7 @@ export class Token extends ethereum.SmartContract {
   checkpoints(
     account: Address,
     pos: BigInt,
-  ): Token__checkpointsResultValue0Struct {
+  ): Meme__checkpointsResultValue0Struct {
     let result = super.call(
       "checkpoints",
       "checkpoints(address,uint32):((uint32,uint224))",
@@ -803,15 +803,13 @@ export class Token extends ethereum.SmartContract {
       ],
     );
 
-    return changetype<Token__checkpointsResultValue0Struct>(
-      result[0].toTuple(),
-    );
+    return changetype<Meme__checkpointsResultValue0Struct>(result[0].toTuple());
   }
 
   try_checkpoints(
     account: Address,
     pos: BigInt,
-  ): ethereum.CallResult<Token__checkpointsResultValue0Struct> {
+  ): ethereum.CallResult<Meme__checkpointsResultValue0Struct> {
     let result = super.tryCall(
       "checkpoints",
       "checkpoints(address,uint32):((uint32,uint224))",
@@ -825,7 +823,7 @@ export class Token extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Token__checkpointsResultValue0Struct>(value[0].toTuple()),
+      changetype<Meme__checkpointsResultValue0Struct>(value[0].toTuple()),
     );
   }
 
@@ -952,14 +950,14 @@ export class Token extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  eip712Domain(): Token__eip712DomainResult {
+  eip712Domain(): Meme__eip712DomainResult {
     let result = super.call(
       "eip712Domain",
       "eip712Domain():(bytes1,string,string,uint256,address,bytes32,uint256[])",
       [],
     );
 
-    return new Token__eip712DomainResult(
+    return new Meme__eip712DomainResult(
       result[0].toBytes(),
       result[1].toString(),
       result[2].toString(),
@@ -970,7 +968,7 @@ export class Token extends ethereum.SmartContract {
     );
   }
 
-  try_eip712Domain(): ethereum.CallResult<Token__eip712DomainResult> {
+  try_eip712Domain(): ethereum.CallResult<Meme__eip712DomainResult> {
     let result = super.tryCall(
       "eip712Domain",
       "eip712Domain():(bytes1,string,string,uint256,address,bytes32,uint256[])",
@@ -981,7 +979,7 @@ export class Token extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      new Token__eip712DomainResult(
+      new Meme__eip712DomainResult(
         value[0].toBytes(),
         value[1].toString(),
         value[2].toString(),
@@ -1300,14 +1298,14 @@ export class Token extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  preToken(): Address {
-    let result = super.call("preToken", "preToken():(address)", []);
+  preMeme(): Address {
+    let result = super.call("preMeme", "preMeme():(address)", []);
 
     return result[0].toAddress();
   }
 
-  try_preToken(): ethereum.CallResult<Address> {
-    let result = super.tryCall("preToken", "preToken():(address)", []);
+  try_preMeme(): ethereum.CallResult<Address> {
+    let result = super.tryCall("preMeme", "preMeme():(address)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -1330,14 +1328,14 @@ export class Token extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  reserveToken(): BigInt {
-    let result = super.call("reserveToken", "reserveToken():(uint256)", []);
+  reserveMeme(): BigInt {
+    let result = super.call("reserveMeme", "reserveMeme():(uint256)", []);
 
     return result[0].toBigInt();
   }
 
-  try_reserveToken(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall("reserveToken", "reserveToken():(uint256)", []);
+  try_reserveMeme(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("reserveMeme", "reserveMeme():(uint256)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }

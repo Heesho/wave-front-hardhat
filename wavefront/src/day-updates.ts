@@ -1,6 +1,5 @@
 import { BigDecimal, BigInt, ethereum } from "@graphprotocol/graph-ts";
 import { TokenHourData, TokenDayData } from "../generated/schema";
-import { Token as Meme } from "../generated/templates/Token/Token";
 import { ZERO_BD, ZERO_BI, ONE_BI, convertEthToDecimal } from "./helpers";
 
 export function updateTokenHourData(

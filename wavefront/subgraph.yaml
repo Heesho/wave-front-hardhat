@@ -8,9 +8,9 @@ dataSources:
     name: WaveFrontFactory
     network: mumbai
     source:
-      address: "0x9Fa5b54Df8c48b1f448D63007122baC30cAC26f7"
+      address: "0xc4d055443290A812ee4f9dd9e5D90232e598Ff19"
       abi: WaveFrontFactory
-      startBlock: 47559810
+      startBlock: 47592064
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -20,15 +20,15 @@ dataSources:
       abis:
         - name: WaveFrontFactory
           file: ./abis/WaveFrontFactory.json
-        - name: Token
-          file: ./abis/Token.json
-        - name: PreToken
-          file: ./abis/PreToken.json
+        - name: Meme
+          file: ./abis/Meme.json
+        - name: PreMeme
+          file: ./abis/PreMeme.json
         - name: WaveFrontMulticall
           file: ./abis/WaveFrontMulticall.json
       eventHandlers:
-        - event: WaveFrontFactory__TokenCreated(uint256,address)
-          handler: handleWaveFrontFactory__TokenCreated
+        - event: WaveFrontFactory__MemeCreated(uint256,address)
+          handler: handleWaveFrontFactory__MemeCreated
         - event: WaveFrontFactory__TreasuryUpdated(address)
           handler: handleWaveFrontFactory__TreasuryUpdated
         - event: WaveFrontFactory__MinAmountInUpdated(uint256)
@@ -40,9 +40,9 @@ dataSources:
     name: WaveFrontRouter
     network: mumbai
     source:
-      address: "0xe242e31046c90a4C47cFF218f3C839F66130e401"
+      address: "0x5aD441790c3114e0AB27816abdB0c9693cd96399"
       abi: WaveFrontRouter
-      startBlock: 47558280
+      startBlock: 47592076
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -58,15 +58,15 @@ dataSources:
       file: ./src/wavefront-router.ts
 templates:
   - kind: ethereum/contract
-    name: Token
+    name: Meme
     network: mumbai
     source:
-      abi: Token
+      abi: Meme
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/token.ts
+      file: ./src/meme.ts
       entities:
         - Directory
         - Token
@@ -79,47 +79,47 @@ templates:
         - Contribute
         - Account
       abis:
-        - name: Token
-          file: ./abis/Token.json
+        - name: Meme
+          file: ./abis/Meme.json
         - name: WaveFrontMulticall
           file: ./abis/WaveFrontMulticall.json
       eventHandlers:
-        - event: Token__Buy(indexed address,indexed address,uint256,uint256)
-          handler: handleToken__Buy
-        - event: Token__Sell(indexed address,indexed address,uint256,uint256)
-          handler: handleToken__Sell
-        - event: Token__Claim(indexed address,uint256)
-          handler: handleToken__Claim
-        - event: Token__StatusFee(indexed address,uint256)
-          handler: handleToken__StatusFee
-        - event: Token__ProviderFee(indexed address,uint256)
-          handler: handleToken__ProviderFee
-        - event: Token__ProtocolFee(indexed address,uint256)
-          handler: handleToken__ProtocolFee
-        - event: Token__Burn(indexed address,uint256)
-          handler: handleToken__Burn
-        - event: Token__ReserveBurn(uint256)
-          handler: handleToken__ReserveBurn
-        - event: Token__StatusUpdated(indexed address,string)
-          handler: handleToken__StatusUpated
-        - event: Token__Borrow(indexed address,uint256)
-          handler: handleToken__Borrow
-        - event: Token__Repay(indexed address,uint256)
-          handler: handleToken__Repay
-        - event: Token__Donation(indexed address,uint256)
-          handler: handleToken__Donation
+        - event: Meme__Buy(indexed address,indexed address,uint256,uint256)
+          handler: handleMeme__Buy
+        - event: Meme__Sell(indexed address,indexed address,uint256,uint256)
+          handler: handleMeme__Sell
+        - event: Meme__Claim(indexed address,uint256)
+          handler: handleMeme__Claim
+        - event: Meme__StatusFee(indexed address,uint256)
+          handler: handleMeme__StatusFee
+        - event: Meme__ProviderFee(indexed address,uint256)
+          handler: handleMeme__ProviderFee
+        - event: Meme__ProtocolFee(indexed address,uint256)
+          handler: handleMeme__ProtocolFee
+        - event: Meme__Burn(indexed address,uint256)
+          handler: handleMeme__Burn
+        - event: Meme__ReserveBurn(uint256)
+          handler: handleMeme__ReserveBurn
+        - event: Meme__StatusUpdated(indexed address,string)
+          handler: handleMeme__StatusUpated
+        - event: Meme__Borrow(indexed address,uint256)
+          handler: handleMeme__Borrow
+        - event: Meme__Repay(indexed address,uint256)
+          handler: handleMeme__Repay
+        - event: Meme__Donation(indexed address,uint256)
+          handler: handleMeme__Donation
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
   - kind: ethereum/contract
-    name: PreToken
+    name: PreMeme
     network: mumbai
     source:
-      abi: PreToken
+      abi: PreMeme
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
-      file: ./src/pre-token.ts
+      file: ./src/pre-meme.ts
       entities:
         - Directory
         - Token
@@ -132,14 +132,14 @@ templates:
         - Contribute
         - Account
       abis:
-        - name: PreToken
-          file: ./abis/PreToken.json
+        - name: PreMeme
+          file: ./abis/PreMeme.json
         - name: WaveFrontMulticall
           file: ./abis/WaveFrontMulticall.json
       eventHandlers:
-        - event: PreToken__Contributed(indexed address,uint256)
-          handler: handlePreToken__Contributed
-        - event: PreToken__MarketOpened(indexed address,uint256,uint256)
-          handler: handlePreToken__MarketOpened
-        - event: PreToken__Redeemed(indexed address,uint256)
-          handler: handlePreToken__Redeemed
+        - event: PreMeme__Contributed(indexed address,uint256)
+          handler: handlePreMeme__Contributed
+        - event: PreMeme__MarketOpened(indexed address,uint256,uint256)
+          handler: handlePreMeme__MarketOpened
+        - event: PreMeme__Redeemed(indexed address,uint256)
+          handler: handlePreMeme__Redeemed

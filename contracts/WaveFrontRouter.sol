@@ -4,22 +4,22 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IWaveFrontFactory {
-    function createToken(string memory name, string memory symbol, string memory uri, address account, uint256 amountIn) external returns (address);
+    function createMeme(string memory name, string memory symbol, string memory uri, address account, uint256 amountIn) external returns (address);
 }
 
-interface IToken {
-    function preToken() external view returns (address);
+interface IMeme {
+    function preMeme() external view returns (address);
     function buy(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) external;
     function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to) external;
     function claimFees(address account) external;
     function updateStatus(address account, string memory status) external;
 }
 
-interface IPreToken {
+interface IPreMeme {
     function endTimestamp() external view returns (uint256);
     function ended() external view returns (bool);
     function totalBaseContributed() external view returns (uint256);
-    function totalTokenBalance() external view returns (uint256);
+    function totalMemeBalance() external view returns (uint256);
     function contribute(address account, uint256 amount) external;
     function redeem(address account) external;
     function openMarket() external;
@@ -39,15 +39,15 @@ contract WaveFrontRouter {
 
     mapping(address => address) public referrals;
 
-    event WaveFrontRouter__Buy(address indexed token, address indexed account, address indexed affiliate, uint256 amountIn, uint256 amountOut);
-    event WaveFrontRouter__Sell(address indexed token, address indexed account, uint256 amountIn, uint256 amountOut);
+    event WaveFrontRouter__Buy(address indexed meme, address indexed account, address indexed affiliate, uint256 amountIn, uint256 amountOut);
+    event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut);
     event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
-    event WaveFrontRouter__ClaimFees(address indexed token, address indexed account);
-    event WaveFrontRouter__TokenCreated(address indexed token, address indexed account);
-    event WaveFrontRouter__StatusUpdated(address indexed token, address indexed account, string status);
-    event WaveFrontRouter__Contributed(address indexed token, address indexed account, uint256 amount);
-    event WaveFrontRouter__Redeemed(address indexed token, address indexed account, uint256 amount);
-    event WaveFrontRouter__MarketOpened(address indexed token, uint256 totalBaseContributed, uint256 totalTokenBalance);
+    event WaveFrontRouter__ClaimFees(address indexed meme, address indexed account);
+    event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account);
+    event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status);
+    event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
+    event WaveFrontRouter__Redeemed(address indexed meme, address indexed account, uint256 amount);
+    event WaveFrontRouter__MarketOpened(address indexed meme, uint256 totalBaseContributed, uint256 totalMemeBalance);
 
     constructor(address _factory, address _base) {
         factory = _factory;
@@ -55,7 +55,7 @@ contract WaveFrontRouter {
     }
 
     function buy(
-        address token,
+        address meme,
         address affiliate,
         uint256 minAmountOut,
         uint256 expireTimestamp
@@ -66,88 +66,88 @@ contract WaveFrontRouter {
         }
 
         IBase(base).deposit{value: msg.value}();
-        IERC20(base).approve(token, msg.value);
-        IToken(token).buy(msg.value, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
+        IERC20(base).approve(meme, msg.value);
+        IMeme(meme).buy(msg.value, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
 
-        uint256 tokenBalance = IERC20(token).balanceOf(address(this));
-        IERC20(token).transfer(msg.sender, tokenBalance);
+        uint256 memeBalance = IERC20(meme).balanceOf(address(this));
+        IERC20(meme).transfer(msg.sender, memeBalance);
         uint256 baseBalance = IERC20(base).balanceOf(address(this));
         IBase(base).withdraw(baseBalance);
         (bool success, ) = msg.sender.call{value: baseBalance}("");
         require(success, "Failed to send ETH");
 
-        emit WaveFrontRouter__Buy(token, msg.sender, referrals[msg.sender], msg.value, tokenBalance);
+        emit WaveFrontRouter__Buy(meme, msg.sender, referrals[msg.sender], msg.value, memeBalance);
     }
 
     function sell(
-        address token,
+        address meme,
         uint256 amountIn,
         uint256 minAmountOut,
         uint256 expireTimestamp
     ) external {
-        IERC20(token).transferFrom(msg.sender, address(this), amountIn);
-        IERC20(token).approve(token, amountIn);
-        IToken(token).sell(amountIn, minAmountOut, expireTimestamp, address(this));
+        IERC20(meme).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(meme).approve(meme, amountIn);
+        IMeme(meme).sell(amountIn, minAmountOut, expireTimestamp, address(this));
 
         uint256 baseBalance = IERC20(base).balanceOf(address(this));
         IBase(base).withdraw(baseBalance);
         (bool success, ) = msg.sender.call{value: baseBalance}("");
         require(success, "Failed to send ETH");
-        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+        IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
 
-        emit WaveFrontRouter__Sell(token, msg.sender, baseBalance, amountIn);
+        emit WaveFrontRouter__Sell(meme, msg.sender, baseBalance, amountIn);
     }
 
-    function claimFees(address[] calldata tokens) external {
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IToken(tokens[i]).claimFees(msg.sender);
-            emit WaveFrontRouter__ClaimFees(tokens[i], msg.sender);
+    function claimFees(address[] calldata memes) external {
+        for (uint256 i = 0; i < memes.length; i++) {
+            IMeme(memes[i]).claimFees(msg.sender);
+            emit WaveFrontRouter__ClaimFees(memes[i], msg.sender);
         }
     }
 
-    function createToken(
+    function createMeme(
         string memory name,
         string memory symbol,
         string memory uri
     ) external payable returns (address) {
         IBase(base).deposit{value: msg.value}();
         IERC20(base).approve(factory, msg.value);
-        address token = IWaveFrontFactory(factory).createToken(name, symbol, uri, msg.sender, msg.value);
-        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+        address meme = IWaveFrontFactory(factory).createMeme(name, symbol, uri, msg.sender, msg.value);
+        IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
         IERC20(base).transfer(msg.sender, IERC20(base).balanceOf(address(this)));
-        emit WaveFrontRouter__Contributed(token, msg.sender, msg.value);
-        emit WaveFrontRouter__TokenCreated(token, msg.sender); // add index
-        return token;
+        emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value);
+        emit WaveFrontRouter__MemeCreated(meme, msg.sender); // add index
+        return meme;
     }
 
-    function contribute(address token) external payable {
-        address preToken = IToken(token).preToken();
+    function contribute(address meme) external payable {
+        address preMeme = IMeme(meme).preMeme();
         IBase(base).deposit{value: msg.value}();
-        IERC20(base).approve(preToken, msg.value);
-        IPreToken(preToken).contribute(msg.sender, msg.value);
-        emit WaveFrontRouter__Contributed(token, msg.sender, msg.value);
-        if (block.timestamp > IPreToken(preToken).endTimestamp() && !IPreToken(preToken).ended()) {
-            IPreToken(preToken).openMarket();
-            emit WaveFrontRouter__MarketOpened(token, IPreToken(preToken).totalBaseContributed(), IPreToken(preToken).totalTokenBalance());
+        IERC20(base).approve(preMeme, msg.value);
+        IPreMeme(preMeme).contribute(msg.sender, msg.value);
+        emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value);
+        if (block.timestamp > IPreMeme(preMeme).endTimestamp() && !IPreMeme(preMeme).ended()) {
+            IPreMeme(preMeme).openMarket();
+            emit WaveFrontRouter__MarketOpened(meme, IPreMeme(preMeme).totalBaseContributed(), IPreMeme(preMeme).totalMemeBalance());
         }
     }
 
-    function redeem(address token) external {
-        address preToken = IToken(token).preToken();
-        if (block.timestamp > IPreToken(preToken).endTimestamp() && !IPreToken(preToken).ended()) {
-            IPreToken(preToken).openMarket();
-            emit WaveFrontRouter__MarketOpened(token, IPreToken(preToken).totalBaseContributed(), IPreToken(preToken).totalTokenBalance());
+    function redeem(address meme) external {
+        address preMeme = IMeme(meme).preMeme();
+        if (block.timestamp > IPreMeme(preMeme).endTimestamp() && !IPreMeme(preMeme).ended()) {
+            IPreMeme(preMeme).openMarket();
+            emit WaveFrontRouter__MarketOpened(meme, IPreMeme(preMeme).totalBaseContributed(), IPreMeme(preMeme).totalMemeBalance());
         }
-        IPreToken(preToken).redeem(msg.sender);
-        uint256 tokenBalance = IERC20(token).balanceOf(address(this));
-        IERC20(token).transfer(msg.sender, tokenBalance);
-        emit WaveFrontRouter__Redeemed(token, msg.sender, tokenBalance);
+        IPreMeme(preMeme).redeem(msg.sender);
+        uint256 memeBalance = IERC20(meme).balanceOf(address(this));
+        IERC20(meme).transfer(msg.sender, memeBalance);
+        emit WaveFrontRouter__Redeemed(meme, msg.sender, memeBalance);
     }
 
-    function updateStatus(address token, string memory status) external {
-        IERC20(token).transferFrom(msg.sender, address(this), STATUS_UPDATE_FEE);
-        IToken(token).updateStatus(msg.sender, status);
-        emit WaveFrontRouter__StatusUpdated(token, msg.sender, status);
+    function updateStatus(address meme, string memory status) external {
+        IERC20(meme).transferFrom(msg.sender, address(this), STATUS_UPDATE_FEE);
+        IMeme(meme).updateStatus(msg.sender, status);
+        emit WaveFrontRouter__StatusUpdated(meme, msg.sender, status);
     }
 
     // Function to receive Ether. msg.data must be empty

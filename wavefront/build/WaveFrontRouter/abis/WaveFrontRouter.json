@@ -40,7 +40,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -77,7 +77,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -96,7 +96,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -121,7 +121,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -133,7 +133,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "totalTokenBalance",
+        "name": "totalMemeBalance",
         "type": "uint256"
       }
     ],
@@ -146,7 +146,26 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "WaveFrontRouter__MemeCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -171,7 +190,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -202,7 +221,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -219,25 +238,6 @@
       }
     ],
     "name": "WaveFrontRouter__StatusUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "WaveFrontRouter__TokenCreated",
     "type": "event"
   },
   {
@@ -274,7 +274,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -302,7 +302,7 @@
     "inputs": [
       {
         "internalType": "address[]",
-        "name": "tokens",
+        "name": "memes",
         "type": "address[]"
       }
     ],
@@ -315,7 +315,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       }
     ],
@@ -342,7 +342,7 @@
         "type": "string"
       }
     ],
-    "name": "createToken",
+    "name": "createMeme",
     "outputs": [
       {
         "internalType": "address",
@@ -370,7 +370,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       }
     ],
@@ -402,7 +402,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -430,7 +430,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {

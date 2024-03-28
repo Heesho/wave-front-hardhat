@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_tokenFactory",
+        "name": "_memeFactory",
         "type": "address"
       },
       {
@@ -80,11 +80,17 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "minAmountIn",
+        "name": "index",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "meme",
+        "type": "address"
       }
     ],
-    "name": "WaveFrontFactory__MinAmountInUpdated",
+    "name": "WaveFrontFactory__MemeCreated",
     "type": "event"
   },
   {
@@ -93,17 +99,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "index",
+        "name": "minAmountIn",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
       }
     ],
-    "name": "WaveFrontFactory__TokenCreated",
+    "name": "WaveFrontFactory__MinAmountInUpdated",
     "type": "event"
   },
   {
@@ -186,7 +186,7 @@
         "type": "uint256"
       }
     ],
-    "name": "createToken",
+    "name": "createMeme",
     "outputs": [
       {
         "internalType": "address",
@@ -218,12 +218,44 @@
         "type": "uint256"
       }
     ],
-    "name": "index_Token",
+    "name": "index_Meme",
     "outputs": [
       {
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "memeFactory",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "meme_Index",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -297,38 +329,6 @@
       }
     ],
     "name": "symbol_Index",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "tokenFactory",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "token_Index",
     "outputs": [
       {
         "internalType": "uint256",

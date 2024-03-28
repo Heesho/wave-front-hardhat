@@ -1,8 +1,8 @@
 import {
-  PreToken__Contributed as PreToken__ContributedEvent,
-  PreToken__MarketOpened as PreToken__MarketOpenedEvent,
-  PreToken__Redeemed as PreToken__RedeemedEvent,
-} from "../generated/WaveFrontFactory/PreToken";
+  PreMeme__Contributed as PreMeme__ContributedEvent,
+  PreMeme__MarketOpened as PreMeme__MarketOpenedEvent,
+  PreMeme__Redeemed as PreMeme__RedeemedEvent,
+} from "../generated/WaveFrontFactory/PreMeme";
 import {
   Token,
   Transaction,
@@ -10,8 +10,8 @@ import {
   Account,
   TokenPosition,
 } from "../generated/schema";
-import { WaveFrontMulticall } from "../generated/templates/Token/WaveFrontMulticall";
-import { PreToken as PreTokenContract } from "../generated/templates/PreToken/PreToken";
+import { WaveFrontMulticall } from "../generated/templates/Meme/WaveFrontMulticall";
+import { PreMeme as PreMemeContract } from "../generated/templates/PreMeme/PreMeme";
 import { Address } from "@graphprotocol/graph-ts";
 import {
   MULTICALL_ADDRESS,
@@ -20,25 +20,25 @@ import {
   ZERO_BD,
 } from "./helpers";
 
-export function handlePreToken__MarketOpened(
-  event: PreToken__MarketOpenedEvent
+export function handlePreMeme__MarketOpened(
+  event: PreMeme__MarketOpenedEvent
 ): void {
-  let preMeme = PreTokenContract.bind(event.address);
+  let preMeme = PreMemeContract.bind(event.address);
   let multicall = WaveFrontMulticall.bind(
     Address.fromString(MULTICALL_ADDRESS)
   );
-  let meme = multicall.getTokenData(preMeme.token());
-  let token = Token.load(meme.token)!;
+  let meme = multicall.getMemeData(preMeme.token());
+  let token = Token.load(meme.meme)!;
   token.open = true;
   token.openAt = event.block.timestamp;
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.save();
 }
 
-export function handlePreToken__Contributed(
-  event: PreToken__ContributedEvent
+export function handlePreMeme__Contributed(
+  event: PreMeme__ContributedEvent
 ): void {
-  let preMeme = PreTokenContract.bind(event.address);
+  let preMeme = PreMemeContract.bind(event.address);
   let multicall = WaveFrontMulticall.bind(
     Address.fromString(MULTICALL_ADDRESS)
   );
@@ -46,10 +46,10 @@ export function handlePreToken__Contributed(
     preMeme.token(),
     event.params.account
   );
-  let meme = multicall.getTokenData(preMeme.token());
-  let token = Token.load(meme.token)!;
+  let meme = multicall.getMemeData(preMeme.token());
+  let token = Token.load(meme.meme)!;
 
-  token.preMemeBalance = convertEthToDecimal(meme.preTokenBalance);
+  token.preMemeBalance = convertEthToDecimal(meme.preMemeBalance);
   token.baseContributed = convertEthToDecimal(meme.baseContributed);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.save();
@@ -72,7 +72,7 @@ export function handlePreToken__Contributed(
   contribute.transaction = transaction.id;
   contribute.timestamp = event.block.timestamp;
   contribute.index = meme.index;
-  contribute.meme = meme.token;
+  contribute.meme = meme.meme;
   contribute.account = event.params.account;
   contribute.amount = convertEthToDecimal(event.params.amount);
   contribute.marketPrice = convertEthToDecimal(meme.marketPrice);
@@ -92,20 +92,20 @@ export function handlePreToken__Contributed(
   }
 
   let tokenPosition = TokenPosition.load(
-    meme.token.toHexString() + "-" + event.params.account.toHexString()
+    meme.meme.toHexString() + "-" + event.params.account.toHexString()
   );
   if (tokenPosition === null) {
     tokenPosition = new TokenPosition(
-      meme.token.toHexString() + "-" + event.params.account.toHexString()
+      meme.meme.toHexString() + "-" + event.params.account.toHexString()
     );
     tokenPosition.index = meme.index;
-    tokenPosition.token = meme.token;
+    tokenPosition.token = meme.meme;
     tokenPosition.account = event.params.account;
   }
-  tokenPosition.balance = convertEthToDecimal(accountData.tokenBalance);
+  tokenPosition.balance = convertEthToDecimal(accountData.memeBalance);
   tokenPosition.claimable = convertEthToDecimal(accountData.baseClaimable);
   tokenPosition.contributed = convertEthToDecimal(accountData.baseContributed);
-  tokenPosition.redeemable = convertEthToDecimal(accountData.tokenRedeemable);
+  tokenPosition.redeemable = convertEthToDecimal(accountData.memeRedeemable);
   tokenPosition.credit = convertEthToDecimal(accountData.baseCredit);
   tokenPosition.debt = convertEthToDecimal(accountData.baseDebt);
   tokenPosition.statusHolder = meme.statusHolder == event.params.account;
@@ -113,8 +113,8 @@ export function handlePreToken__Contributed(
   account.save();
 }
 
-export function handlePreToken__Redeemed(event: PreToken__RedeemedEvent): void {
-  let preMeme = PreTokenContract.bind(event.address);
+export function handlePreMeme__Redeemed(event: PreMeme__RedeemedEvent): void {
+  let preMeme = PreMemeContract.bind(event.address);
   let multicall = WaveFrontMulticall.bind(
     Address.fromString(MULTICALL_ADDRESS)
   );
@@ -122,11 +122,11 @@ export function handlePreToken__Redeemed(event: PreToken__RedeemedEvent): void {
     preMeme.token(),
     event.params.account
   );
-  let meme = multicall.getTokenData(preMeme.token());
-  let token = Token.load(meme.token)!;
+  let meme = multicall.getMemeData(preMeme.token());
+  let token = Token.load(meme.meme)!;
 
   token.open = meme.marketOpen;
-  token.preMemeBalance = convertEthToDecimal(meme.preTokenBalance);
+  token.preMemeBalance = convertEthToDecimal(meme.preMemeBalance);
   token.baseContributed = convertEthToDecimal(meme.baseContributed);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.save();
@@ -140,20 +140,20 @@ export function handlePreToken__Redeemed(event: PreToken__RedeemedEvent): void {
   }
 
   let tokenPosition = TokenPosition.load(
-    meme.token.toHexString() + "-" + event.params.account.toHexString()
+    meme.meme.toHexString() + "-" + event.params.account.toHexString()
   );
   if (tokenPosition === null) {
     tokenPosition = new TokenPosition(
-      meme.token.toHexString() + "-" + event.params.account.toHexString()
+      meme.meme.toHexString() + "-" + event.params.account.toHexString()
     );
     tokenPosition.index = meme.index;
-    tokenPosition.token = meme.token;
+    tokenPosition.token = meme.meme;
     tokenPosition.account = event.params.account;
   }
-  tokenPosition.balance = convertEthToDecimal(accountData.tokenBalance);
+  tokenPosition.balance = convertEthToDecimal(accountData.memeBalance);
   tokenPosition.claimable = convertEthToDecimal(accountData.baseClaimable);
   tokenPosition.contributed = convertEthToDecimal(accountData.baseContributed);
-  tokenPosition.redeemable = convertEthToDecimal(accountData.tokenRedeemable);
+  tokenPosition.redeemable = convertEthToDecimal(accountData.memeRedeemable);
   tokenPosition.credit = convertEthToDecimal(accountData.baseCredit);
   tokenPosition.debt = convertEthToDecimal(accountData.baseDebt);
   tokenPosition.statusHolder = meme.statusHolder == event.params.account;

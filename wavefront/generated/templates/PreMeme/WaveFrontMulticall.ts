@@ -40,11 +40,11 @@ export class WaveFrontMulticall__getAccountDataResultAccountDataStruct extends e
     return this[0].toBigInt();
   }
 
-  get tokenRedeemable(): BigInt {
+  get memeRedeemable(): BigInt {
     return this[1].toBigInt();
   }
 
-  get tokenBalance(): BigInt {
+  get memeBalance(): BigInt {
     return this[2].toBigInt();
   }
 
@@ -61,16 +61,16 @@ export class WaveFrontMulticall__getAccountDataResultAccountDataStruct extends e
   }
 }
 
-export class WaveFrontMulticall__getTokenDataResultTokenDataStruct extends ethereum.Tuple {
+export class WaveFrontMulticall__getMemeDataResultMemeDataStruct extends ethereum.Tuple {
   get index(): BigInt {
     return this[0].toBigInt();
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this[1].toAddress();
   }
 
-  get preToken(): Address {
+  get preMeme(): Address {
     return this[2].toAddress();
   }
 
@@ -114,7 +114,7 @@ export class WaveFrontMulticall__getTokenDataResultTokenDataStruct extends ether
     return this[12].toBigInt();
   }
 
-  get reserveToken(): BigInt {
+  get reserveMeme(): BigInt {
     return this[13].toBigInt();
   }
 
@@ -126,7 +126,7 @@ export class WaveFrontMulticall__getTokenDataResultTokenDataStruct extends ether
     return this[15].toBigInt();
   }
 
-  get preTokenBalance(): BigInt {
+  get preMemeBalance(): BigInt {
     return this[16].toBigInt();
   }
 
@@ -369,13 +369,13 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   contributes(
-    token: Address,
+    meme: Address,
     account: Address,
   ): WaveFrontMulticall__contributesResult {
     let result = super.call(
       "contributes",
       "contributes(address,address):(uint256,uint256)",
-      [ethereum.Value.fromAddress(token), ethereum.Value.fromAddress(account)],
+      [ethereum.Value.fromAddress(meme), ethereum.Value.fromAddress(account)],
     );
 
     return new WaveFrontMulticall__contributesResult(
@@ -385,13 +385,13 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   try_contributes(
-    token: Address,
+    meme: Address,
     account: Address,
   ): ethereum.CallResult<WaveFrontMulticall__contributesResult> {
     let result = super.tryCall(
       "contributes",
       "contributes(address,address):(uint256,uint256)",
-      [ethereum.Value.fromAddress(token), ethereum.Value.fromAddress(account)],
+      [ethereum.Value.fromAddress(meme), ethereum.Value.fromAddress(account)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -406,13 +406,13 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   getAccountData(
-    token: Address,
+    meme: Address,
     account: Address,
   ): WaveFrontMulticall__getAccountDataResultAccountDataStruct {
     let result = super.call(
       "getAccountData",
       "getAccountData(address,address):((uint256,uint256,uint256,uint256,uint256,uint256))",
-      [ethereum.Value.fromAddress(token), ethereum.Value.fromAddress(account)],
+      [ethereum.Value.fromAddress(meme), ethereum.Value.fromAddress(account)],
     );
 
     return changetype<WaveFrontMulticall__getAccountDataResultAccountDataStruct>(
@@ -421,13 +421,13 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   try_getAccountData(
-    token: Address,
+    meme: Address,
     account: Address,
   ): ethereum.CallResult<WaveFrontMulticall__getAccountDataResultAccountDataStruct> {
     let result = super.tryCall(
       "getAccountData",
       "getAccountData(address,address):((uint256,uint256,uint256,uint256,uint256,uint256))",
-      [ethereum.Value.fromAddress(token), ethereum.Value.fromAddress(account)],
+      [ethereum.Value.fromAddress(meme), ethereum.Value.fromAddress(account)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -438,6 +438,29 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
         value[0].toTuple(),
       ),
     );
+  }
+
+  getIndexByMeme(meme: Address): BigInt {
+    let result = super.call(
+      "getIndexByMeme",
+      "getIndexByMeme(address):(uint256)",
+      [ethereum.Value.fromAddress(meme)],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getIndexByMeme(meme: Address): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getIndexByMeme",
+      "getIndexByMeme(address):(uint256)",
+      [ethereum.Value.fromAddress(meme)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   getIndexBySymbol(symbol: string): BigInt {
@@ -463,43 +486,20 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getIndexByToken(token: Address): BigInt {
+  getMemeByIndex(index: BigInt): Address {
     let result = super.call(
-      "getIndexByToken",
-      "getIndexByToken(address):(uint256)",
-      [ethereum.Value.fromAddress(token)],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getIndexByToken(token: Address): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getIndexByToken",
-      "getIndexByToken(address):(uint256)",
-      [ethereum.Value.fromAddress(token)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getTokenByIndex(index: BigInt): Address {
-    let result = super.call(
-      "getTokenByIndex",
-      "getTokenByIndex(uint256):(address)",
+      "getMemeByIndex",
+      "getMemeByIndex(uint256):(address)",
       [ethereum.Value.fromUnsignedBigInt(index)],
     );
 
     return result[0].toAddress();
   }
 
-  try_getTokenByIndex(index: BigInt): ethereum.CallResult<Address> {
+  try_getMemeByIndex(index: BigInt): ethereum.CallResult<Address> {
     let result = super.tryCall(
-      "getTokenByIndex",
-      "getTokenByIndex(uint256):(address)",
+      "getMemeByIndex",
+      "getMemeByIndex(uint256):(address)",
       [ethereum.Value.fromUnsignedBigInt(index)],
     );
     if (result.reverted) {
@@ -509,18 +509,14 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  getTokenCount(): BigInt {
-    let result = super.call("getTokenCount", "getTokenCount():(uint256)", []);
+  getMemeCount(): BigInt {
+    let result = super.call("getMemeCount", "getMemeCount():(uint256)", []);
 
     return result[0].toBigInt();
   }
 
-  try_getTokenCount(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getTokenCount",
-      "getTokenCount():(uint256)",
-      [],
-    );
+  try_getMemeCount(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("getMemeCount", "getMemeCount():(uint256)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -528,41 +524,41 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getTokenData(
-    token: Address,
-  ): WaveFrontMulticall__getTokenDataResultTokenDataStruct {
+  getMemeData(
+    meme: Address,
+  ): WaveFrontMulticall__getMemeDataResultMemeDataStruct {
     let result = super.call(
-      "getTokenData",
-      "getTokenData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
-      [ethereum.Value.fromAddress(token)],
+      "getMemeData",
+      "getMemeData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
+      [ethereum.Value.fromAddress(meme)],
     );
 
-    return changetype<WaveFrontMulticall__getTokenDataResultTokenDataStruct>(
+    return changetype<WaveFrontMulticall__getMemeDataResultMemeDataStruct>(
       result[0].toTuple(),
     );
   }
 
-  try_getTokenData(
-    token: Address,
-  ): ethereum.CallResult<WaveFrontMulticall__getTokenDataResultTokenDataStruct> {
+  try_getMemeData(
+    meme: Address,
+  ): ethereum.CallResult<WaveFrontMulticall__getMemeDataResultMemeDataStruct> {
     let result = super.tryCall(
-      "getTokenData",
-      "getTokenData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
-      [ethereum.Value.fromAddress(token)],
+      "getMemeData",
+      "getMemeData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
+      [ethereum.Value.fromAddress(meme)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<WaveFrontMulticall__getTokenDataResultTokenDataStruct>(
+      changetype<WaveFrontMulticall__getMemeDataResultMemeDataStruct>(
         value[0].toTuple(),
       ),
     );
   }
 
   quoteBuyIn(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): WaveFrontMulticall__quoteBuyInResult {
@@ -570,7 +566,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteBuyIn",
       "quoteBuyIn(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -585,7 +581,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   try_quoteBuyIn(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): ethereum.CallResult<WaveFrontMulticall__quoteBuyInResult> {
@@ -593,7 +589,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteBuyIn",
       "quoteBuyIn(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -613,7 +609,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   quoteBuyOut(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): WaveFrontMulticall__quoteBuyOutResult {
@@ -621,7 +617,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteBuyOut",
       "quoteBuyOut(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -636,7 +632,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   try_quoteBuyOut(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): ethereum.CallResult<WaveFrontMulticall__quoteBuyOutResult> {
@@ -644,7 +640,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteBuyOut",
       "quoteBuyOut(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -664,7 +660,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   quoteSellIn(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): WaveFrontMulticall__quoteSellInResult {
@@ -672,7 +668,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteSellIn",
       "quoteSellIn(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -687,7 +683,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   try_quoteSellIn(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): ethereum.CallResult<WaveFrontMulticall__quoteSellInResult> {
@@ -695,7 +691,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteSellIn",
       "quoteSellIn(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -715,7 +711,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   quoteSellOut(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): WaveFrontMulticall__quoteSellOutResult {
@@ -723,7 +719,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteSellOut",
       "quoteSellOut(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],
@@ -738,7 +734,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   }
 
   try_quoteSellOut(
-    token: Address,
+    meme: Address,
     input: BigInt,
     slippageTolerance: BigInt,
   ): ethereum.CallResult<WaveFrontMulticall__quoteSellOutResult> {
@@ -746,7 +742,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       "quoteSellOut",
       "quoteSellOut(address,uint256,uint256):(uint256,uint256,uint256,uint256)",
       [
-        ethereum.Value.fromAddress(token),
+        ethereum.Value.fromAddress(meme),
         ethereum.Value.fromUnsignedBigInt(input),
         ethereum.Value.fromUnsignedBigInt(slippageTolerance),
       ],

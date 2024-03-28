@@ -32,6 +32,28 @@ export class OwnershipTransferred__Params {
   }
 }
 
+export class WaveFrontFactory__MemeCreated extends ethereum.Event {
+  get params(): WaveFrontFactory__MemeCreated__Params {
+    return new WaveFrontFactory__MemeCreated__Params(this);
+  }
+}
+
+export class WaveFrontFactory__MemeCreated__Params {
+  _event: WaveFrontFactory__MemeCreated;
+
+  constructor(event: WaveFrontFactory__MemeCreated) {
+    this._event = event;
+  }
+
+  get index(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get meme(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+}
+
 export class WaveFrontFactory__MinAmountInUpdated extends ethereum.Event {
   get params(): WaveFrontFactory__MinAmountInUpdated__Params {
     return new WaveFrontFactory__MinAmountInUpdated__Params(this);
@@ -47,28 +69,6 @@ export class WaveFrontFactory__MinAmountInUpdated__Params {
 
   get minAmountIn(): BigInt {
     return this._event.parameters[0].value.toBigInt();
-  }
-}
-
-export class WaveFrontFactory__TokenCreated extends ethereum.Event {
-  get params(): WaveFrontFactory__TokenCreated__Params {
-    return new WaveFrontFactory__TokenCreated__Params(this);
-  }
-}
-
-export class WaveFrontFactory__TokenCreated__Params {
-  _event: WaveFrontFactory__TokenCreated;
-
-  constructor(event: WaveFrontFactory__TokenCreated) {
-    this._event = event;
-  }
-
-  get index(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
-  }
-
-  get token(): Address {
-    return this._event.parameters[1].value.toAddress();
   }
 }
 
@@ -156,7 +156,7 @@ export class WaveFrontFactory extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  createToken(
+  createMeme(
     name: string,
     symbol: string,
     uri: string,
@@ -164,8 +164,8 @@ export class WaveFrontFactory extends ethereum.SmartContract {
     amountIn: BigInt,
   ): Address {
     let result = super.call(
-      "createToken",
-      "createToken(string,string,string,address,uint256):(address)",
+      "createMeme",
+      "createMeme(string,string,string,address,uint256):(address)",
       [
         ethereum.Value.fromString(name),
         ethereum.Value.fromString(symbol),
@@ -178,7 +178,7 @@ export class WaveFrontFactory extends ethereum.SmartContract {
     return result[0].toAddress();
   }
 
-  try_createToken(
+  try_createMeme(
     name: string,
     symbol: string,
     uri: string,
@@ -186,8 +186,8 @@ export class WaveFrontFactory extends ethereum.SmartContract {
     amountIn: BigInt,
   ): ethereum.CallResult<Address> {
     let result = super.tryCall(
-      "createToken",
-      "createToken(string,string,string,address,uint256):(address)",
+      "createMeme",
+      "createMeme(string,string,string,address,uint256):(address)",
       [
         ethereum.Value.fromString(name),
         ethereum.Value.fromString(symbol),
@@ -218,25 +218,57 @@ export class WaveFrontFactory extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  index_Token(param0: BigInt): Address {
-    let result = super.call("index_Token", "index_Token(uint256):(address)", [
+  index_Meme(param0: BigInt): Address {
+    let result = super.call("index_Meme", "index_Meme(uint256):(address)", [
       ethereum.Value.fromUnsignedBigInt(param0),
     ]);
 
     return result[0].toAddress();
   }
 
-  try_index_Token(param0: BigInt): ethereum.CallResult<Address> {
-    let result = super.tryCall(
-      "index_Token",
-      "index_Token(uint256):(address)",
-      [ethereum.Value.fromUnsignedBigInt(param0)],
-    );
+  try_index_Meme(param0: BigInt): ethereum.CallResult<Address> {
+    let result = super.tryCall("index_Meme", "index_Meme(uint256):(address)", [
+      ethereum.Value.fromUnsignedBigInt(param0),
+    ]);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  memeFactory(): Address {
+    let result = super.call("memeFactory", "memeFactory():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_memeFactory(): ethereum.CallResult<Address> {
+    let result = super.tryCall("memeFactory", "memeFactory():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  meme_Index(param0: Address): BigInt {
+    let result = super.call("meme_Index", "meme_Index(address):(uint256)", [
+      ethereum.Value.fromAddress(param0),
+    ]);
+
+    return result[0].toBigInt();
+  }
+
+  try_meme_Index(param0: Address): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("meme_Index", "meme_Index(address):(uint256)", [
+      ethereum.Value.fromAddress(param0),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   minAmountIn(): BigInt {
@@ -290,42 +322,6 @@ export class WaveFrontFactory extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  tokenFactory(): Address {
-    let result = super.call("tokenFactory", "tokenFactory():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_tokenFactory(): ethereum.CallResult<Address> {
-    let result = super.tryCall("tokenFactory", "tokenFactory():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
-  token_Index(param0: Address): BigInt {
-    let result = super.call("token_Index", "token_Index(address):(uint256)", [
-      ethereum.Value.fromAddress(param0),
-    ]);
-
-    return result[0].toBigInt();
-  }
-
-  try_token_Index(param0: Address): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "token_Index",
-      "token_Index(address):(uint256)",
-      [ethereum.Value.fromAddress(param0)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   treasury(): Address {
     let result = super.call("treasury", "treasury():(address)", []);
 
@@ -359,7 +355,7 @@ export class ConstructorCall__Inputs {
     this._call = call;
   }
 
-  get _tokenFactory(): Address {
+  get _memeFactory(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 
@@ -380,20 +376,20 @@ export class ConstructorCall__Outputs {
   }
 }
 
-export class CreateTokenCall extends ethereum.Call {
-  get inputs(): CreateTokenCall__Inputs {
-    return new CreateTokenCall__Inputs(this);
+export class CreateMemeCall extends ethereum.Call {
+  get inputs(): CreateMemeCall__Inputs {
+    return new CreateMemeCall__Inputs(this);
   }
 
-  get outputs(): CreateTokenCall__Outputs {
-    return new CreateTokenCall__Outputs(this);
+  get outputs(): CreateMemeCall__Outputs {
+    return new CreateMemeCall__Outputs(this);
   }
 }
 
-export class CreateTokenCall__Inputs {
-  _call: CreateTokenCall;
+export class CreateMemeCall__Inputs {
+  _call: CreateMemeCall;
 
-  constructor(call: CreateTokenCall) {
+  constructor(call: CreateMemeCall) {
     this._call = call;
   }
 
@@ -418,10 +414,10 @@ export class CreateTokenCall__Inputs {
   }
 }
 
-export class CreateTokenCall__Outputs {
-  _call: CreateTokenCall;
+export class CreateMemeCall__Outputs {
+  _call: CreateMemeCall;
 
-  constructor(call: CreateTokenCall) {
+  constructor(call: CreateMemeCall) {
     this._call = call;
   }
 

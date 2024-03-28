@@ -1,13 +1,13 @@
 import {
-  WaveFrontFactory__TokenCreated as WaveFrontactory__TokenCreatedEvent,
+  WaveFrontFactory__MemeCreated as WaveFrontactory__MemeCreatedEvent,
   WaveFrontFactory__TreasuryUpdated as WaveFrontFactory__TreasuryUpdatedEvent,
   WaveFrontFactory__MinAmountInUpdated as WaveFrontFactory__MinAmountInUpdatedEvent,
   OwnershipTransferred as OwnershipTransferredEvent,
 } from "../generated/WaveFrontFactory/WaveFrontFactory";
 import { Directory, Token } from "../generated/schema";
-import { Token as Meme, PreToken as PreMeme } from "../generated/templates";
+import { Meme, PreMeme } from "../generated/templates";
 import { WaveFrontFactory } from "../generated/WaveFrontFactory/WaveFrontFactory";
-import { WaveFrontMulticall } from "../generated/templates/Token/WaveFrontMulticall";
+import { WaveFrontMulticall } from "../generated/templates/Meme/WaveFrontMulticall";
 import { Address } from "@graphprotocol/graph-ts";
 import {
   FACTORY_ADDRESS,
@@ -18,8 +18,8 @@ import {
   convertEthToDecimal,
 } from "./helpers";
 
-export function handleWaveFrontFactory__TokenCreated(
-  event: WaveFrontactory__TokenCreatedEvent
+export function handleWaveFrontFactory__MemeCreated(
+  event: WaveFrontactory__MemeCreatedEvent
 ): void {
   let factory = WaveFrontFactory.bind(event.address);
   let directory = Directory.load(Address.fromString(FACTORY_ADDRESS));
@@ -40,31 +40,31 @@ export function handleWaveFrontFactory__TokenCreated(
   let multicall = WaveFrontMulticall.bind(
     Address.fromString(MULTICALL_ADDRESS)
   );
-  let meme = multicall.getTokenData(event.params.token);
+  let meme = multicall.getMemeData(event.params.meme);
 
-  Meme.create(event.params.token);
-  PreMeme.create(meme.preToken);
+  Meme.create(event.params.meme);
+  PreMeme.create(meme.preMeme);
 
-  let token = Token.load(meme.token);
+  let token = Token.load(meme.meme);
   if (token === null) {
-    token = new Token(meme.token);
+    token = new Token(meme.meme);
     token.index = meme.index;
     token.name = meme.name;
     token.symbol = meme.symbol;
     token.uri = meme.uri;
     token.status = meme.status;
-    token.meme = meme.token;
-    token.preMeme = meme.preToken;
+    token.meme = meme.meme;
+    token.preMeme = meme.preMeme;
     token.fees = meme.fees;
     token.statusHolder = meme.statusHolder;
     token.createdAt = event.block.timestamp;
     token.openAt = meme.marketOpenTimestamp;
     token.open = meme.marketOpen;
-    token.preMemeBalance = convertEthToDecimal(meme.preTokenBalance);
+    token.preMemeBalance = convertEthToDecimal(meme.preMemeBalance);
     token.baseContributed = convertEthToDecimal(meme.baseContributed);
     token.reserveVirtualBase = convertEthToDecimal(meme.reserveVirtualBase);
     token.reserveRealBase = convertEthToDecimal(meme.reserveBase);
-    token.reserveRealMeme = convertEthToDecimal(meme.reserveToken);
+    token.reserveRealMeme = convertEthToDecimal(meme.reserveMeme);
     token.totalSupply = convertEthToDecimal(meme.totalSupply);
     token.floorPrice = convertEthToDecimal(meme.floorPrice);
     token.marketPrice = convertEthToDecimal(meme.marketPrice);

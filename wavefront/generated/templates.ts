@@ -6,26 +6,22 @@ import {
   DataSourceContext,
 } from "@graphprotocol/graph-ts";
 
-export class Token extends DataSourceTemplate {
+export class Meme extends DataSourceTemplate {
   static create(address: Address): void {
-    DataSourceTemplate.create("Token", [address.toHex()]);
+    DataSourceTemplate.create("Meme", [address.toHex()]);
   }
 
   static createWithContext(address: Address, context: DataSourceContext): void {
-    DataSourceTemplate.createWithContext("Token", [address.toHex()], context);
+    DataSourceTemplate.createWithContext("Meme", [address.toHex()], context);
   }
 }
 
-export class PreToken extends DataSourceTemplate {
+export class PreMeme extends DataSourceTemplate {
   static create(address: Address): void {
-    DataSourceTemplate.create("PreToken", [address.toHex()]);
+    DataSourceTemplate.create("PreMeme", [address.toHex()]);
   }
 
   static createWithContext(address: Address, context: DataSourceContext): void {
-    DataSourceTemplate.createWithContext(
-      "PreToken",
-      [address.toHex()],
-      context,
-    );
+    DataSourceTemplate.createWithContext("PreMeme", [address.toHex()], context);
   }
 }

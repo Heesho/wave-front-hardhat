@@ -25,11 +25,11 @@ const tenThousand = convert("10000", 18);
 const oneHundredThousand = convert("100000", 18);
 
 let owner, multisig, treasury, user0, user1, user2;
-let tokenFactory, meme1, meme2;
+let memeFactory, meme1, meme2;
 let factory, multicall, router;
 let base;
 
-describe.only("local: test0", function () {
+describe("local: test0", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -40,15 +40,13 @@ describe.only("local: test0", function () {
     base = await baseArtifact.deploy();
     console.log("- BASE Initialized");
 
-    const tokenFactoryArtifact = await ethers.getContractFactory(
-      "TokenFactory"
-    );
-    tokenFactory = await tokenFactoryArtifact.deploy();
-    console.log("- TokenFactory Initialized");
+    const memeFactoryArtifact = await ethers.getContractFactory("MemeFactory");
+    memeFactory = await memeFactoryArtifact.deploy();
+    console.log("- MemeFactory Initialized");
 
     const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
     factory = await factoryArtifact.deploy(
-      tokenFactory.address,
+      memeFactory.address,
       base.address,
       treasury.address
     );
@@ -79,8 +77,8 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await router
       .connect(user0)
-      .createToken("Meme 1", "MEME1", "http/ipfs.com", { value: ten });
-    meme1 = await ethers.getContractAt("Token", await factory.index_Token(1));
+      .createMeme("Meme 1", "MEME1", "http/ipfs.com", { value: ten });
+    meme1 = await ethers.getContractAt("Meme", await factory.index_Meme(1));
     console.log("Meme1 Created");
   });
 
@@ -88,8 +86,8 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await router
       .connect(user0)
-      .createToken("Meme 2", "MEME2", "http/ipfs.com", { value: ten });
-    meme2 = await ethers.getContractAt("Token", await factory.index_Token(2));
+      .createMeme("Meme 2", "MEME2", "http/ipfs.com", { value: ten });
+    meme2 = await ethers.getContractAt("Meme", await factory.index_Meme(2));
     console.log("Meme0 Created");
   });
 
@@ -118,7 +116,7 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await expect(
       router.connect(user1).redeem(meme1.address)
-    ).to.be.revertedWith("PreToken__NotEligible");
+    ).to.be.revertedWith("PreMeme__NotEligible");
   });
 
   it("User0 redeems meme1 contribution", async function () {
@@ -130,14 +128,14 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await expect(
       router.connect(user0).redeem(meme1.address)
-    ).to.be.revertedWith("PreToken__NotEligible");
+    ).to.be.revertedWith("PreMeme__NotEligible");
   });
 
   it("User0 tries to contribute 10 ETH to meme1", async function () {
     console.log("******************************************************");
     await expect(
       router.connect(user0).contribute(meme1.address, { value: ten })
-    ).to.be.revertedWith("PreToken__Concluded");
+    ).to.be.revertedWith("PreMeme__Concluded");
   });
 
   it("User0 contributes 10 ETH to meme2", async function () {
@@ -149,7 +147,7 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await expect(
       router.connect(user1).redeem(meme2.address)
-    ).to.be.revertedWith("PreToken__NotEligible");
+    ).to.be.revertedWith("PreMeme__NotEligible");
   });
 
   it("User0 buys meme1", async function () {
@@ -329,7 +327,7 @@ describe.only("local: test0", function () {
 
   it("Meme Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(meme1.address);
+    let res = await multicall.getMemeData(meme1.address);
     console.log(res);
   });
 
@@ -358,7 +356,7 @@ describe.only("local: test0", function () {
     console.log("******************************************************");
     await expect(
       meme1.connect(user0).transfer(user1.address, one)
-    ).to.be.revertedWith("Token__CollateralRequirement");
+    ).to.be.revertedWith("Meme__CollateralRequirement");
   });
 
   it("User0 tries to sell meme0", async function () {
@@ -375,7 +373,7 @@ describe.only("local: test0", function () {
           0,
           1904422437
         )
-    ).to.be.revertedWith("Token__CollateralRequirement");
+    ).to.be.revertedWith("Meme__CollateralRequirement");
   });
 
   it("User0 repays some WETH for meme1", async function () {
@@ -405,15 +403,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -432,15 +430,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme2", async function () {
     console.log("******************************************************");
     const reserveBase = await meme2.reserveBase();
-    const reserveToken = await meme2.reserveToken();
+    const reserveMeme = await meme2.reserveMeme();
     const totalSupply = await meme2.totalSupply();
     const maxSupply = await meme2.maxSupply();
     const baseBalance = await base.balanceOf(meme2.address);
     const initialBase = await meme2.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -477,15 +475,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -522,15 +520,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -559,15 +557,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -605,15 +603,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -646,15 +644,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -692,15 +690,15 @@ describe.only("local: test0", function () {
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();
-    const reserveToken = await meme1.reserveToken();
+    const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
     const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
-    const maxReserve = reserveToken.add(totalSupply);
+    const maxReserve = reserveMeme.add(totalSupply);
     const remainingBase = reserveBase
       .add(initialBase)
-      .mul(reserveToken)
+      .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
@@ -718,12 +716,12 @@ describe.only("local: test0", function () {
 
   it("Multicall Coverage", async function () {
     console.log("******************************************************");
-    console.log("Token Count: ", await multicall.getTokenCount());
+    console.log("Meme Count: ", await multicall.getMemeCount());
     console.log(
       "Index of Meme1: ",
-      await multicall.getIndexByToken(meme1.address)
+      await multicall.getIndexByMeme(meme1.address)
     );
-    console.log("Token at Index 2: ", await multicall.getTokenByIndex(2));
+    console.log("Meme at Index 2: ", await multicall.getMemeByIndex(2));
     console.log(
       "Index by Symbol MEME1: ",
       await multicall.getIndexBySymbol("MEME1")

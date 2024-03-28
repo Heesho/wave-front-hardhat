@@ -1,4 +1,4 @@
-import { WaveFrontRouter__AffiliateSet as WaveFrontRouter__AffiliateSetEvent } from "../generated/Contract/Contract";
+import { WaveFrontRouter__AffiliateSet as WaveFrontRouter__AffiliateSetEvent } from "../generated/WaveFrontRouter/WaveFrontRouter";
 import { Account } from "../generated/schema";
 import { ZERO_BD, ZERO_BI } from "./helpers";
 

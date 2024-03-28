@@ -45,7 +45,7 @@ export class WaveFrontRouter__Buy__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -79,7 +79,7 @@ export class WaveFrontRouter__ClaimFees__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -101,7 +101,7 @@ export class WaveFrontRouter__Contributed__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -127,7 +127,7 @@ export class WaveFrontRouter__MarketOpened__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -135,8 +135,30 @@ export class WaveFrontRouter__MarketOpened__Params {
     return this._event.parameters[1].value.toBigInt();
   }
 
-  get totalTokenBalance(): BigInt {
+  get totalMemeBalance(): BigInt {
     return this._event.parameters[2].value.toBigInt();
+  }
+}
+
+export class WaveFrontRouter__MemeCreated extends ethereum.Event {
+  get params(): WaveFrontRouter__MemeCreated__Params {
+    return new WaveFrontRouter__MemeCreated__Params(this);
+  }
+}
+
+export class WaveFrontRouter__MemeCreated__Params {
+  _event: WaveFrontRouter__MemeCreated;
+
+  constructor(event: WaveFrontRouter__MemeCreated) {
+    this._event = event;
+  }
+
+  get meme(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+
+  get account(): Address {
+    return this._event.parameters[1].value.toAddress();
   }
 }
 
@@ -153,7 +175,7 @@ export class WaveFrontRouter__Redeemed__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -179,7 +201,7 @@ export class WaveFrontRouter__Sell__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -209,7 +231,7 @@ export class WaveFrontRouter__StatusUpdated__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -219,28 +241,6 @@ export class WaveFrontRouter__StatusUpdated__Params {
 
   get status(): string {
     return this._event.parameters[2].value.toString();
-  }
-}
-
-export class WaveFrontRouter__TokenCreated extends ethereum.Event {
-  get params(): WaveFrontRouter__TokenCreated__Params {
-    return new WaveFrontRouter__TokenCreated__Params(this);
-  }
-}
-
-export class WaveFrontRouter__TokenCreated__Params {
-  _event: WaveFrontRouter__TokenCreated;
-
-  constructor(event: WaveFrontRouter__TokenCreated) {
-    this._event = event;
-  }
-
-  get token(): Address {
-    return this._event.parameters[0].value.toAddress();
-  }
-
-  get account(): Address {
-    return this._event.parameters[1].value.toAddress();
   }
 }
 
@@ -399,7 +399,7 @@ export class BuyCall__Inputs {
     this._call = call;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 
@@ -441,7 +441,7 @@ export class ClaimFeesCall__Inputs {
     this._call = call;
   }
 
-  get tokens(): Array<Address> {
+  get memes(): Array<Address> {
     return this._call.inputValues[0].value.toAddressArray();
   }
 }
@@ -471,7 +471,7 @@ export class ContributeCall__Inputs {
     this._call = call;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 }
@@ -484,20 +484,20 @@ export class ContributeCall__Outputs {
   }
 }
 
-export class CreateTokenCall extends ethereum.Call {
-  get inputs(): CreateTokenCall__Inputs {
-    return new CreateTokenCall__Inputs(this);
+export class CreateMemeCall extends ethereum.Call {
+  get inputs(): CreateMemeCall__Inputs {
+    return new CreateMemeCall__Inputs(this);
   }
 
-  get outputs(): CreateTokenCall__Outputs {
-    return new CreateTokenCall__Outputs(this);
+  get outputs(): CreateMemeCall__Outputs {
+    return new CreateMemeCall__Outputs(this);
   }
 }
 
-export class CreateTokenCall__Inputs {
-  _call: CreateTokenCall;
+export class CreateMemeCall__Inputs {
+  _call: CreateMemeCall;
 
-  constructor(call: CreateTokenCall) {
+  constructor(call: CreateMemeCall) {
     this._call = call;
   }
 
@@ -514,10 +514,10 @@ export class CreateTokenCall__Inputs {
   }
 }
 
-export class CreateTokenCall__Outputs {
-  _call: CreateTokenCall;
+export class CreateMemeCall__Outputs {
+  _call: CreateMemeCall;
 
-  constructor(call: CreateTokenCall) {
+  constructor(call: CreateMemeCall) {
     this._call = call;
   }
 
@@ -543,7 +543,7 @@ export class RedeemCall__Inputs {
     this._call = call;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 }
@@ -573,7 +573,7 @@ export class SellCall__Inputs {
     this._call = call;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 
@@ -615,7 +615,7 @@ export class UpdateStatusCall__Inputs {
     this._call = call;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 

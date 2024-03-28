@@ -10,16 +10,16 @@ import {
   BigInt,
 } from "@graphprotocol/graph-ts";
 
-export class PreToken__Contributed extends ethereum.Event {
-  get params(): PreToken__Contributed__Params {
-    return new PreToken__Contributed__Params(this);
+export class PreMeme__Contributed extends ethereum.Event {
+  get params(): PreMeme__Contributed__Params {
+    return new PreMeme__Contributed__Params(this);
   }
 }
 
-export class PreToken__Contributed__Params {
-  _event: PreToken__Contributed;
+export class PreMeme__Contributed__Params {
+  _event: PreMeme__Contributed;
 
-  constructor(event: PreToken__Contributed) {
+  constructor(event: PreMeme__Contributed) {
     this._event = event;
   }
 
@@ -32,16 +32,16 @@ export class PreToken__Contributed__Params {
   }
 }
 
-export class PreToken__MarketOpened extends ethereum.Event {
-  get params(): PreToken__MarketOpened__Params {
-    return new PreToken__MarketOpened__Params(this);
+export class PreMeme__MarketOpened extends ethereum.Event {
+  get params(): PreMeme__MarketOpened__Params {
+    return new PreMeme__MarketOpened__Params(this);
   }
 }
 
-export class PreToken__MarketOpened__Params {
-  _event: PreToken__MarketOpened;
+export class PreMeme__MarketOpened__Params {
+  _event: PreMeme__MarketOpened;
 
-  constructor(event: PreToken__MarketOpened) {
+  constructor(event: PreMeme__MarketOpened) {
     this._event = event;
   }
 
@@ -49,7 +49,7 @@ export class PreToken__MarketOpened__Params {
     return this._event.parameters[0].value.toAddress();
   }
 
-  get totalTokenBalance(): BigInt {
+  get totalMemeBalance(): BigInt {
     return this._event.parameters[1].value.toBigInt();
   }
 
@@ -58,16 +58,16 @@ export class PreToken__MarketOpened__Params {
   }
 }
 
-export class PreToken__Redeemed extends ethereum.Event {
-  get params(): PreToken__Redeemed__Params {
-    return new PreToken__Redeemed__Params(this);
+export class PreMeme__Redeemed extends ethereum.Event {
+  get params(): PreMeme__Redeemed__Params {
+    return new PreMeme__Redeemed__Params(this);
   }
 }
 
-export class PreToken__Redeemed__Params {
-  _event: PreToken__Redeemed;
+export class PreMeme__Redeemed__Params {
+  _event: PreMeme__Redeemed;
 
-  constructor(event: PreToken__Redeemed) {
+  constructor(event: PreMeme__Redeemed) {
     this._event = event;
   }
 
@@ -80,9 +80,9 @@ export class PreToken__Redeemed__Params {
   }
 }
 
-export class PreToken extends ethereum.SmartContract {
-  static bind(address: Address): PreToken {
-    return new PreToken("PreToken", address);
+export class PreMeme extends ethereum.SmartContract {
+  static bind(address: Address): PreMeme {
+    return new PreMeme("PreMeme", address);
   }
 
   DURATION(): BigInt {
@@ -206,20 +206,20 @@ export class PreToken extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  totalTokenBalance(): BigInt {
+  totalMemeBalance(): BigInt {
     let result = super.call(
-      "totalTokenBalance",
-      "totalTokenBalance():(uint256)",
+      "totalMemeBalance",
+      "totalMemeBalance():(uint256)",
       [],
     );
 
     return result[0].toBigInt();
   }
 
-  try_totalTokenBalance(): ethereum.CallResult<BigInt> {
+  try_totalMemeBalance(): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "totalTokenBalance",
-      "totalTokenBalance():(uint256)",
+      "totalMemeBalance",
+      "totalMemeBalance():(uint256)",
       [],
     );
     if (result.reverted) {

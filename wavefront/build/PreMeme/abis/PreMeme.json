@@ -12,22 +12,22 @@
   },
   {
     "inputs": [],
-    "name": "PreToken__Concluded",
+    "name": "PreMeme__Concluded",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "PreToken__InProgress",
+    "name": "PreMeme__InProgress",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "PreToken__NotEligible",
+    "name": "PreMeme__NotEligible",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "PreToken__ZeroInput",
+    "name": "PreMeme__ZeroInput",
     "type": "error"
   },
   {
@@ -46,7 +46,7 @@
         "type": "uint256"
       }
     ],
-    "name": "PreToken__Contributed",
+    "name": "PreMeme__Contributed",
     "type": "event"
   },
   {
@@ -61,7 +61,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "totalTokenBalance",
+        "name": "totalMemeBalance",
         "type": "uint256"
       },
       {
@@ -71,7 +71,7 @@
         "type": "uint256"
       }
     ],
-    "name": "PreToken__MarketOpened",
+    "name": "PreMeme__MarketOpened",
     "type": "event"
   },
   {
@@ -90,7 +90,7 @@
         "type": "uint256"
       }
     ],
-    "name": "PreToken__Redeemed",
+    "name": "PreMeme__Redeemed",
     "type": "event"
   },
   {
@@ -230,7 +230,7 @@
   },
   {
     "inputs": [],
-    "name": "totalTokenBalance",
+    "name": "totalMemeBalance",
     "outputs": [
       {
         "internalType": "uint256",

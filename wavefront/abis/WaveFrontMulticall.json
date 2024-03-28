@@ -71,7 +71,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -100,7 +100,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -120,12 +120,12 @@
           },
           {
             "internalType": "uint256",
-            "name": "tokenRedeemable",
+            "name": "memeRedeemable",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "tokenBalance",
+            "name": "memeBalance",
             "type": "uint256"
           },
           {
@@ -155,6 +155,25 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "meme",
+        "type": "address"
+      }
+    ],
+    "name": "getIndexByMeme",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "symbol",
         "type": "string"
@@ -174,31 +193,12 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "getIndexByToken",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "index",
         "type": "uint256"
       }
     ],
-    "name": "getTokenByIndex",
+    "name": "getMemeByIndex",
     "outputs": [
       {
         "internalType": "address",
@@ -211,7 +211,7 @@
   },
   {
     "inputs": [],
-    "name": "getTokenCount",
+    "name": "getMemeCount",
     "outputs": [
       {
         "internalType": "uint256",
@@ -226,11 +226,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       }
     ],
-    "name": "getTokenData",
+    "name": "getMemeData",
     "outputs": [
       {
         "components": [
@@ -241,12 +241,12 @@
           },
           {
             "internalType": "address",
-            "name": "token",
+            "name": "meme",
             "type": "address"
           },
           {
             "internalType": "address",
-            "name": "preToken",
+            "name": "preMeme",
             "type": "address"
           },
           {
@@ -301,7 +301,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "reserveToken",
+            "name": "reserveMeme",
             "type": "uint256"
           },
           {
@@ -316,7 +316,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "preTokenBalance",
+            "name": "preMemeBalance",
             "type": "uint256"
           },
           {
@@ -340,8 +340,8 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct WaveFrontMulticall.TokenData",
-        "name": "tokenData",
+        "internalType": "struct WaveFrontMulticall.MemeData",
+        "name": "memeData",
         "type": "tuple"
       }
     ],
@@ -352,7 +352,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -396,7 +396,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -440,7 +440,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -484,7 +484,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {

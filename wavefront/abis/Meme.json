@@ -41,6 +41,56 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "Meme__CollateralRequirement",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__CreditLimit",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__Expired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__InvalidAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__MarketNotOpen",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__NotAuthorized",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__SlippageToleranceExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__StatusLimitExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__StatusRequired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Meme__ZeroInput",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "string",
@@ -49,56 +99,6 @@
       }
     ],
     "name": "StringTooLong",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__CollateralRequirement",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__CreditLimit",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__Expired",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__InvalidAccount",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__MarketNotOpen",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__NotAuthorized",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__SlippageToleranceExceeded",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__StatusLimitExceeded",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__StatusRequired",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Token__ZeroInput",
     "type": "error"
   },
   {
@@ -198,7 +198,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__Borrow",
+    "name": "Meme__Borrow",
     "type": "event"
   },
   {
@@ -213,11 +213,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "amountToken",
+        "name": "amountMeme",
         "type": "uint256"
       }
     ],
-    "name": "Token__Burn",
+    "name": "Meme__Burn",
     "type": "event"
   },
   {
@@ -248,7 +248,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__Buy",
+    "name": "Meme__Buy",
     "type": "event"
   },
   {
@@ -267,7 +267,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__Claim",
+    "name": "Meme__Claim",
     "type": "event"
   },
   {
@@ -286,7 +286,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__Donation",
+    "name": "Meme__Donation",
     "type": "event"
   },
   {
@@ -307,11 +307,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "amountToken",
+        "name": "amountMeme",
         "type": "uint256"
       }
     ],
-    "name": "Token__Fees",
+    "name": "Meme__Fees",
     "type": "event"
   },
   {
@@ -330,7 +330,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__ProtocolFee",
+    "name": "Meme__ProtocolFee",
     "type": "event"
   },
   {
@@ -349,7 +349,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__ProviderFee",
+    "name": "Meme__ProviderFee",
     "type": "event"
   },
   {
@@ -368,7 +368,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__Repay",
+    "name": "Meme__Repay",
     "type": "event"
   },
   {
@@ -377,11 +377,11 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "amountToken",
+        "name": "amountMeme",
         "type": "uint256"
       }
     ],
-    "name": "Token__ReserveBurn",
+    "name": "Meme__ReserveBurn",
     "type": "event"
   },
   {
@@ -412,7 +412,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__Sell",
+    "name": "Meme__Sell",
     "type": "event"
   },
   {
@@ -431,7 +431,7 @@
         "type": "uint256"
       }
     ],
-    "name": "Token__StatusFee",
+    "name": "Meme__StatusFee",
     "type": "event"
   },
   {
@@ -450,7 +450,7 @@
         "type": "string"
       }
     ],
-    "name": "Token__StatusUpdated",
+    "name": "Meme__StatusUpdated",
     "type": "event"
   },
   {
@@ -1321,7 +1321,7 @@
   },
   {
     "inputs": [],
-    "name": "preToken",
+    "name": "preMeme",
     "outputs": [
       {
         "internalType": "address",
@@ -1360,7 +1360,7 @@
   },
   {
     "inputs": [],
-    "name": "reserveToken",
+    "name": "reserveMeme",
     "outputs": [
       {
         "internalType": "uint256",
