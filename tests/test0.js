@@ -103,9 +103,9 @@ describe.only("local: test0", function () {
     await router.connect(user1).contribute(meme1.address, { value: ten });
   });
 
-  it("Forward 1 hour", async function () {
+  it("Forward 2 hour", async function () {
     console.log("******************************************************");
-    await network.provider.send("evm_increaseTime", [3600]);
+    await network.provider.send("evm_increaseTime", [7200]);
     await network.provider.send("evm_mine");
   });
 

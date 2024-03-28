@@ -8,6 +8,45 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./FixedPointMathLib.sol";
 
+/**
+ * @title TokenFactory
+ * @author heesho
+ *
+ * The TokenFactory contract is designed for creating a new type of ERC20 token governed 
+ * by a bonding curve. The bonding curve lives in the token and ensures liquidity at all price ranges 
+ * with a constant product, facilitating dynamic pricing based on market demand. Tokens are initially
+ * launched via the PreToken contract to ensure a bot-resistant and fair distribution. Once launched, 
+ * tokens can be traded, used as collateral for borrowing, or held to earn transaction fees.
+ *
+ * Token: 
+ * The primary asset with a built-in bonding curve, enabling buy/sell transactions
+ * with price adjustments based on supply. A virtual bonding curve is used with a constant product
+ * formula (XY = K) The token can be bought, sold, allows for liqduition free borrowing against held 
+ * tokens and fee accumulation for token holders. It also uses a bonding curve shift to adjuast the 
+ * reserves based on the maxSupply of token. Buy transactions incur a 2% fee, divided among
+ * the protocol treasury (20%), status holder (20%), a provider (20% optional), with the remainder 
+ * going to token holders. Sell transactions also incur a 2% fee, which is fully burned, reducing
+ * maxSupply and increasing the token's floor and market prices, also increasing the borrowing
+ * capacity of the token. The status of the token can be updated by anyone by burning token. The
+ * token does not need to be deposited to earn fees or borrow against it, both can be done from
+ * the user's wallet. Borrowing however will not let the user transfer the token if the collateral
+ * requirement is not met.
+
+ * PreToken: 
+ * Manages the initial distribution phase, collecting base tokens (e.g., ETH) and
+ * transitioning to the open market phase for the Token, ensuring a fair launch. Everyone
+ * that participates in the PreToken phase receives tokens at the same price.
+ * 
+ * TokenFees: 
+ * Handles the collection and distribution of transaction fees. A portion of
+ * buying fees is distributed to token holders.
+ * 
+ * TokenFactory: 
+ * Facilitates the creation of new Token instances, integrating them with the
+ * bonding curve and fee mechanisms, and linking to the PreToken for initial distribution.
+ *
+ */
+
 interface IWaveFrontFactory {
     function treasury() external view returns (address);
 }
@@ -15,33 +54,52 @@ interface IWaveFrontFactory {
 contract PreToken is ReentrancyGuard {
     using FixedPointMathLib for uint256;
 
-    uint256 public constant DURATION = 3600;
+    /*----------  CONSTANTS  --------------------------------------------*/
+
+    uint256 public constant DURATION = 7200; // Duration in seconds for the pre-market phase
+
+    /*----------  STATE VARIABLES  --------------------------------------*/
     
-    address public immutable base;
-    address public immutable token;
+    address public immutable base; // Address of the base token (e.g., ETH)
+    address public immutable token; // Address of the token deployed
 
-    uint256 public immutable endTimestamp;
-    bool public ended = false;
+    uint256 public immutable endTimestamp; // Timestamp when the pre-market phase ends
+    bool public ended = false; // Flag indicating if the pre-market phase has ended
 
-    uint256 public totalTokenBalance;
-    uint256 public totalBaseContributed;
-    mapping(address => uint256) public account_BaseContributed;
+    uint256 public totalTokenBalance; // Total balance of the token distributed after pre-market
+    uint256 public totalBaseContributed; // Total base tokens contributed during the pre-market phase
+    mapping(address => uint256) public account_BaseContributed; // Base tokens contributed by each account
+
+    /*----------  ERRORS ------------------------------------------------*/
 
     error PreToken__ZeroInput();
     error PreToken__Concluded();
     error PreToken__InProgress();
     error PreToken__NotEligible();
 
+    /*----------  EVENTS ------------------------------------------------*/
+
     event PreToken__Contributed(address indexed account, uint256 amount);
     event PreToken__MarketOpened(address indexed token, uint256 totalTokenBalance, uint256 totalBaseContributed);
     event PreToken__Redeemed(address indexed account, uint256 amount);
 
+    /*----------  FUNCTIONS  --------------------------------------------*/
+
+    /**
+     * @dev Constructs the PreToken contract.
+     * @param _base Address of the base token, typically a stablecoin or native cryptocurrency like ETH.
+     */
     constructor(address _base) {
         base = _base;
         token = msg.sender;
         endTimestamp = block.timestamp + DURATION;
     }
 
+    /**
+     * @dev Allows users to contribute base tokens during the pre-market phase.
+     * @param account The account making the contribution.
+     * @param amount The amount of base tokens to contribute.
+     */
     function contribute(address account, uint256 amount) external nonReentrant {
         if (amount == 0) revert PreToken__ZeroInput();
         if (ended) revert PreToken__Concluded();
@@ -51,6 +109,10 @@ contract PreToken is ReentrancyGuard {
         emit PreToken__Contributed(account, amount);
     }
 
+    /**
+     * @dev Opens the market for the token, ending the pre-market phase.
+     * Can only be called after the pre-market phase duration has ended.
+     */
     function openMarket() external {
         if (endTimestamp > block.timestamp) revert PreToken__InProgress();
         if (ended) revert PreToken__Concluded();
@@ -62,6 +124,10 @@ contract PreToken is ReentrancyGuard {
         emit PreToken__MarketOpened(token, totalTokenBalance, totalBaseContributed);
     }
 
+    /**
+     * @dev Allows users who contributed during the pre-market phase to redeem their new tokens.
+     * @param account The account redeeming its contribution for new tokens.
+     */
     function redeem(address account) external nonReentrant {
         if (!ended) revert PreToken__InProgress();
         uint256 contribution = account_BaseContributed[account];
@@ -76,14 +142,25 @@ contract PreToken is ReentrancyGuard {
 
 contract TokenFees {
 
-    address internal immutable base;
-    address internal immutable token;
+    address internal immutable base; // Base token address (e.g., ETH or a stablecoin).
+    address internal immutable token; // Address of the token that this contract manages fees for.
 
+    /**
+     * @dev Constructs the contract by setting the base token and associating this contract with a token.
+     * @param _base The address of the base token.
+     */
     constructor(address _base) {
         token = msg.sender;
         base = _base;
     }
 
+    /**
+     * @dev Allows the Token contract to claim fees on behalf of a user or entity.
+     * This function is meant to be called by the Token contract to distribute fees
+     * to various stakeholders.
+     * @param recipient The address receiving the claimed fees.
+     * @param amountBase The amount of base token to be transferred as fees.
+     */
     function claimFeesFor(address recipient, uint amountBase) external {
         require(msg.sender == token);
         if (amountBase > 0) IERC20(base).transfer(recipient, amountBase);
@@ -96,42 +173,42 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
-    uint256 public constant PRECISION = 1e18;
-    uint256 public constant RESERVE_VIRTUAL_BASE = 1000 * PRECISION;
-    uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION;
-    uint256 public constant FEE = 200;
-    uint256 public constant FEE_AMOUNT = 2000;
-    uint256 public constant STATUS_FEE = 1000;
-    uint256 public constant STATUS_MAX_LENGTH = 140;
-    uint256 public constant DIVISOR = 10000;
+    uint256 public constant PRECISION = 1e18; // Precision for math
+    uint256 public constant RESERVE_VIRTUAL_BASE = 1000 * PRECISION; // Initial virtual base reserve
+    uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION; // Initial supply of the token
+    uint256 public constant FEE = 200; // 2% fee rate for buy/sell operations
+    uint256 public constant FEE_AMOUNT = 2000; // Additional fee parameters for ditributing to stakeholders
+    uint256 public constant STATUS_FEE = 10 * PRECISION; // Fee for status update 10 tokens
+    uint256 public constant STATUS_MAX_LENGTH = 140; // Maximum length of status string
+    uint256 public constant DIVISOR = 10000; // Divisor for fee calculations
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
-    address public immutable base;
-    address public immutable fees;
-    address public immutable waveFrontFactory;
-    address public immutable preToken;
+    address public immutable base; // Address of the base token (e.g., ETH)
+    address public immutable fees; // Address of the TokenFees contract
+    address public immutable waveFrontFactory; // Address of the WaveFrontFactory contract
+    address public immutable preToken; // Address of the PreToken contract
 
-    uint256 public maxSupply = INITIAL_SUPPLY;
-    bool public open = false;
+    uint256 public maxSupply = INITIAL_SUPPLY; // Maximum supply of the token, can only decrease
+    bool public open = false; // Flag indicating if the market is open, only the preToken can open it
 
     // bonding curve state
-    uint256 public reserveBase = 0;
-    uint256 public reserveToken = INITIAL_SUPPLY;
+    uint256 public reserveBase = 0; // Base reserve of the token
+    uint256 public reserveToken = INITIAL_SUPPLY; // Token reserve of the token. Initially set to the max supply
 
     // fees state
-    uint256 public totalFeesBase;
-    uint256 public indexBase;
-    mapping(address => uint256) public supplyIndexBase;
-    mapping(address => uint256) public claimableBase;
+    uint256 public totalFeesBase; // Total fees collected in base token
+    uint256 public indexBase; // Index for calculating fees for token holders
+    mapping(address => uint256) public supplyIndexBase; // Index for calculating fees for token holders
+    mapping(address => uint256) public claimableBase; // Claimable fees for token holders
 
     // borrowing
-    uint256 public totalDebt;
-    mapping(address => uint256) public account_Debt;
+    uint256 public totalDebt; // Total debt of the token
+    mapping(address => uint256) public account_Debt; // Debt of each account
 
-    string public uri;
-    string public status;
-    address public statusHolder;
+    string public uri; // URI for the token image
+    string public status; // Status of the token
+    address public statusHolder; // Address of the account holding the status
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -146,7 +223,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error Token__StatusRequired();
     error Token__StatusLimitExceeded();
 
-    /*----------  EVENTS ------------------------------------------------*/
+    /*----------  ERRORS ------------------------------------------------*/
 
     event Token__Buy(address indexed from, address indexed to, uint256 amountIn, uint256 amountOut);
     event Token__Sell(address indexed from, address indexed to, uint256 amountIn, uint256 amountOut);
@@ -176,6 +253,15 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
+    /**
+     * @dev Constructs the Token contract with initial settings.
+     * @param _name Name of the token.
+     * @param _symbol Symbol of the token.
+     * @param _uri URI for token metadata.
+     * @param _base Address of the base token.
+     * @param _waveFrontFactory Address of the WaveFrontFactory contract.
+     * @param _statusHolder Address of the initial status holder.
+     */
     constructor(
         string memory _name, 
         string memory _symbol, 
@@ -196,6 +282,15 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         preToken = address(new PreToken(_base));
     }
 
+    /**
+     * @dev Executes a token purchase operation within the bonding curve mechanism.
+     * Calculates the necessary fees, updates reserves, and mints the tokens to the buyer.
+     * @param amountIn The amount of base tokens provided for the purchase.
+     * @param minAmountOut The minimum amount of this token expected to be received, for slippage control.
+     * @param expireTimestamp Timestamp after which the transaction is not valid.
+     * @param to The address receiving the purchased tokens.
+     * @param provider The address that may receive a portion of the fee, if applicable.
+     */
     function buy(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) 
         external 
         nonReentrant
@@ -233,6 +328,14 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         _updateBase(feeBase); 
     }
 
+    /**
+     * @dev Allows token holders to sell their tokens back to the bonding curve.
+     * A fee is applied to the sale, which is then burned, reducing the total supply and adjusting the bonding curve.
+     * @param amountIn The amount of this token being sold.
+     * @param minAmountOut The minimum amount of base token expected in return, for slippage control.
+     * @param expireTimestamp Timestamp after which the transaction is not valid.
+     * @param to The address receiving the base token from the sale.
+     */
     function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to) 
         external 
         nonReentrant
@@ -256,6 +359,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(base).transfer(to, amountOut);
     }
 
+    /**
+     * @dev Allows token holders to borrow base tokens against their token holdings as collateral.
+     * @param amountBase The amount of base tokens to borrow.
+     */
     function borrow(uint256 amountBase) 
         external 
         nonReentrant
@@ -269,6 +376,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(base).transfer(msg.sender, amountBase);
     }
 
+    /**
+     * @dev Allows borrowers to repay their borrowed base tokens, reducing their debt.
+     * @param amountBase The amount of base tokens to repay.
+     */
     function repay(uint256 amountBase) 
         external 
         nonReentrant
@@ -280,6 +391,11 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(base).transferFrom(msg.sender, address(this), amountBase);
     }
 
+    /**
+     * @dev Allows token holders to claim their accumulated fees in base tokens.
+     * @param account The address of the token holder claiming their fees.
+     * @return claimedBase The amount of base tokens claimed as fees.
+     */
     function claimFees(address account) 
         external 
         returns (uint256 claimedBase) 
@@ -297,6 +413,11 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
     }
 
+    /**
+     * @dev Updates the status associated with the token, which can be a feature like a pinned message.
+     * @param account The address setting the new status.
+     * @param _status The new status message to be set.
+     */
     function updateStatus(address account, string memory _status)
         external
         nonReentrant
@@ -310,6 +431,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__StatusUpdated(account, _status);
     }
 
+    /**
+     * @dev Allows token holders to burn their tokens, reducing the total supply and shifting the bonding curve.
+     * @param amount The amount of this token to be burned.
+     */
     function burn(uint256 amount) 
         public 
         notZeroInput(amount)
@@ -326,6 +451,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__Burn(msg.sender, amount);
     }
 
+    /**
+     * @dev Allows anyone to donate base tokens to the contract, to distribute as fees to token holders.
+     * @param amount The amount of base tokens to donate.
+     */
     function donate(uint256 amount) 
         external 
         nonReentrant
@@ -338,6 +467,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
+    /**
+     * @dev Opens the token market for trading, allowing buy and sell operations. Can only be called by the PreToken contract.
+     */
     function openMarket() 
         external 
     {
@@ -345,6 +477,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         open = true;
     }
 
+    /**
+     * @dev Internal function to update the fee distribution index based on the total supply and collected fees.
+     * @param amount The amount of base token fees collected.
+     */
     function _updateBase(uint256 amount) 
         internal 
     {
@@ -357,6 +493,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__Fees(msg.sender, amount, 0);
     }
     
+    /**
+     * @dev Internal function to update the claimable fees for an account based on its token holdings and fee index.
+     * @param recipient The address for which to update the claimable fees.
+     */
     function _updateFor(address recipient) 
         internal 
     {
@@ -384,6 +524,14 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         super._afterTokenTransfer(from, to, amount);
     }
 
+    /**
+     * @dev Internal function that is called before any token transfer, including minting and burning.
+     * This function checks if the sender has enough transferrable tokens after considering any existing debt (used as collateral).
+     * It also updates the fee distribution for both the sender and the receiver.
+     * @param from The address sending the tokens.
+     * @param to The address receiving the tokens.
+     * @param amount The amount of tokens being transferred.
+     */
     function _beforeTokenTransfer(address from, address to, uint256 amount)
         internal
         override(ERC20)
@@ -410,6 +558,11 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
+    /**
+     * @dev Calculates the current market price of the token based on the bonding curve.
+     * The market price is derived from the ratio of the virtual and actual reserves to the token supply.
+     * @return The current market price per token.
+     */
     function getMarketPrice()
         external
         view
@@ -418,6 +571,11 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return ((RESERVE_VIRTUAL_BASE + reserveBase).mulWadDown(PRECISION)).divWadDown(reserveToken);
     }
 
+    /**
+     * @dev Calculates the floor price of the token, which is the lowest price that the token can reach, based on the bonding curve.
+     * The floor price is determined by the virtual reserve and the maximum supply of the token.
+     * @return The floor price per token.
+     */
     function getFloorPrice() 
         external 
         view 
@@ -426,6 +584,12 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return (RESERVE_VIRTUAL_BASE.mulWadDown(PRECISION)).divWadDown(maxSupply);
     }
 
+    /**
+     * @dev Calculates the borrowing credit available to an account based on its token balance.
+     * This credit represents the maximum base tokens that the account can borrow.
+     * @param account The address of the user for whom the credit is being calculated.
+     * @return The amount of base token credit available for borrowing.
+     */
     function getAccountCredit(address account) 
         public 
         view 
@@ -435,6 +599,12 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return ((RESERVE_VIRTUAL_BASE.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
     }
 
+    /**
+     * @dev Calculates the transferrable balance of an account, considering any locked tokens due to outstanding debts.
+     * This function ensures that users cannot transfer tokens that are required as collateral for borrowed base tokens.
+     * @param account The address of the user for whom the transferrable balance is being calculated.
+     * @return The amount of this token that the account can transfer.
+     */
     function getAccountTransferrable(address account) 
         public 
         view 
@@ -448,10 +618,22 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
 contract TokenFactory {
     
-    address public lastToken;
+    address public lastToken; // Address of the last token created
 
     event TokenFactory__TokenCreated(address Token);
 
+    /**
+     * @dev Creates a new `Token` contract instance and stores its address.
+     * This function allows users to launch new tokens with specified parameters.
+     * 
+     * @param name The name of the new token to be created.
+     * @param symbol The symbol of the new token.
+     * @param uri The URI for the new token's metadata.
+     * @param base The address of the base currency used for trading the new token.
+     * @param statusHolder The initial holder of the token's status, potentially a governance role.
+     * 
+     * @return The address of the newly created token contract.
+     */
     function createToken(
         string memory name,
         string memory symbol,
