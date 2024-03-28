@@ -68,6 +68,7 @@ export function handleWaveFrontFactory__MemeCreated(
     token.totalSupply = convertEthToDecimal(meme.totalSupply);
     token.floorPrice = convertEthToDecimal(meme.floorPrice);
     token.marketPrice = convertEthToDecimal(meme.marketPrice);
+    token.marketCap = token.marketPrice.times(token.totalSupply);
     token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
     token.totalDebt = convertEthToDecimal(meme.totalDebt);
     token.volume = ZERO_BD;
