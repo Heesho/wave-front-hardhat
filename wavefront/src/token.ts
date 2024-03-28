@@ -29,6 +29,7 @@ import {
   FACTORY_ADDRESS,
   MULTICALL_ADDRESS,
   ZERO_BD,
+  ZERO_BI,
   ONE_BI,
   convertEthToDecimal,
 } from "./helpers";
@@ -294,6 +295,7 @@ export function handleTransfer(event: TransferEvent): void {
   let from = Account.load(event.params.from);
   if (from === null) {
     from = new Account(event.params.from);
+    from.referrals = ZERO_BI;
     from.statusEarnings = ZERO_BD;
     from.holderEarnings = ZERO_BD;
     from.providerEarnings = ZERO_BD;
@@ -327,6 +329,7 @@ export function handleTransfer(event: TransferEvent): void {
   let to = Account.load(event.params.to);
   if (to === null) {
     to = new Account(event.params.to);
+    to.referrals = ZERO_BI;
     to.statusEarnings = ZERO_BD;
     to.holderEarnings = ZERO_BD;
     to.providerEarnings = ZERO_BD;

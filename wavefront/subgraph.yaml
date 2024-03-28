@@ -36,6 +36,26 @@ dataSources:
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransferred
       file: ./src/wavefront-factory.ts
+  - kind: ethereum
+    name: WaveFrontRouter
+    network: mumbai
+    source:
+      address: "0xe242e31046c90a4C47cFF218f3C839F66130e401"
+      abi: WaveFrontRouter
+      startBlock: 47558280
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Account
+      abis:
+        - name: WaveFrontRouter
+          file: ./abis/WaveFrontRouter.json
+      eventHandlers:
+        - event: WaveFrontRouter__AffiliateSet(indexed address,indexed address)
+          handler: handleWaveFrontRouter__AffiliateSet
+      file: ./src/wavefront-router.ts
 templates:
   - kind: ethereum/contract
     name: Token

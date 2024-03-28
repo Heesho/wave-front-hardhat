@@ -107,6 +107,7 @@ type Account @entity {
   providerEarnings: BigDecimal!
   statusEarnings: BigDecimal!
   holderEarnings: BigDecimal!
+  referrals: BigInt!
   tokenPositions: [TokenPosition!]! @derivedFrom(field: "account")
 }
 

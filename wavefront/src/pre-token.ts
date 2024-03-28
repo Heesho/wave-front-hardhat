@@ -13,7 +13,12 @@ import {
 import { WaveFrontMulticall } from "../generated/templates/Token/WaveFrontMulticall";
 import { PreToken as PreTokenContract } from "../generated/templates/PreToken/PreToken";
 import { Address } from "@graphprotocol/graph-ts";
-import { MULTICALL_ADDRESS, convertEthToDecimal, ZERO_BD } from "./helpers";
+import {
+  MULTICALL_ADDRESS,
+  convertEthToDecimal,
+  ZERO_BI,
+  ZERO_BD,
+} from "./helpers";
 
 export function handlePreToken__MarketOpened(
   event: PreToken__MarketOpenedEvent
@@ -80,6 +85,7 @@ export function handlePreToken__Contributed(
   let account = Account.load(event.params.account);
   if (account === null) {
     account = new Account(event.params.account);
+    account.referrals = ZERO_BI;
     account.providerEarnings = ZERO_BD;
     account.statusEarnings = ZERO_BD;
     account.holderEarnings = ZERO_BD;

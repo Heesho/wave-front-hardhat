@@ -1354,6 +1354,19 @@ export class Account extends Entity {
     this.set("holderEarnings", Value.fromBigDecimal(value));
   }
 
+  get referrals(): BigInt {
+    let value = this.get("referrals");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set referrals(value: BigInt) {
+    this.set("referrals", Value.fromBigInt(value));
+  }
+
   get tokenPositions(): TokenPositionLoader {
     return new TokenPositionLoader(
       "Account",
