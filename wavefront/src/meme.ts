@@ -53,9 +53,10 @@ export function handleMeme__Buy(event: Meme__BuyEvent): void {
   token.reserveVirtualBase = convertEthToDecimal(meme.reserveVirtualBase);
   token.reserveRealBase = convertEthToDecimal(meme.reserveBase);
   token.reserveRealMeme = convertEthToDecimal(meme.reserveMeme);
-  token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
   token.totalDebt = convertEthToDecimal(meme.totalDebt);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountIn));
@@ -124,9 +125,10 @@ export function handleMeme__Sell(event: Meme__SellEvent): void {
   token.reserveVirtualBase = convertEthToDecimal(meme.reserveVirtualBase);
   token.reserveRealBase = convertEthToDecimal(meme.reserveBase);
   token.reserveRealMeme = convertEthToDecimal(meme.reserveMeme);
-  token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
   token.totalDebt = convertEthToDecimal(meme.totalDebt);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountOut));
@@ -233,8 +235,10 @@ export function handleMeme__Burn(event: Meme__BurnEvent): void {
   );
   let meme = multicall.getMemeData(event.address);
   let token = Token.load(meme.meme)!;
-  token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
+  token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.save();
 }
 

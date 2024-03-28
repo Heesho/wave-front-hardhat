@@ -31,6 +31,7 @@ type Token @entity {
   totalSupply: BigDecimal!
   floorPrice: BigDecimal!
   marketPrice: BigDecimal!
+  marketCap: BigDecimal!
   rewardsBase: BigDecimal!
   totalDebt: BigDecimal!
   volume: BigDecimal!

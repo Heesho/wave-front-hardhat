@@ -31,7 +31,10 @@ export function handlePreMeme__MarketOpened(
   let token = Token.load(meme.meme)!;
   token.open = true;
   token.openAt = event.block.timestamp;
+  token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.save();
 }
 
@@ -51,7 +54,10 @@ export function handlePreMeme__Contributed(
 
   token.preMemeBalance = convertEthToDecimal(meme.preMemeBalance);
   token.baseContributed = convertEthToDecimal(meme.baseContributed);
+  token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.save();
 
   let transaction = Transaction.load(event.transaction.hash.toHexString());
@@ -128,7 +134,10 @@ export function handlePreMeme__Redeemed(event: PreMeme__RedeemedEvent): void {
   token.open = meme.marketOpen;
   token.preMemeBalance = convertEthToDecimal(meme.preMemeBalance);
   token.baseContributed = convertEthToDecimal(meme.baseContributed);
+  token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.save();
 
   let account = Account.load(event.params.account);
