@@ -55,7 +55,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "token",
+        "name": "meme",
         "type": "address"
       },
       {
@@ -184,6 +184,19 @@
   },
   {
     "inputs": [],
+    "name": "meme",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "openMarket",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -200,19 +213,6 @@
     "name": "redeem",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "token",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

@@ -45,7 +45,7 @@ export class PreMeme__MarketOpened__Params {
     this._event = event;
   }
 
-  get token(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
@@ -168,14 +168,14 @@ export class PreMeme extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  token(): Address {
-    let result = super.call("token", "token():(address)", []);
+  meme(): Address {
+    let result = super.call("meme", "meme():(address)", []);
 
     return result[0].toAddress();
   }
 
-  try_token(): ethereum.CallResult<Address> {
-    let result = super.tryCall("token", "token():(address)", []);
+  try_meme(): ethereum.CallResult<Address> {
+    let result = super.tryCall("meme", "meme():(address)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }

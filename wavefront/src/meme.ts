@@ -6,6 +6,7 @@ import {
   Meme__ProviderFee as Meme__ProviderFeeEvent,
   Meme__ProtocolFee as Meme__ProtocolFeeEvent,
   Meme__Burn as Meme__BurnEvent,
+  Meme__ReserveBurn as Meme__ReserveBurnEvent,
   Meme__StatusUpdated as Meme__StatusUpdatedEvent,
   Meme__Borrow as Meme__BorrowEvent,
   Meme__Repay as Meme__RepayEvent,
@@ -230,6 +231,19 @@ export function handleMeme__StatusUpdated(
 }
 
 export function handleMeme__Burn(event: Meme__BurnEvent): void {
+  let multicall = WaveFrontMulticall.bind(
+    Address.fromString(MULTICALL_ADDRESS)
+  );
+  let meme = multicall.getMemeData(event.address);
+  let token = Token.load(meme.meme)!;
+  token.floorPrice = convertEthToDecimal(meme.floorPrice);
+  token.marketPrice = convertEthToDecimal(meme.marketPrice);
+  token.totalSupply = convertEthToDecimal(meme.totalSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.save();
+}
+
+export function handleMeme__ReserveBurn(event: Meme__ReserveBurnEvent): void {
   let multicall = WaveFrontMulticall.bind(
     Address.fromString(MULTICALL_ADDRESS)
   );

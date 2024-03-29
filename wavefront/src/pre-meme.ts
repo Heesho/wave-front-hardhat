@@ -27,7 +27,7 @@ export function handlePreMeme__MarketOpened(
   let multicall = WaveFrontMulticall.bind(
     Address.fromString(MULTICALL_ADDRESS)
   );
-  let meme = multicall.getMemeData(preMeme.token());
+  let meme = multicall.getMemeData(preMeme.meme());
   let token = Token.load(meme.meme)!;
   token.open = true;
   token.openAt = event.block.timestamp;
@@ -46,10 +46,10 @@ export function handlePreMeme__Contributed(
     Address.fromString(MULTICALL_ADDRESS)
   );
   let accountData = multicall.getAccountData(
-    preMeme.token(),
+    preMeme.meme(),
     event.params.account
   );
-  let meme = multicall.getMemeData(preMeme.token());
+  let meme = multicall.getMemeData(preMeme.meme());
   let token = Token.load(meme.meme)!;
 
   token.preMemeBalance = convertEthToDecimal(meme.preMemeBalance);
@@ -125,10 +125,10 @@ export function handlePreMeme__Redeemed(event: PreMeme__RedeemedEvent): void {
     Address.fromString(MULTICALL_ADDRESS)
   );
   let accountData = multicall.getAccountData(
-    preMeme.token(),
+    preMeme.meme(),
     event.params.account
   );
-  let meme = multicall.getMemeData(preMeme.token());
+  let meme = multicall.getMemeData(preMeme.meme());
   let token = Token.load(meme.meme)!;
 
   token.open = meme.marketOpen;
