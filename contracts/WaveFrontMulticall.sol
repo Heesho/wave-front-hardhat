@@ -201,10 +201,11 @@ contract WaveFrontMulticall {
         autoMinOutput = input * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
     }
 
-    function contributes(address meme, address account) external view returns (uint256 totalContributed,  uint256 accountContributed) {
+    function contributes(address meme, address account) external view returns (uint256 totalContributed,  uint256 accountContributed, uint256 accountAllocation) {
         address preMeme = IMeme(meme).preMeme();
         totalContributed = IPreMeme(preMeme).totalBaseContributed();
         accountContributed = IPreMeme(preMeme).account_BaseContributed(account);
+        accountAllocation = IPreMeme(preMeme).totalMemeBalance() * accountContributed / totalContributed;
     }
     
 }

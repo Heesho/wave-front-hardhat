@@ -90,7 +90,7 @@ async function getContracts() {
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x35Fa5848bE77B07578Cc232370a74A5c4cbdbc47"
+    "0x1309Ec3E7e0BA4A0d4B9AfAB8b6Df19CE8E129af"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
@@ -287,7 +287,7 @@ async function main() {
   // console.log("Starting System Verificatrion Deployment");
   // await verifyMemeFactory();
   // await verifyFactory();
-  // await verifyMulticall();
+  await verifyMulticall();
   // await verifyRouter();
 
   //===================================================================
