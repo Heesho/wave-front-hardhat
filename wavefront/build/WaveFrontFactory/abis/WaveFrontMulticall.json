@@ -91,6 +91,11 @@
         "internalType": "uint256",
         "name": "accountContributed",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "accountAllocation",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -327,6 +332,11 @@
           {
             "internalType": "uint256",
             "name": "marketPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "marketCap",
             "type": "uint256"
           },
           {

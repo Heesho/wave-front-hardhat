@@ -13,16 +13,19 @@ import {
 export class WaveFrontMulticall__contributesResult {
   value0: BigInt;
   value1: BigInt;
+  value2: BigInt;
 
-  constructor(value0: BigInt, value1: BigInt) {
+  constructor(value0: BigInt, value1: BigInt, value2: BigInt) {
     this.value0 = value0;
     this.value1 = value1;
+    this.value2 = value2;
   }
 
   toMap(): TypedMap<string, ethereum.Value> {
     let map = new TypedMap<string, ethereum.Value>();
     map.set("value0", ethereum.Value.fromUnsignedBigInt(this.value0));
     map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
+    map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
     return map;
   }
 
@@ -32,6 +35,10 @@ export class WaveFrontMulticall__contributesResult {
 
   getAccountContributed(): BigInt {
     return this.value1;
+  }
+
+  getAccountAllocation(): BigInt {
+    return this.value2;
   }
 }
 
@@ -138,12 +145,16 @@ export class WaveFrontMulticall__getMemeDataResultMemeDataStruct extends ethereu
     return this[18].toBigInt();
   }
 
-  get totalRewardsBase(): BigInt {
+  get marketCap(): BigInt {
     return this[19].toBigInt();
   }
 
-  get totalDebt(): BigInt {
+  get totalRewardsBase(): BigInt {
     return this[20].toBigInt();
+  }
+
+  get totalDebt(): BigInt {
+    return this[21].toBigInt();
   }
 }
 
@@ -374,13 +385,14 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   ): WaveFrontMulticall__contributesResult {
     let result = super.call(
       "contributes",
-      "contributes(address,address):(uint256,uint256)",
+      "contributes(address,address):(uint256,uint256,uint256)",
       [ethereum.Value.fromAddress(meme), ethereum.Value.fromAddress(account)],
     );
 
     return new WaveFrontMulticall__contributesResult(
       result[0].toBigInt(),
       result[1].toBigInt(),
+      result[2].toBigInt(),
     );
   }
 
@@ -390,7 +402,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   ): ethereum.CallResult<WaveFrontMulticall__contributesResult> {
     let result = super.tryCall(
       "contributes",
-      "contributes(address,address):(uint256,uint256)",
+      "contributes(address,address):(uint256,uint256,uint256)",
       [ethereum.Value.fromAddress(meme), ethereum.Value.fromAddress(account)],
     );
     if (result.reverted) {
@@ -401,6 +413,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
       new WaveFrontMulticall__contributesResult(
         value[0].toBigInt(),
         value[1].toBigInt(),
+        value[2].toBigInt(),
       ),
     );
   }
@@ -529,7 +542,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   ): WaveFrontMulticall__getMemeDataResultMemeDataStruct {
     let result = super.call(
       "getMemeData",
-      "getMemeData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
+      "getMemeData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
       [ethereum.Value.fromAddress(meme)],
     );
 
@@ -543,7 +556,7 @@ export class WaveFrontMulticall extends ethereum.SmartContract {
   ): ethereum.CallResult<WaveFrontMulticall__getMemeDataResultMemeDataStruct> {
     let result = super.tryCall(
       "getMemeData",
-      "getMemeData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
+      "getMemeData(address):((uint256,address,address,address,string,string,string,string,address,bool,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))",
       [ethereum.Value.fromAddress(meme)],
     );
     if (result.reverted) {

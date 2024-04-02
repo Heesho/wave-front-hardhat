@@ -28,6 +28,7 @@ interface IMeme {
     function RESERVE_VIRTUAL_BASE() external view returns (uint256);
     function reserveMeme() external view returns (uint256);
     function maxSupply() external view returns (uint256);
+    function totalSupply() external view returns (uint256);
     function getMarketPrice() external view returns (uint256);
     function getFloorPrice() external view returns (uint256);
     function claimableBase(address account) external view returns (uint256);
@@ -75,6 +76,7 @@ contract WaveFrontMulticall {
 
         uint256 floorPrice;
         uint256 marketPrice;
+        uint256 marketCap;
         uint256 totalRewardsBase;
         uint256 totalDebt;
     }
@@ -119,19 +121,19 @@ contract WaveFrontMulticall {
         memeData.preMeme = IMeme(meme).preMeme();
         memeData.fees = IMeme(meme).fees();
 
-        memeData.name = IERC20Metadata(memeData.meme).name();
-        memeData.symbol = IERC20Metadata(memeData.meme).symbol();
-        memeData.uri = IMeme(memeData.meme).uri();
-        memeData.status = IMeme(memeData.meme).status();
-        memeData.statusHolder = IMeme(memeData.meme).statusHolder();
+        memeData.name = IERC20Metadata(meme).name();
+        memeData.symbol = IERC20Metadata(meme).symbol();
+        memeData.uri = IMeme(meme).uri();
+        memeData.status = IMeme(meme).status();
+        memeData.statusHolder = IMeme(meme).statusHolder();
 
         memeData.marketOpen = IPreMeme(memeData.preMeme).ended();
         memeData.marketOpenTimestamp = IPreMeme(memeData.preMeme).endTimestamp();
 
-        memeData.reserveVirtualBase = IMeme(memeData.meme).RESERVE_VIRTUAL_BASE();
-        memeData.reserveBase = IMeme(memeData.meme).reserveBase();
-        memeData.reserveMeme = IMeme(memeData.meme).reserveMeme();
-        memeData.totalSupply = IMeme(memeData.meme).maxSupply();
+        memeData.reserveVirtualBase = IMeme(meme).RESERVE_VIRTUAL_BASE();
+        memeData.reserveBase = IMeme(meme).reserveBase();
+        memeData.reserveMeme = IMeme(meme).reserveMeme();
+        memeData.totalSupply = IMeme(meme).maxSupply();
 
         memeData.baseContributed = IPreMeme(memeData.preMeme).totalBaseContributed();
         uint256 fee = memeData.baseContributed * FEE / DIVISOR;
@@ -139,10 +141,11 @@ contract WaveFrontMulticall {
         uint256 newReserveMeme = (memeData.reserveBase + memeData.reserveVirtualBase) * memeData.reserveMeme / newReserveBase;
         memeData.preMemeBalance = memeData.reserveMeme - newReserveMeme;
 
-        memeData.floorPrice = IMeme(memeData.meme).getFloorPrice();
-        memeData.marketPrice = (memeData.marketOpen ? IMeme(memeData.meme).getMarketPrice() : memeData.baseContributed * 1e18 / memeData.preMemeBalance);
-        memeData.totalRewardsBase = IMeme(memeData.meme).totalFeesBase();
-        memeData.totalDebt = IMeme(memeData.meme).totalDebt();
+        memeData.floorPrice = IMeme(meme).getFloorPrice();
+        memeData.marketPrice = (memeData.marketOpen ? IMeme(meme).getMarketPrice() : memeData.baseContributed * 1e18 / memeData.preMemeBalance);
+        memeData.marketCap = (memeData.marketOpen ? IMeme(meme).totalSupply() * IMeme(meme).getMarketPrice() : memeData.baseContributed);
+        memeData.totalRewardsBase = IMeme(meme).totalFeesBase();
+        memeData.totalDebt = IMeme(meme).totalDebt();
     }
 
     function getAccountData(address meme, address account) public view returns (AccountData memory accountData) {

@@ -57,7 +57,7 @@ export function handleMeme__Buy(event: Meme__BuyEvent): void {
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
   token.totalDebt = convertEthToDecimal(meme.totalDebt);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountIn));
@@ -130,7 +130,7 @@ export function handleMeme__Sell(event: Meme__SellEvent): void {
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
   token.totalDebt = convertEthToDecimal(meme.totalDebt);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountOut));
@@ -241,7 +241,7 @@ export function handleMeme__Burn(event: Meme__BurnEvent): void {
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.save();
 }
 
@@ -254,7 +254,7 @@ export function handleMeme__ReserveBurn(event: Meme__ReserveBurnEvent): void {
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.save();
 }
 
@@ -277,7 +277,7 @@ export function handleMeme__Borrow(event: Meme__BorrowEvent): void {
   tokenPosition.redeemable = convertEthToDecimal(account.memeRedeemable);
   tokenPosition.credit = convertEthToDecimal(account.baseCredit);
   tokenPosition.debt = convertEthToDecimal(account.baseDebt);
-  tokenPosition.statusHolder = meme.statusHolder == event.params.account;
+  tokenPosition.statusHolder = meme.statusHolder.equals(event.params.account);
   tokenPosition.save();
 }
 
@@ -300,7 +300,7 @@ export function handleMeme__Repay(event: Meme__RepayEvent): void {
   tokenPosition.redeemable = convertEthToDecimal(account.memeRedeemable);
   tokenPosition.credit = convertEthToDecimal(account.baseCredit);
   tokenPosition.debt = convertEthToDecimal(account.baseDebt);
-  tokenPosition.statusHolder = meme.statusHolder == event.params.account;
+  tokenPosition.statusHolder = meme.statusHolder.equals(event.params.account);
   tokenPosition.save();
 }
 
@@ -342,7 +342,7 @@ export function handleTransfer(event: TransferEvent): void {
   );
   fromTokenPosition.credit = convertEthToDecimal(toAccount.baseCredit);
   fromTokenPosition.debt = convertEthToDecimal(toAccount.baseDebt);
-  fromTokenPosition.statusHolder = meme.statusHolder == event.params.from;
+  fromTokenPosition.statusHolder = meme.statusHolder.equals(event.params.from);
   fromTokenPosition.save();
   from.save();
 
@@ -372,7 +372,7 @@ export function handleTransfer(event: TransferEvent): void {
   toTokenPosition.redeemable = convertEthToDecimal(toAccount.memeRedeemable);
   toTokenPosition.credit = convertEthToDecimal(toAccount.baseCredit);
   toTokenPosition.debt = convertEthToDecimal(toAccount.baseDebt);
-  toTokenPosition.statusHolder = meme.statusHolder == event.params.to;
+  toTokenPosition.statusHolder = meme.statusHolder.equals(event.params.to);
   toTokenPosition.save();
   to.save();
 }

@@ -287,7 +287,7 @@ async function main() {
   // console.log("Starting System Verificatrion Deployment");
   // await verifyMemeFactory();
   // await verifyFactory();
-  await verifyMulticall();
+  // await verifyMulticall();
   // await verifyRouter();
 
   //===================================================================

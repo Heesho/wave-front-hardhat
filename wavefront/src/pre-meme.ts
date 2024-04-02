@@ -34,7 +34,7 @@ export function handlePreMeme__MarketOpened(
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.save();
 }
 
@@ -57,7 +57,7 @@ export function handlePreMeme__Contributed(
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.save();
 
   let transaction = Transaction.load(event.transaction.hash.toHexString());
@@ -115,7 +115,7 @@ export function handlePreMeme__Contributed(
   tokenPosition.redeemable = convertEthToDecimal(accountData.memeRedeemable);
   tokenPosition.credit = convertEthToDecimal(accountData.baseCredit);
   tokenPosition.debt = convertEthToDecimal(accountData.baseDebt);
-  tokenPosition.statusHolder = meme.statusHolder == event.params.account;
+  tokenPosition.statusHolder = meme.statusHolder.equals(event.params.account);
   tokenPosition.save();
   account.save();
 }
@@ -138,7 +138,7 @@ export function handlePreMeme__Redeemed(event: PreMeme__RedeemedEvent): void {
   token.floorPrice = convertEthToDecimal(meme.floorPrice);
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
-  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.marketCap = convertEthToDecimal(meme.marketCap);
   token.save();
 
   let account = Account.load(event.params.account);
@@ -166,7 +166,7 @@ export function handlePreMeme__Redeemed(event: PreMeme__RedeemedEvent): void {
   tokenPosition.redeemable = convertEthToDecimal(accountData.memeRedeemable);
   tokenPosition.credit = convertEthToDecimal(accountData.baseCredit);
   tokenPosition.debt = convertEthToDecimal(accountData.baseDebt);
-  tokenPosition.statusHolder = meme.statusHolder == event.params.account;
+  tokenPosition.statusHolder = meme.statusHolder.equals(event.params.account);
   tokenPosition.save();
   account.save();
 }
