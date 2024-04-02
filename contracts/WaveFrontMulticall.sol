@@ -208,7 +208,7 @@ contract WaveFrontMulticall {
         address preMeme = IMeme(meme).preMeme();
         totalContributed = IPreMeme(preMeme).totalBaseContributed();
         accountContributed = IPreMeme(preMeme).account_BaseContributed(account);
-        accountAllocation = IPreMeme(preMeme).totalMemeBalance() * accountContributed / totalContributed;
+        accountAllocation = getAccountData(meme, account).memeRedeemable;
     }
     
 }
