@@ -226,7 +226,22 @@ export function handleMeme__ProtocolFee(event: Meme__ProtocolFeeEvent): void {
 export function handleMeme__StatusUpdated(
   event: Meme__StatusUpdatedEvent
 ): void {
+  let memeContract = MemeContract.bind(event.address);
   let token = Token.load(event.address)!;
+  let prevTokenPosition = TokenPosition.load(
+    event.address.toHexString() + "-" + token.statusHolder.toHexString()
+  )!;
+  prevTokenPosition.statusHolder = memeContract
+    .statusHolder()
+    .equals(token.statusHolder);
+  prevTokenPosition.save();
+  let newTokenPosition = TokenPosition.load(
+    event.address.toHexString() + "-" + event.params.account.toHexString()
+  )!;
+  newTokenPosition.statusHolder = memeContract
+    .statusHolder()
+    .equals(event.params.account);
+  newTokenPosition.save();
   token.status = event.params.status;
   token.statusHolder = event.params.account;
   token.save();
