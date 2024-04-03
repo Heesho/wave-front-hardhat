@@ -77,6 +77,7 @@ contract WaveFrontMulticall {
         uint256 floorPrice;
         uint256 marketPrice;
         uint256 marketCap;
+        uint256 liquidity;
         uint256 totalRewardsBase;
         uint256 totalDebt;
     }
@@ -144,6 +145,7 @@ contract WaveFrontMulticall {
         memeData.floorPrice = IMeme(meme).getFloorPrice();
         memeData.marketPrice = (memeData.marketOpen ? IMeme(meme).getMarketPrice() : memeData.baseContributed * 1e18 / memeData.preMemeBalance);
         memeData.marketCap = (memeData.marketOpen ? IMeme(meme).totalSupply() * IMeme(meme).getMarketPrice() : memeData.baseContributed);
+        memeData.liquidity = (memeData.reserveBase + memeData.reserveVirtualBase) * 2;
         memeData.totalRewardsBase = IMeme(meme).totalFeesBase();
         memeData.totalDebt = IMeme(meme).totalDebt();
     }

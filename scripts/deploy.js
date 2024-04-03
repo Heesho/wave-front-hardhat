@@ -90,16 +90,16 @@ async function getContracts() {
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x6877776F1481f47Dd581eD1225dA744e04250bbf"
+    "0x7587D5Dd60Da6da42E86CC7d78cB80E12Fe61167"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
     "0x5BE1dA75c2A4d81F99641402d3Dc83F25Be3414c"
   );
-  // meme = await ethers.getContractAt(
-  //   "contracts/MemeFactory.sol:Meme",
-  //   "0x45b05dB3f8FE270b8D8D9F51c754316809790993"
-  // );
+  meme = await ethers.getContractAt(
+    "contracts/MemeFactory.sol:Meme",
+    "0x2F89F9f4Cc5b4CF15F83a7BBf97151b105DBC55D"
+  );
   console.log("Contracts Retrieved");
 }
 
@@ -230,9 +230,9 @@ async function verifyMeme(wallet) {
     address: meme.address,
     contract: "contracts/MemeFactory.sol:Meme",
     constructorArguments: [
-      meme1.name,
-      meme1.symbol,
-      meme1.uri,
+      await meme.name(),
+      await meme.symbol(),
+      await meme.uri(),
       BASE_ADDRESS,
       factory.address,
       wallet,

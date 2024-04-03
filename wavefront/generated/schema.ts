@@ -460,6 +460,19 @@ export class Token extends Entity {
     this.set("marketCap", Value.fromBigDecimal(value));
   }
 
+  get liquidity(): BigDecimal {
+    let value = this.get("liquidity");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set liquidity(value: BigDecimal) {
+    this.set("liquidity", Value.fromBigDecimal(value));
+  }
+
   get rewardsBase(): BigDecimal {
     let value = this.get("rewardsBase");
     if (!value || value.kind == ValueKind.NULL) {

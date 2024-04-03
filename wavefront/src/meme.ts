@@ -58,6 +58,7 @@ export function handleMeme__Buy(event: Meme__BuyEvent): void {
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.marketCap = convertEthToDecimal(meme.marketCap);
+  token.liquidity = convertEthToDecimal(meme.liquidity);
   token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
   token.totalDebt = convertEthToDecimal(meme.totalDebt);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountIn));
@@ -131,6 +132,7 @@ export function handleMeme__Sell(event: Meme__SellEvent): void {
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.marketCap = convertEthToDecimal(meme.marketCap);
+  token.liquidity = convertEthToDecimal(meme.liquidity);
   token.rewardsBase = convertEthToDecimal(meme.totalRewardsBase);
   token.totalDebt = convertEthToDecimal(meme.totalDebt);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountOut));
@@ -257,6 +259,7 @@ export function handleMeme__Burn(event: Meme__BurnEvent): void {
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.marketCap = convertEthToDecimal(meme.marketCap);
+  token.liquidity = convertEthToDecimal(meme.liquidity);
   token.save();
 }
 
@@ -270,6 +273,7 @@ export function handleMeme__ReserveBurn(event: Meme__ReserveBurnEvent): void {
   token.marketPrice = convertEthToDecimal(meme.marketPrice);
   token.totalSupply = convertEthToDecimal(meme.totalSupply);
   token.marketCap = convertEthToDecimal(meme.marketCap);
+  token.liquidity = convertEthToDecimal(meme.liquidity);
   token.save();
 }
 

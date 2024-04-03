@@ -341,6 +341,11 @@
           },
           {
             "internalType": "uint256",
+            "name": "liquidity",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "totalRewardsBase",
             "type": "uint256"
           },
