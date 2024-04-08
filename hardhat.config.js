@@ -12,10 +12,10 @@ const CHAIN_ID = 80001; // Mumbai chain id
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
 
-config();
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-const SCAN_API_KEY = process.env.SCAN_API_KEY || "";
-const RPC_URL = process.env.RPC_URL || "";
+// config();
+// const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
+// const SCAN_API_KEY = process.env.SCAN_API_KEY || "";
+// const RPC_URL = process.env.RPC_URL || "";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -45,15 +45,15 @@ module.exports = {
     },
   },
   networks: {
-    mainnet: {
-      url: RPC_URL,
-      chainId: CHAIN_ID,
-      accounts: [PRIVATE_KEY],
-    },
+    // mainnet: {
+    //   url: RPC_URL,
+    //   chainId: CHAIN_ID,
+    //   accounts: [PRIVATE_KEY],
+    // },
     hardhat: {},
   },
   etherscan: {
-    apiKey: SCAN_API_KEY,
+    // apiKey: SCAN_API_KEY,
   },
   paths: {
     sources: "./contracts",

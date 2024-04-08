@@ -179,7 +179,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     uint256 public constant FEE = 200; // 2% fee rate for buy/sell operations
     uint256 public constant FEE_AMOUNT = 2000; // Additional fee parameters for ditributing to stakeholders
     uint256 public constant STATUS_FEE = 10 * PRECISION; // Fee for status update 10 tokens
-    uint256 public constant STATUS_MAX_LENGTH = 140; // Maximum length of status string
+    uint256 public constant STATUS_MAX_LENGTH = 280; // Maximum length of status string
     uint256 public constant DIVISOR = 10000; // Divisor for fee calculations
 
     /*----------  STATE VARIABLES  --------------------------------------*/
