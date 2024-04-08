@@ -56,7 +56,7 @@ contract PreMeme is ReentrancyGuard {
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
-    uint256 public constant DURATION = 1800; // Duration in seconds for the pre-market phase
+    uint256 public constant DURATION = 600; // Duration in seconds for the pre-market phase
 
     /*----------  STATE VARIABLES  --------------------------------------*/
     
@@ -174,7 +174,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /*----------  CONSTANTS  --------------------------------------------*/
 
     uint256 public constant PRECISION = 1e18; // Precision for math
-    uint256 public constant RESERVE_VIRTUAL_BASE = 1000 * PRECISION; // Initial virtual base reserve
+    uint256 public constant RESERVE_VIRTUAL_BASE = 100 * PRECISION; // Initial virtual base reserve
     uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION; // Initial supply of the meme token
     uint256 public constant FEE = 200; // 2% fee rate for buy/sell operations
     uint256 public constant FEE_AMOUNT = 2000; // Additional fee parameters for ditributing to stakeholders
