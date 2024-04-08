@@ -56,7 +56,7 @@ contract PreMeme is ReentrancyGuard {
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
-    uint256 public constant DURATION = 7200; // Duration in seconds for the pre-market phase
+    uint256 public constant DURATION = 1800; // Duration in seconds for the pre-market phase
 
     /*----------  STATE VARIABLES  --------------------------------------*/
     
