@@ -21,7 +21,7 @@ import "./FixedPointMathLib.sol";
  * Meme: 
  * The primary asset with a built-in bonding curve, enabling buy/sell transactions
  * with price adjustments based on supply. A virtual bonding curve is used with a constant product
- * formula (XY = K) The meme can be bought, sold, allows for liqduition free borrowing against held 
+ * formula (XY = K). The meme can be bought, sold, allows for liqduition free borrowing against held 
  * memes and fee accumulation for meme holders. It also uses a bonding curve shift to adjuast the 
  * reserves based on the maxSupply of meme. Buy transactions incur a 2% fee, divided among
  * the protocol treasury (20%), status holder (20%), a provider (20% optional), with the remainder 
@@ -33,7 +33,7 @@ import "./FixedPointMathLib.sol";
  * requirement is not met.
 
  * PreMeme: 
- * Manages the initial distribution phase, collecting base memes (e.g., ETH) and
+ * Manages the initial distribution phase, collecting base tokens (e.g., ETH) and
  * transitioning to the open market phase for the Meme, ensuring a fair launch. Everyone
  * that participates in the PreMeme phase receives memes at the same price.
  * 
