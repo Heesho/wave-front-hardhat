@@ -82,24 +82,24 @@ let meme, preMeme, MemeFees;
 async function getContracts() {
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0xc558c326c4c75b6D09D023c539229644584C8770"
+    "0x1D1eAEc094F35C2D18C1CE758809AF7A35612DA4"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0xE0b5239cb1e29cA341Ae9D0cD576268ebE0047aE"
+    "0x228A65b210075dC7ADB25aFAcEaDf723B916c9BA"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x7587D5Dd60Da6da42E86CC7d78cB80E12Fe61167"
+    "0x3d1973Ee5731d8D3a66d83906ADB2F52955DD467"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x5BE1dA75c2A4d81F99641402d3Dc83F25Be3414c"
+    "0xB6366480412b75A2bb9Ed00cdb52A72Ec22231F4"
   );
-  meme = await ethers.getContractAt(
-    "contracts/MemeFactory.sol:Meme",
-    "0x2F89F9f4Cc5b4CF15F83a7BBf97151b105DBC55D"
-  );
+  // meme = await ethers.getContractAt(
+  //   "contracts/MemeFactory.sol:Meme",
+  //   ""
+  // );
   console.log("Contracts Retrieved");
 }
 
@@ -287,7 +287,7 @@ async function main() {
   // console.log("Starting System Verificatrion Deployment");
   // await verifyMemeFactory();
   // await verifyFactory();
-  await verifyMulticall();
+  // await verifyMulticall();
   // await verifyRouter();
 
   //===================================================================

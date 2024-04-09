@@ -8,9 +8,9 @@ dataSources:
     name: WaveFrontFactory
     network: mumbai
     source:
-      address: "0xE0b5239cb1e29cA341Ae9D0cD576268ebE0047aE"
+      address: "0x228A65b210075dC7ADB25aFAcEaDf723B916c9BA"
       abi: WaveFrontFactory
-      startBlock: 47596570
+      startBlock: 48060865
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -40,9 +40,9 @@ dataSources:
     name: WaveFrontRouter
     network: mumbai
     source:
-      address: "0x5BE1dA75c2A4d81F99641402d3Dc83F25Be3414c"
+      address: "0xB6366480412b75A2bb9Ed00cdb52A72Ec22231F4"
       abi: WaveFrontRouter
-      startBlock: 47596583
+      startBlock: 48060865
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
