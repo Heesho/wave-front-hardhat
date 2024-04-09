@@ -32,7 +32,7 @@ interface IBase {
 
 contract WaveFrontRouter {
 
-    uint256 public constant STATUS_UPDATE_FEE = 10 * 1e18;
+    uint256 public constant STATUS_UPDATE_FEE = 1000 * 1e18;
 
     address public immutable base;
     address public immutable factory;

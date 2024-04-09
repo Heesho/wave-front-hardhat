@@ -94,7 +94,7 @@ async function getContracts() {
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0xB6366480412b75A2bb9Ed00cdb52A72Ec22231F4"
+    "0x3240F6BFc6fcF4cff31c36C12312ca4C15545102"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -288,7 +288,7 @@ async function main() {
   // await verifyMemeFactory();
   // await verifyFactory();
   // await verifyMulticall();
-  // await verifyRouter();
+  await verifyRouter();
 
   //===================================================================
   // 3. Deploy Meme

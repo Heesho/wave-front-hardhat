@@ -40,7 +40,7 @@ dataSources:
     name: WaveFrontRouter
     network: mumbai
     source:
-      address: "0xB6366480412b75A2bb9Ed00cdb52A72Ec22231F4"
+      address: "0x3240F6BFc6fcF4cff31c36C12312ca4C15545102"
       abi: WaveFrontRouter
       startBlock: 48060865
     mapping:
