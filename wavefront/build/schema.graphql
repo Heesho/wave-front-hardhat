@@ -90,7 +90,7 @@ type Contribute @entity {
 type TokenHourData @entity {
   id: ID!
   timestamp: BigInt! # uint256
-  meme: Bytes! # address
+  token: Token!
   marketPrice: BigDecimal!
   hourlyVolume: BigDecimal!
   hourlyTxns: BigInt! # uint256
@@ -99,7 +99,7 @@ type TokenHourData @entity {
 type TokenDayData @entity {
   id: ID!
   timestamp: BigInt! # uint256
-  meme: Bytes! # address
+  token: Token!
   marketPrice: BigDecimal!
   dailyVolume: BigDecimal!
   dailyTxns: BigInt! # uint256

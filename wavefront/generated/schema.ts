@@ -1153,8 +1153,8 @@ export class TokenHourData extends Entity {
     this.set("timestamp", Value.fromBigInt(value));
   }
 
-  get meme(): Bytes {
-    let value = this.get("meme");
+  get token(): Bytes {
+    let value = this.get("token");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -1162,8 +1162,8 @@ export class TokenHourData extends Entity {
     }
   }
 
-  set meme(value: Bytes) {
-    this.set("meme", Value.fromBytes(value));
+  set token(value: Bytes) {
+    this.set("token", Value.fromBytes(value));
   }
 
   get marketPrice(): BigDecimal {
@@ -1260,8 +1260,8 @@ export class TokenDayData extends Entity {
     this.set("timestamp", Value.fromBigInt(value));
   }
 
-  get meme(): Bytes {
-    let value = this.get("meme");
+  get token(): Bytes {
+    let value = this.get("token");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -1269,8 +1269,8 @@ export class TokenDayData extends Entity {
     }
   }
 
-  set meme(value: Bytes) {
-    this.set("meme", Value.fromBytes(value));
+  set token(value: Bytes) {
+    this.set("token", Value.fromBytes(value));
   }
 
   get marketPrice(): BigDecimal {

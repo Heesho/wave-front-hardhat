@@ -7,7 +7,7 @@ require("solidity-coverage");
 /*===================================================================*/
 /*===========================  SETTINGS  ============================*/
 
-const CHAIN_ID = 80001; // Mumbai chain id
+const CHAIN_ID = 84532; // Base Sepolia
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -54,6 +54,16 @@ module.exports = {
   },
   etherscan: {
     apiKey: SCAN_API_KEY,
+    customChains: [
+      {
+        network: "base-sepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org/",
+        },
+      },
+    ],
   },
   paths: {
     sources: "./contracts",

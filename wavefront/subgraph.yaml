@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: WaveFrontFactory
-    network: mumbai
+    network: base-sepolia
     source:
-      address: "0x228A65b210075dC7ADB25aFAcEaDf723B916c9BA"
+      address: "0xaB0Ab38Ade96aF42742b0030F201E05eCca127d4"
       abi: WaveFrontFactory
-      startBlock: 48060865
+      startBlock: 8635116
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -38,11 +38,11 @@ dataSources:
       file: ./src/wavefront-factory.ts
   - kind: ethereum
     name: WaveFrontRouter
-    network: mumbai
+    network: base-sepolia
     source:
-      address: "0x3240F6BFc6fcF4cff31c36C12312ca4C15545102"
+      address: "0x43FDE9Cb7D2BD5F91e920Ea6f4206Fe3015194B2"
       abi: WaveFrontRouter
-      startBlock: 48060865
+      startBlock: 8635116
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -59,7 +59,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: Meme
-    network: mumbai
+    network: base-sepolia
     source:
       abi: Meme
     mapping:
@@ -112,7 +112,7 @@ templates:
           handler: handleTransfer
   - kind: ethereum/contract
     name: PreMeme
-    network: mumbai
+    network: base-sepolia
     source:
       abi: PreMeme
     mapping:

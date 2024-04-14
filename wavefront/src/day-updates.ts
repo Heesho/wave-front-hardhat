@@ -14,7 +14,7 @@ export function updateTokenHourData(
   if (tokenHourData === null) {
     tokenHourData = new TokenHourData(hourTokenId);
     tokenHourData.timestamp = BigInt.fromI32(hourStartTimestamp);
-    tokenHourData.meme = event.address;
+    tokenHourData.token = event.address;
     tokenHourData.hourlyVolume = ZERO_BD;
     tokenHourData.hourlyTxns = ZERO_BI;
   }
@@ -37,7 +37,7 @@ export function updateTokenDayData(
   if (tokenDayData === null) {
     tokenDayData = new TokenDayData(dayTokenId);
     tokenDayData.timestamp = BigInt.fromI32(dayStartTimestamp);
-    tokenDayData.meme = event.address;
+    tokenDayData.token = event.address;
     tokenDayData.dailyVolume = ZERO_BD;
     tokenDayData.dailyTxns = ZERO_BI;
   }

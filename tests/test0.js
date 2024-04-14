@@ -26,7 +26,7 @@ const oneHundredThousand = convert("100000", 18);
 
 let owner, multisig, treasury, user0, user1, user2;
 let memeFactory, meme1, meme2;
-let factory, multicall, router;
+let factory, multicallSubgraph, multicallFrontend, router;
 let base;
 
 describe("local: test0", function () {
@@ -52,11 +52,23 @@ describe("local: test0", function () {
     );
     console.log("- WaveFront Factory Initialized");
 
-    const multicallArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticall"
+    const multicallSubgraphArtifact = await ethers.getContractFactory(
+      "WaveFrontMulticallSubgraph"
     );
-    multicall = await multicallArtifact.deploy(factory.address, base.address);
-    console.log("- Multicall Initialized");
+    multicallSubgraph = await multicallSubgraphArtifact.deploy(
+      factory.address,
+      base.address
+    );
+    console.log("- Subgraph Multicall Initialized");
+
+    const multicallFrontendArtifact = await ethers.getContractFactory(
+      "WaveFrontMulticallFrontend"
+    );
+    multicallFrontend = await multicallFrontendArtifact.deploy(
+      factory.address,
+      base.address
+    );
+    console.log("- Frontend Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
     router = await routerArtifact.deploy(factory.address, base.address);
@@ -273,7 +285,7 @@ describe("local: test0", function () {
 
   it("Quote Buy In", async function () {
     console.log("******************************************************");
-    let res = await multicall
+    let res = await multicallFrontend
       .connect(owner)
       .quoteBuyIn(meme1.address, ten, 9800);
     console.log("BASE in", divDec(ten));
@@ -286,7 +298,7 @@ describe("local: test0", function () {
 
   it("Quote Sell In", async function () {
     console.log("******************************************************");
-    let res = await multicall.quoteSellIn(
+    let res = await multicallFrontend.quoteSellIn(
       meme1.address,
       await meme1.balanceOf(user0.address),
       9700
@@ -301,7 +313,7 @@ describe("local: test0", function () {
 
   it("Quote buy out", async function () {
     console.log("******************************************************");
-    let res = await multicall
+    let res = await multicallFrontend
       .connect(owner)
       .quoteBuyOut(meme1.address, ten, 9700);
     console.log("MEME out", divDec(ten));
@@ -314,7 +326,7 @@ describe("local: test0", function () {
 
   it("Quote sell out", async function () {
     console.log("******************************************************");
-    let res = await multicall
+    let res = await multicallFrontend
       .connect(owner)
       .quoteSellOut(meme1.address, five, 9950);
     console.log("BASE out", divDec(five));
@@ -325,15 +337,24 @@ describe("local: test0", function () {
     console.log("min BASE out", divDec(res.minOutput));
   });
 
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
+    console.log(res);
+  });
+
   it("Meme Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getMemeData(meme1.address);
+    let res = await multicallSubgraph.getMemeData(meme1.address);
     console.log(res);
   });
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user0.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user0.address
+    );
     console.log(res);
   });
 
@@ -348,7 +369,16 @@ describe("local: test0", function () {
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user0.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user0.address
+    );
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
     console.log(res);
   });
 
@@ -456,19 +486,37 @@ describe("local: test0", function () {
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user0.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user0.address
+    );
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
     console.log(res);
   });
 
   it("User0 updates status through router", async function () {
     console.log("******************************************************");
-    await meme1.connect(user0).approve(router.address, ten);
+    await meme1.connect(user0).approve(router.address, oneThousand);
     await router.connect(user0).updateStatus(meme1.address, "Sup everybody?");
   });
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user0.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user0.address
+    );
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
     console.log(res);
   });
 
@@ -583,7 +631,16 @@ describe("local: test0", function () {
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user1.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user1.address
+    );
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
     console.log(res);
   });
 
@@ -596,7 +653,16 @@ describe("local: test0", function () {
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user1.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user1.address
+    );
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user1.address);
     console.log(res);
   });
 
@@ -627,9 +693,16 @@ describe("local: test0", function () {
     expect(remainingBase).to.be.at.least(initialBase);
   });
 
+  it("User1 buys meme1", async function () {
+    console.log("******************************************************");
+    await router.connect(user1).buy(meme1.address, AddressZero, 0, 1904422437, {
+      value: oneHundred,
+    });
+  });
+
   it("User1 updates status through router", async function () {
     console.log("******************************************************");
-    await meme1.connect(user1).approve(router.address, ten);
+    await meme1.connect(user1).approve(router.address, oneThousand);
     await router
       .connect(user1)
       .updateStatus(meme1.address, "Buy pepecoin for my familia");
@@ -637,7 +710,16 @@ describe("local: test0", function () {
 
   it("Account Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getAccountData(meme1.address, user1.address);
+    let res = await multicallSubgraph.getAccountData(
+      meme1.address,
+      user1.address
+    );
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user1.address);
     console.log(res);
   });
 
@@ -716,19 +798,15 @@ describe("local: test0", function () {
 
   it("Multicall Coverage", async function () {
     console.log("******************************************************");
-    console.log("Meme Count: ", await multicall.getMemeCount());
+    console.log("Meme Count: ", await multicallFrontend.getMemeCount());
     console.log(
       "Index of Meme1: ",
-      await multicall.getIndexByMeme(meme1.address)
+      await multicallFrontend.getIndexByMeme(meme1.address)
     );
-    console.log("Meme at Index 2: ", await multicall.getMemeByIndex(2));
+    console.log("Meme at Index 2: ", await multicallFrontend.getMemeByIndex(2));
     console.log(
       "Index by Symbol MEME1: ",
-      await multicall.getIndexBySymbol("MEME1")
-    );
-    console.log(
-      "Meme1 User0 contribution: ",
-      await multicall.contributes(meme1.address, user0.address)
+      await multicallFrontend.getIndexBySymbol("MEME1")
     );
   });
 

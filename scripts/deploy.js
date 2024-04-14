@@ -6,7 +6,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===================================================================*/
 /*===========================  SETTINGS  ============================*/
 
-const BASE_ADDRESS = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889"; // BASE token Address (eg WMATIC on Mumbai)
+const BASE_ADDRESS = "0x4200000000000000000000000000000000000006"; // BASE token Address (eg wETH on Base)
 const TREASURY_ADDRESS = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712"; // Treasury Address
 
 const meme1 = {
@@ -73,7 +73,7 @@ const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
 const convert = (amount, decimals) => ethers.utils.parseUnits(amount, decimals);
 
 // Contract Variables
-let memeFactory, factory, multicall, router;
+let memeFactory, factory, multicallSubgraph, multicallFrontend, router;
 let meme, preMeme, MemeFees;
 
 /*===================================================================*/
@@ -82,19 +82,23 @@ let meme, preMeme, MemeFees;
 async function getContracts() {
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0x1D1eAEc094F35C2D18C1CE758809AF7A35612DA4"
+    "0x17548E0b3f3d556907DF9A61352afB18D8506C32"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x228A65b210075dC7ADB25aFAcEaDf723B916c9BA"
+    "0xaB0Ab38Ade96aF42742b0030F201E05eCca127d4"
   );
-  multicall = await ethers.getContractAt(
-    "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x3d1973Ee5731d8D3a66d83906ADB2F52955DD467"
+  multicallSubgraph = await ethers.getContractAt(
+    "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
+    "0xdCE6609d7b9c933E9aCC453EDA6713c8B9efA067"
+  );
+  multicallFrontend = await ethers.getContractAt(
+    "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
+    "0xb7b7B8DF8cAF2829971329BD71D0b7127D0734be"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x3240F6BFc6fcF4cff31c36C12312ca4C15545102"
+    "0x43FDE9Cb7D2BD5F91e920Ea6f4206Fe3015194B2"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -133,21 +137,38 @@ async function deployFactory() {
   console.log("Factory Deployed at:", factory.address);
 }
 
-async function deployMulticall() {
-  console.log("Starting WaveFrontMulticall Deployment");
-  const multicallArtifact = await ethers.getContractFactory(
-    "WaveFrontMulticall"
+async function deployMulticallSubgraph() {
+  console.log("Starting WaveFrontMulticallSubgraph Deployment");
+  const multicallSubgraphArtifact = await ethers.getContractFactory(
+    "WaveFrontMulticallSubgraph"
   );
-  const multicallContract = await multicallArtifact.deploy(
+  const multicallSubgraphContract = await multicallSubgraphArtifact.deploy(
     factory.address,
     BASE_ADDRESS,
     {
       gasPrice: ethers.gasPrice,
     }
   );
-  multicall = await multicallContract.deployed();
+  multicallSubgraph = await multicallSubgraphContract.deployed();
   await sleep(5000);
-  console.log("Multicall Deployed at:", multicall.address);
+  console.log("MulticallSubgraph Deployed at:", multicallSubgraph.address);
+}
+
+async function deployMulticallFrontend() {
+  console.log("Starting WaveFrontMulticallFrontend Deployment");
+  const multicallFrontendArtifact = await ethers.getContractFactory(
+    "WaveFrontMulticallFrontend"
+  );
+  const multicallFrontendContract = await multicallFrontendArtifact.deploy(
+    factory.address,
+    BASE_ADDRESS,
+    {
+      gasPrice: ethers.gasPrice,
+    }
+  );
+  multicallFrontend = await multicallFrontendContract.deployed();
+  await sleep(5000);
+  console.log("MulticallFrontend Deployed at:", multicallFrontend.address);
 }
 
 async function deployRouter() {
@@ -167,8 +188,10 @@ async function deployRouter() {
 
 async function printDeployment() {
   console.log("**************************************************************");
-  console.log("Factory: ", factory.address);
-  console.log("Multicall: ", multicall.address);
+  console.log("MemeFactory: ", memeFactory.address);
+  console.log("WaveFrontFactory: ", factory.address);
+  console.log("MulticallSubgraph: ", multicallSubgraph.address);
+  console.log("MulticallFrontend: ", multicallFrontend.address);
   console.log("Router: ", router.address);
   console.log("**************************************************************");
 }
@@ -193,14 +216,26 @@ async function verifyFactory() {
   console.log("Factory Verified");
 }
 
-async function verifyMulticall() {
-  console.log("Starting Multicall Verification");
+async function verifyMulticallSubgraph() {
+  console.log("Starting MulticallSubgraph Verification");
   await hre.run("verify:verify", {
-    address: multicall.address,
-    contract: "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
+    address: multicallSubgraph.address,
+    contract:
+      "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
     constructorArguments: [factory.address, BASE_ADDRESS],
   });
-  console.log("Multicall Verified");
+  console.log("MulticallSubgraph Verified");
+}
+
+async function verifyMulticallFrontend() {
+  console.log("Starting MulticallFrontend Verification");
+  await hre.run("verify:verify", {
+    address: multicallFrontend.address,
+    contract:
+      "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
+    constructorArguments: [factory.address, BASE_ADDRESS],
+  });
+  console.log("MulticallFrontend Verified");
 }
 
 async function verifyRouter() {
@@ -274,7 +309,8 @@ async function main() {
   // console.log("Starting System Deployment");
   // await deployMemeFactory();
   // await deployFactory();
-  // await deployMulticall();
+  // await deployMulticallSubgraph();
+  // await deployMulticallFrontend();
   // await deployRouter();
   // await printDeployment();
 
@@ -284,10 +320,11 @@ async function main() {
   // 2. Verify System
   //===================================================================
 
-  // console.log("Starting System Verificatrion Deployment");
-  // await verifyMemeFactory();
-  // await verifyFactory();
-  // await verifyMulticall();
+  console.log("Starting System Verificatrion Deployment");
+  await verifyMemeFactory();
+  await verifyFactory();
+  await verifyMulticallSubgraph();
+  await verifyMulticallFrontend();
   await verifyRouter();
 
   //===================================================================
