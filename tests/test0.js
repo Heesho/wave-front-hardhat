@@ -723,6 +723,12 @@ describe("local: test0", function () {
     console.log(res);
   });
 
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, AddressZero);
+    console.log(res);
+  });
+
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
     const reserveBase = await meme1.reserveBase();

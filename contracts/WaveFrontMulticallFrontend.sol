@@ -144,16 +144,18 @@ contract WaveFrontMulticallFrontend {
         pageData.totalSupply = IMeme(meme).maxSupply();
         pageData.totalContributed = totalContributed;
 
-        pageData.accountNativeBalance = account.balance;
-        pageData.accountBaseBalance = IERC20(base).balanceOf(account);
-        pageData.accountMemeBalance = IERC20(meme).balanceOf(account);
-        pageData.accountMemeValue = pageData.accountMemeBalance * pageData.marketPrice / 1e18;
-        pageData.accountDebt = IMeme(meme).account_Debt(account);
-        pageData.accountCredit = IMeme(meme).getAccountCredit(account);
-        pageData.accountTransferable = IMeme(meme).getAccountTransferrable(account);
-        pageData.accountClaimable = IMeme(meme).claimableBase(account);
-        pageData.accountContributed = IPreMeme(preMeme).account_BaseContributed(account);
-        pageData.accountRedeemable = (marketOpen ? IPreMeme(preMeme).totalMemeBalance() * pageData.accountContributed / totalContributed : expectedMemeAmount * pageData.accountContributed / totalContributed);
+        if (account != address(0)) {
+            pageData.accountNativeBalance = account.balance;
+            pageData.accountBaseBalance = IERC20(base).balanceOf(account);
+            pageData.accountMemeBalance = IERC20(meme).balanceOf(account);
+            pageData.accountMemeValue = pageData.accountMemeBalance * pageData.marketPrice / 1e18;
+            pageData.accountDebt = IMeme(meme).account_Debt(account);
+            pageData.accountCredit = IMeme(meme).getAccountCredit(account);
+            pageData.accountTransferable = IMeme(meme).getAccountTransferrable(account);
+            pageData.accountClaimable = IMeme(meme).claimableBase(account);
+            pageData.accountContributed = IPreMeme(preMeme).account_BaseContributed(account);
+            pageData.accountRedeemable = (marketOpen ? IPreMeme(preMeme).totalMemeBalance() * pageData.accountContributed / totalContributed : expectedMemeAmount * pageData.accountContributed / totalContributed);
+        }
 
         if (!marketOpen && block.timestamp < pageData.marketOpenTimestamp) {
             pageData.pageType = PageType.CONTRIBUTE;

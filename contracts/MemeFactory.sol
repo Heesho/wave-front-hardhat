@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./FixedPointMathLib.sol";
 
 /**
@@ -33,7 +33,7 @@ import "./FixedPointMathLib.sol";
  * requirement is not met.
 
  * PreMeme: 
- * Manages the initial distribution phase, collecting base tokens (e.g., ETH) and
+ * Manages the initial distribution phase, collecting base tokens (e.g., wETH) and
  * transitioning to the open market phase for the Meme, ensuring a fair launch. Everyone
  * that participates in the PreMeme phase receives memes at the same price.
  * 
@@ -53,6 +53,7 @@ interface IWaveFrontFactory {
 
 contract PreMeme is ReentrancyGuard {
     using FixedPointMathLib for uint256;
+    using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
@@ -60,7 +61,7 @@ contract PreMeme is ReentrancyGuard {
 
     /*----------  STATE VARIABLES  --------------------------------------*/
     
-    address public immutable base; // Address of the base meme (e.g., ETH)
+    address public immutable base; // Address of the base meme (e.g., wETH)
     address public immutable meme; // Address of the meme token deployed
 
     uint256 public immutable endTimestamp; // Timestamp when the pre-market phase ends
@@ -87,7 +88,7 @@ contract PreMeme is ReentrancyGuard {
 
     /**
      * @dev Constructs the PreMeme contract.
-     * @param _base Address of the base meme, typically a stablecoin or native cryptocurrency like ETH.
+     * @param _base Address of the base meme, typically a stablecoin or native cryptocurrency like wETH.
      */
     constructor(address _base) {
         base = _base;
@@ -105,7 +106,7 @@ contract PreMeme is ReentrancyGuard {
         if (ended) revert PreMeme__Concluded();
         totalBaseContributed += amount;
         account_BaseContributed[account] += amount;
-        IERC20(base).transferFrom(msg.sender, address(this), amount);
+        IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
         emit PreMeme__Contributed(account, amount);
     }
 
@@ -134,15 +135,16 @@ contract PreMeme is ReentrancyGuard {
         if (contribution == 0) revert PreMeme__NotEligible();
         account_BaseContributed[account] = 0;
         uint256 memeAmount = totalMemeBalance.mulWadDown(contribution).divWadDown(totalBaseContributed);
-        IERC20(meme).transfer(account, memeAmount);
+        IERC20(meme).safeTransfer(account, memeAmount);
         emit PreMeme__Redeemed(account, memeAmount);
     }
     
 }
 
 contract MemeFees {
+    using SafeERC20 for IERC20;
 
-    address internal immutable base; // Base token address (e.g., ETH or a stablecoin).
+    address internal immutable base; // Base token address (e.g., wETH or a stablecoin).
     address internal immutable meme; // Address of the meme token that this contract manages fees for.
 
     /**
@@ -163,13 +165,14 @@ contract MemeFees {
      */
     function claimFeesFor(address recipient, uint amountBase) external {
         require(msg.sender == meme);
-        if (amountBase > 0) IERC20(base).transfer(recipient, amountBase);
+        if (amountBase > 0) IERC20(base).safeTransfer(recipient, amountBase);
     }
 
 }
 
 contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     using FixedPointMathLib for uint256;
+    using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
@@ -184,7 +187,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
-    address public immutable base; // Address of the base token (e.g., ETH)
+    address public immutable base; // Address of the base token (e.g., wETH)
     address public immutable fees; // Address of the MemeFees contract
     address public immutable waveFrontFactory; // Address of the WaveFrontFactory contract
     address public immutable preMeme; // Address of the PreMeme contract
@@ -311,17 +314,18 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
         emit Meme__Buy(msg.sender, to, amountIn, amountOut);
 
-        IERC20(base).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(base).safeTransferFrom(msg.sender, address(this), amountIn);
         uint256 feeAmount = feeBase.mulWadDown(FEE_AMOUNT).divWadDown(DIVISOR);
         if (provider != address(0)) {
-            IERC20(base).transfer(provider, feeAmount);
+            IERC20(base).safeTransfer(provider, feeAmount);
             emit Meme__ProviderFee(provider, feeAmount);
             feeBase -= feeAmount;
         }
-        IERC20(base).transfer(statusHolder, feeAmount);
+        IERC20(base).safeTransfer(statusHolder, feeAmount);
         emit Meme__StatusFee(statusHolder, feeAmount);
-        IERC20(base).transfer(IWaveFrontFactory(waveFrontFactory).treasury(), feeAmount);
-        emit Meme__ProtocolFee(IWaveFrontFactory(waveFrontFactory).treasury(), feeAmount);
+        address treasury = IWaveFrontFactory(waveFrontFactory).treasury();
+        IERC20(base).safeTransfer(treasury, feeAmount);
+        emit Meme__ProtocolFee(treasury, feeAmount);
         feeBase -= (2* feeAmount);
 
         _mint(to, amountOut);
@@ -356,7 +360,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
         _burn(msg.sender, amountIn - feeMeme);
         burn(feeMeme);
-        IERC20(base).transfer(to, amountOut);
+        IERC20(base).safeTransfer(to, amountOut);
     }
 
     /**
@@ -373,7 +377,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         totalDebt += amountBase;
         account_Debt[msg.sender] += amountBase;
         emit Meme__Borrow(msg.sender, amountBase);
-        IERC20(base).transfer(msg.sender, amountBase);
+        IERC20(base).safeTransfer(msg.sender, amountBase);
     }
 
     /**
@@ -388,7 +392,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         totalDebt -= amountBase;
         account_Debt[msg.sender] -= amountBase;
         emit Meme__Repay(msg.sender, amountBase);
-        IERC20(base).transferFrom(msg.sender, address(this), amountBase);
+        IERC20(base).safeTransferFrom(msg.sender, address(this), amountBase);
     }
 
     /**
@@ -460,7 +464,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         nonReentrant
         notZeroInput(amount)
     {
-        IERC20(base).transferFrom(msg.sender, address(this), amount);
+        IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
         _updateBase(amount);
         emit Meme__Donation(msg.sender, amount);
     }
@@ -484,7 +488,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     function _updateBase(uint256 amount) 
         internal 
     {
-        IERC20(base).transfer(fees, amount);
+        IERC20(base).safeTransfer(fees, amount);
         totalFeesBase += amount;
         uint256 _ratio = amount.mulWadDown(1e18).divWadDown(totalSupply());
         if (_ratio > 0) {
@@ -617,8 +621,6 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 }
 
 contract MemeFactory {
-    
-    address public lastMeme; // Address of the last meme token created
 
     event MemeFactory__MemeCreated(address meme);
 
@@ -644,7 +646,7 @@ contract MemeFactory {
         external 
         returns (address) 
     {
-        lastMeme = address(new Meme(name, symbol, uri, base, msg.sender, statusHolder));
+        address lastMeme = address(new Meme(name, symbol, uri, base, msg.sender, statusHolder));
         emit MemeFactory__MemeCreated(lastMeme);
         return lastMeme;
     }

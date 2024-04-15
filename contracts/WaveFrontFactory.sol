@@ -44,8 +44,8 @@ contract WaveFrontFactory is Ownable {
     /*----------  STATE VARIABLES  --------------------------------------*/
     
     address public immutable base; // Base token address
+    address public immutable memeFactory; // Meme factory address
     address public treasury; // Treasury address
-    address public memeFactory; // Meme factory address
     uint256 public minAmountIn = 0.01 ether; // Minimum amount of base token required to create a token
 
     uint256 public index = 1; // Current index counter
@@ -109,11 +109,12 @@ contract WaveFrontFactory is Ownable {
 
         address meme = IMemeFactory(memeFactory).createMeme(name, symbol, uri, base, account);
         address preMeme = IMeme(meme).preMeme();
-        index_Meme[index] = meme;
-        meme_Index[meme] = index;
-        symbol_Index[symbol] = index;
+        uint256 currentIndex = index;
+        index_Meme[currentIndex] = meme;
+        meme_Index[meme] = currentIndex;
+        symbol_Index[symbol] = currentIndex;
 
-        emit WaveFrontFactory__MemeCreated(index, meme);
+        emit WaveFrontFactory__MemeCreated(currentIndex, meme);
         index++;
 
         IERC20(base).transferFrom(msg.sender, address(this), amountIn);
