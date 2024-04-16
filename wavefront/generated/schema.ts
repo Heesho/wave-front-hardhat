@@ -601,8 +601,8 @@ export class Transaction extends Entity {
     this.set("timestamp", Value.fromBigInt(value));
   }
 
-  get meme(): Bytes {
-    let value = this.get("meme");
+  get token(): Bytes {
+    let value = this.get("token");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
@@ -610,8 +610,8 @@ export class Transaction extends Entity {
     }
   }
 
-  set meme(value: Bytes) {
-    this.set("meme", Value.fromBytes(value));
+  set token(value: Bytes) {
+    this.set("token", Value.fromBytes(value));
   }
 
   get buys(): Array<string> {

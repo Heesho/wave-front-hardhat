@@ -44,7 +44,7 @@ type Transaction @entity {
   id: ID!
   blockNumber: BigInt! # uint256
   timestamp: BigInt! # uint256
-  meme: Bytes! # address
+  token: Token!
   buys: [Buy!]!
   sells: [Sell!]!
   contributes: [Contribute!]!

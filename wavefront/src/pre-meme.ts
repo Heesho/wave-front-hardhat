@@ -67,7 +67,7 @@ export function handlePreMeme__Contributed(
     transaction = new Transaction(event.transaction.hash.toHexString());
     transaction.blockNumber = event.block.number;
     transaction.timestamp = event.block.timestamp;
-    transaction.meme = meme.meme;
+    transaction.token = meme.meme;
     transaction.buys = [];
     transaction.sells = [];
     transaction.contributes = [];

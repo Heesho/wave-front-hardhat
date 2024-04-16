@@ -70,7 +70,7 @@ export function handleMeme__Buy(event: Meme__BuyEvent): void {
     transaction = new Transaction(event.transaction.hash.toHexString());
     transaction.blockNumber = event.block.number;
     transaction.timestamp = event.block.timestamp;
-    transaction.meme = meme.meme;
+    transaction.token = meme.meme;
     transaction.buys = [];
     transaction.sells = [];
     transaction.contributes = [];
@@ -144,7 +144,7 @@ export function handleMeme__Sell(event: Meme__SellEvent): void {
     transaction = new Transaction(event.transaction.hash.toHexString());
     transaction.blockNumber = event.block.number;
     transaction.timestamp = event.block.timestamp;
-    transaction.meme = meme.meme;
+    transaction.token = meme.meme;
     transaction.buys = [];
     transaction.sells = [];
     transaction.contributes = [];
