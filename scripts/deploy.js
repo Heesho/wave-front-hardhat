@@ -320,12 +320,12 @@ async function main() {
   // 2. Verify System
   //===================================================================
 
-  console.log("Starting System Verificatrion Deployment");
-  await verifyMemeFactory();
-  await verifyFactory();
-  await verifyMulticallSubgraph();
-  await verifyMulticallFrontend();
-  await verifyRouter();
+  // console.log("Starting System Verificatrion Deployment");
+  // await verifyMemeFactory();
+  // await verifyFactory();
+  // await verifyMulticallSubgraph();
+  // await verifyMulticallFrontend();
+  // await verifyRouter();
 
   //===================================================================
   // 3. Deploy Meme
@@ -348,6 +348,10 @@ async function main() {
   //===================================================================
   // 4. Transactions
   //===================================================================
+
+  // await factory
+  //   .connect(wallet)
+  //   .setMinAmountIn(ethers.utils.parseEther("0.001"));
 
   // meme = await ethers.getContractAt(
   //   "contracts/Meme.sol:Meme",

@@ -303,9 +303,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         if (!open && msg.sender != preMeme) revert Meme__MarketNotOpen();
 
         uint256 feeBase = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
-        uint256 newReserveBase = RESERVE_VIRTUAL_BASE + reserveBase + amountIn - feeBase;
-        uint256 newReserveMeme = (RESERVE_VIRTUAL_BASE + reserveBase).mulWadUp(reserveMeme).divWadUp(newReserveBase);
-        uint256 amountOut = reserveMeme - newReserveMeme;
+        uint256 savedReserveBase = reserveBase;
+        uint256 savedReserveMeme = reserveMeme;
+        uint256 newReserveBase = RESERVE_VIRTUAL_BASE + savedReserveBase + amountIn - feeBase;
+        uint256 newReserveMeme = (RESERVE_VIRTUAL_BASE + savedReserveBase).mulWadUp(savedReserveMeme).divWadUp(newReserveBase);
+        uint256 amountOut = savedReserveMeme - newReserveMeme;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
@@ -326,7 +328,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         address treasury = IWaveFrontFactory(waveFrontFactory).treasury();
         IERC20(base).safeTransfer(treasury, feeAmount);
         emit Meme__ProtocolFee(treasury, feeAmount);
-        feeBase -= (2* feeAmount);
+        feeBase -= (2 * feeAmount);
 
         _mint(to, amountOut);
         _updateBase(feeBase); 
@@ -347,9 +349,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         notExpired(expireTimestamp) 
     {
         uint256 feeMeme = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
-        uint256 newReserveMeme = reserveMeme + amountIn - feeMeme;
-        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + reserveBase).mulWadUp(reserveMeme).divWadUp(newReserveMeme);
-        uint256 amountOut = RESERVE_VIRTUAL_BASE + reserveBase - newReserveBase;
+        uint256 prevReserveBAse = reserveBase;
+        uint256 savedReserveMeme = reserveMeme;
+        uint256 newReserveMeme = savedReserveMeme + amountIn - feeMeme;
+        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + prevReserveBAse).mulWadUp(savedReserveMeme).divWadUp(newReserveMeme);
+        uint256 amountOut = RESERVE_VIRTUAL_BASE + prevReserveBAse - newReserveBase;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
@@ -443,8 +447,10 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         public 
         notZeroInput(amount)
     {
-        if (maxSupply > reserveMeme) {
-            uint256 reserveBurn = reserveMeme.mulWadDown(amount).divWadDown(maxSupply - reserveMeme);
+        uint256 savedMaxSupply = maxSupply;
+        uint256 savedReserveMeme = reserveMeme;
+        if (savedMaxSupply > savedReserveMeme) {
+            uint256 reserveBurn = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
             reserveMeme -= reserveBurn;
             maxSupply -= (amount + reserveBurn);
             emit Meme__ReserveBurn(reserveBurn);
@@ -600,7 +606,8 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         returns (uint256) 
     {
         if (balanceOf(account) == 0) return 0;
-        return ((RESERVE_VIRTUAL_BASE.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
+        uint256 savedMaxSupply = maxSupply;
+        return ((RESERVE_VIRTUAL_BASE.mulWadDown(savedMaxSupply).divWadDown(savedMaxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
     }
 
     /**
@@ -615,7 +622,8 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         returns (uint256) 
     {
         if (account_Debt[account] == 0) return balanceOf(account);
-        return balanceOf(account) - (maxSupply - (RESERVE_VIRTUAL_BASE.mulWadUp(maxSupply).divWadUp(account_Debt[account] + RESERVE_VIRTUAL_BASE)));
+        uint256 savedMaxSupply = maxSupply;
+        return balanceOf(account) - (savedMaxSupply - (RESERVE_VIRTUAL_BASE.mulWadUp(savedMaxSupply).divWadUp(account_Debt[account] + RESERVE_VIRTUAL_BASE)));
     }
 
 }
