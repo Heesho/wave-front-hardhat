@@ -349,11 +349,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         notExpired(expireTimestamp) 
     {
         uint256 feeMeme = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
-        uint256 prevReserveBAse = reserveBase;
+        uint256 savedReserveBase = reserveBase;
         uint256 savedReserveMeme = reserveMeme;
         uint256 newReserveMeme = savedReserveMeme + amountIn - feeMeme;
-        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + prevReserveBAse).mulWadUp(savedReserveMeme).divWadUp(newReserveMeme);
-        uint256 amountOut = RESERVE_VIRTUAL_BASE + prevReserveBAse - newReserveBase;
+        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + savedReserveBase).mulWadUp(savedReserveMeme).divWadUp(newReserveMeme);
+        uint256 amountOut = RESERVE_VIRTUAL_BASE + savedReserveBase - newReserveBase;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
@@ -630,7 +630,15 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
 contract MemeFactory {
 
+    address waveFrontFactory;
+
+    error MemeFactory__NotAuthorized();
+
     event MemeFactory__MemeCreated(address meme);
+
+    constructor() {
+        waveFrontFactory = msg.sender;
+    }
 
     /**
      * @dev Creates a new `Meme` contract instance and stores its address.
@@ -654,8 +662,20 @@ contract MemeFactory {
         external 
         returns (address) 
     {
+        if (msg.sender != waveFrontFactory) revert MemeFactory__NotAuthorized();
         address lastMeme = address(new Meme(name, symbol, uri, base, msg.sender, statusHolder));
         emit MemeFactory__MemeCreated(lastMeme);
         return lastMeme;
+    }
+
+    /**
+     * @dev Allows the WaveFrontFactory contract to update the address of the WaveFrontFactory contract.
+     * @param _waveFrontFactory The new address of the WaveFrontFactory contract.
+     */
+    function setWaveFrontFactory(address _waveFrontFactory) 
+        external 
+    {
+        if (msg.sender != waveFrontFactory) revert MemeFactory__NotAuthorized();
+        waveFrontFactory = _waveFrontFactory;
     }
 }

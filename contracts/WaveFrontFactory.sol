@@ -45,8 +45,9 @@ contract WaveFrontFactory is Ownable {
     
     address public immutable base; // Base token address
     address public immutable memeFactory; // Meme factory address
+    
     address public treasury; // Treasury address
-    uint256 public minAmountIn = 0.01 ether; // Minimum amount of base token required to create a token
+    uint256 public minAmountIn = 0.001 ether; // Minimum amount of base token required to create a token
 
     uint256 public index = 1; // Current index counter
     mapping(uint256 => address) public index_Meme; // Meme address by index

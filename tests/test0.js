@@ -74,6 +74,7 @@ describe("local: test0", function () {
     router = await routerArtifact.deploy(factory.address, base.address);
     console.log("- Router Initialized");
 
+    await memeFactory.setWaveFrontFactory(factory.address);
     console.log("- System set up");
 
     console.log("Initialization Complete");
