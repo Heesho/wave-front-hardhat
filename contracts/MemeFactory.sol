@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FixedPointMathLib.sol";
 
 /**
@@ -628,7 +629,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
 }
 
-contract MemeFactory {
+contract MemeFactory is Ownable {
 
     address waveFrontFactory;
 
@@ -673,9 +674,9 @@ contract MemeFactory {
      * @param _waveFrontFactory The new address of the WaveFrontFactory contract.
      */
     function setWaveFrontFactory(address _waveFrontFactory) 
-        external 
+        external
+        onlyOwner
     {
-        if (msg.sender != waveFrontFactory) revert MemeFactory__NotAuthorized();
         waveFrontFactory = _waveFrontFactory;
     }
 }
