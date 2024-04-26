@@ -140,7 +140,7 @@ contract WaveFrontMulticallFrontend {
         pageData.marketCap = (marketOpen ? IMeme(meme).totalSupply() * IMeme(meme).getMarketPrice() / 1e18 : totalContributed);
         pageData.liquidity = (IMeme(meme).reserveBase() + reserveVirtualBase) * 2;
         pageData.floorPrice = IMeme(meme).getFloorPrice();
-        pageData.marketPrice = (marketOpen ? IMeme(meme).getMarketPrice() : totalContributed * 1e18 / expectedMemeAmount);
+        pageData.marketPrice = (marketOpen ? IMeme(meme).getMarketPrice() : newReserveBase * 1e18 / newReserveMeme);
         pageData.totalSupply = IMeme(meme).maxSupply();
         pageData.totalContributed = totalContributed;
 
@@ -166,7 +166,11 @@ contract WaveFrontMulticallFrontend {
                 pageData.pageType = PageType.CONTRIBUTE;
             }
         } else {
-            pageData.pageType = PageType.MARKET;
+            if (pageData.accountContributed > 0) {
+                pageData.pageType = PageType.REDEEM;
+            } else {
+                pageData.pageType = PageType.MARKET;
+            }
         }
     }
 

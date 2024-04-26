@@ -124,7 +124,7 @@ contract WaveFrontMulticallSubgraph {
         memeData.preMemeBalance = memeData.reserveMeme - newReserveMeme;
 
         memeData.floorPrice = IMeme(meme).getFloorPrice();
-        memeData.marketPrice = (memeData.marketOpen ? IMeme(meme).getMarketPrice() : memeData.baseContributed * 1e18 / memeData.preMemeBalance);
+        memeData.marketPrice = (memeData.marketOpen ? IMeme(meme).getMarketPrice() : newReserveBase * 1e18 / newReserveMeme);
         memeData.marketCap = (memeData.marketOpen ? IMeme(meme).totalSupply() * IMeme(meme).getMarketPrice() / 1e18 : memeData.baseContributed);
         memeData.liquidity = (memeData.reserveBase + memeData.reserveVirtualBase) * 2;
         memeData.totalRewardsBase = IMeme(meme).totalFeesBase();

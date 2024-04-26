@@ -94,7 +94,7 @@ async function getContracts() {
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x531A7BC1a8B75107ee3ce76C5D906e0AA7aEd61f"
+    "0x85EB6224D920D4349c2182d18491D1f282107f07"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
@@ -306,7 +306,7 @@ async function main() {
   // 1. Deploy System
   //===================================================================
 
-  // console.log("Starting System Deployment");
+  console.log("Starting System Deployment");
   // await deployMemeFactory();
   // await deployFactory();
   // await deployMulticallSubgraph();
@@ -324,7 +324,7 @@ async function main() {
   // await verifyMemeFactory();
   // await verifyFactory();
   // await verifyMulticallSubgraph();
-  // await verifyMulticallFrontend();
+  await verifyMulticallFrontend();
   // await verifyRouter();
 
   //===================================================================
