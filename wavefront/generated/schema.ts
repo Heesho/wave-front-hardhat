@@ -291,6 +291,19 @@ export class Token extends Entity {
     this.set("fees", Value.fromBytes(value));
   }
 
+  get creator(): Bytes {
+    let value = this.get("creator");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set creator(value: Bytes) {
+    this.set("creator", Value.fromBytes(value));
+  }
+
   get statusHolder(): Bytes {
     let value = this.get("statusHolder");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1406,6 +1419,14 @@ export class Account extends Entity {
     this.set("referrals", Value.fromBigInt(value));
   }
 
+  get created(): TokenLoader {
+    return new TokenLoader(
+      "Account",
+      this.get("id")!.toBytes().toHexString(),
+      "created",
+    );
+  }
+
   get tokenPositions(): TokenPositionLoader {
     return new TokenPositionLoader(
       "Account",
@@ -1602,5 +1623,23 @@ export class TokenPositionLoader extends Entity {
   load(): TokenPosition[] {
     let value = store.loadRelated(this._entity, this._id, this._field);
     return changetype<TokenPosition[]>(value);
+  }
+}
+
+export class TokenLoader extends Entity {
+  _entity: string;
+  _field: string;
+  _id: string;
+
+  constructor(entity: string, id: string, field: string) {
+    super();
+    this._entity = entity;
+    this._id = id;
+    this._field = field;
+  }
+
+  load(): Token[] {
+    let value = store.loadRelated(this._entity, this._id, this._field);
+    return changetype<Token[]>(value);
   }
 }

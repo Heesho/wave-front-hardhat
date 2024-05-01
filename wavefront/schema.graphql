@@ -19,6 +19,7 @@ type Token @entity {
   meme: Bytes! #address
   preMeme: Bytes! #address
   fees: Bytes! #address
+  creator: Account! #address
   statusHolder: Bytes! #address
   createdAt: BigInt!
   openAt: BigInt!
@@ -111,6 +112,8 @@ type Account @entity {
   statusEarnings: BigDecimal!
   holderEarnings: BigDecimal!
   referrals: BigInt!
+  transactions: BigInt!
+  created: [Token!]! @derivedFrom(field: "creator")
   tokenPositions: [TokenPosition!]! @derivedFrom(field: "account")
 }
 

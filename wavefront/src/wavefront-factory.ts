@@ -4,7 +4,7 @@ import {
   WaveFrontFactory__MinAmountInUpdated as WaveFrontFactory__MinAmountInUpdatedEvent,
   OwnershipTransferred as OwnershipTransferredEvent,
 } from "../generated/WaveFrontFactory/WaveFrontFactory";
-import { Directory, Token } from "../generated/schema";
+import { Account, Directory, Token } from "../generated/schema";
 import { Meme, PreMeme } from "../generated/templates";
 import { WaveFrontFactory } from "../generated/WaveFrontFactory/WaveFrontFactory";
 import { WaveFrontMulticall } from "../generated/templates/Meme/WaveFrontMulticall";
@@ -56,6 +56,7 @@ export function handleWaveFrontFactory__MemeCreated(
     token.meme = meme.meme;
     token.preMeme = meme.preMeme;
     token.fees = meme.fees;
+    token.creator = meme.statusHolder;
     token.statusHolder = meme.statusHolder;
     token.createdAt = event.block.timestamp;
     token.openAt = meme.marketOpenTimestamp;
@@ -76,6 +77,16 @@ export function handleWaveFrontFactory__MemeCreated(
     token.txCount = ZERO_BI;
   }
   token.save();
+
+  let account = Account.load(token.creator);
+  if (account === null) {
+    account = new Account(token.creator);
+    account.referrals = ZERO_BI;
+    account.statusEarnings = ZERO_BD;
+    account.holderEarnings = ZERO_BD;
+    account.providerEarnings = ZERO_BD;
+  }
+  account.save();
 }
 
 export function handleWaveFrontFactory__TreasuryUpdated(

@@ -17,6 +17,8 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Directory
+        - Account
+        - Token
       abis:
         - name: WaveFrontFactory
           file: ./abis/WaveFrontFactory.json
