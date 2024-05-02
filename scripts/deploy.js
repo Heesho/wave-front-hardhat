@@ -80,26 +80,26 @@ let meme, preMeme, MemeFees;
 /*===========================  CONTRACT DATA  =======================*/
 
 async function getContracts() {
-  memeFactory = await ethers.getContractAt(
-    "contracts/MemeFactory.sol:MemeFactory",
-    "0x067Cd33e00b7719853447362654D900A68077f70"
-  );
-  factory = await ethers.getContractAt(
-    "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x1552b0DCAC344fFA9702Dbafa6EfA5ebEFB62A82"
-  );
-  multicallSubgraph = await ethers.getContractAt(
-    "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0xB5ccEA2Ebb813EA818f2571b89A686E137E67889"
-  );
-  multicallFrontend = await ethers.getContractAt(
-    "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x85EB6224D920D4349c2182d18491D1f282107f07"
-  );
-  router = await ethers.getContractAt(
-    "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x158CB676938b57475Da1007E66480E19D99F3c26"
-  );
+  // memeFactory = await ethers.getContractAt(
+  //   "contracts/MemeFactory.sol:MemeFactory",
+  //   "0x067Cd33e00b7719853447362654D900A68077f70"
+  // );
+  // factory = await ethers.getContractAt(
+  //   "contracts/WaveFrontFactory.sol:WaveFrontFactory",
+  //   "0x1552b0DCAC344fFA9702Dbafa6EfA5ebEFB62A82"
+  // );
+  // multicallSubgraph = await ethers.getContractAt(
+  //   "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
+  //   "0xB5ccEA2Ebb813EA818f2571b89A686E137E67889"
+  // );
+  // multicallFrontend = await ethers.getContractAt(
+  //   "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
+  //   "0x85EB6224D920D4349c2182d18491D1f282107f07"
+  // );
+  // router = await ethers.getContractAt(
+  //   "contracts/WaveFrontRouter.sol:WaveFrontRouter",
+  //   "0x158CB676938b57475Da1007E66480E19D99F3c26"
+  // );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
   //   ""
@@ -307,12 +307,12 @@ async function main() {
   //===================================================================
 
   console.log("Starting System Deployment");
-  // await deployMemeFactory();
-  // await deployFactory();
-  // await deployMulticallSubgraph();
-  // await deployMulticallFrontend();
-  // await deployRouter();
-  // await printDeployment();
+  await deployMemeFactory();
+  await deployFactory();
+  await deployMulticallSubgraph();
+  await deployMulticallFrontend();
+  await deployRouter();
+  await printDeployment();
 
   /*********** UPDATE getContracts() with new addresses *************/
 
@@ -324,7 +324,7 @@ async function main() {
   // await verifyMemeFactory();
   // await verifyFactory();
   // await verifyMulticallSubgraph();
-  await verifyMulticallFrontend();
+  // await verifyMulticallFrontend();
   // await verifyRouter();
 
   //===================================================================

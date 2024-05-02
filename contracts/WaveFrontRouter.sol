@@ -43,7 +43,7 @@ contract WaveFrontRouter {
     event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut);
     event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
     event WaveFrontRouter__ClaimFees(address indexed meme, address indexed account);
-    event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, uint256 index, string name, string symbol, string uri);
+    event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, string name, string symbol, string uri);
     event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status);
     event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
     event WaveFrontRouter__Redeemed(address indexed meme, address indexed account, uint256 amount);
