@@ -43,7 +43,7 @@ contract WaveFrontRouter {
     event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut);
     event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
     event WaveFrontRouter__ClaimFees(address indexed meme, address indexed account);
-    event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account);
+    event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, uint256 index, string name, string symbol, string uri);
     event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status);
     event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
     event WaveFrontRouter__Redeemed(address indexed meme, address indexed account, uint256 amount);
@@ -116,7 +116,7 @@ contract WaveFrontRouter {
         IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
         IERC20(base).transfer(msg.sender, IERC20(base).balanceOf(address(this)));
         emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value);
-        emit WaveFrontRouter__MemeCreated(meme, msg.sender); // add index
+        emit WaveFrontRouter__MemeCreated(meme, msg.sender, name, symbol, uri); // add index
         return meme;
     }
 
