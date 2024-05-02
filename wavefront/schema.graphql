@@ -112,7 +112,6 @@ type Account @entity {
   statusEarnings: BigDecimal!
   holderEarnings: BigDecimal!
   referrals: BigInt!
-  transactions: BigInt!
   created: [Token!]! @derivedFrom(field: "creator")
   tokenPositions: [TokenPosition!]! @derivedFrom(field: "account")
 }
