@@ -116,7 +116,7 @@ contract WaveFrontRouter {
         IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
         IERC20(base).transfer(msg.sender, IERC20(base).balanceOf(address(this)));
         emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value);
-        emit WaveFrontRouter__MemeCreated(meme, msg.sender, name, symbol, uri); // add index
+        emit WaveFrontRouter__MemeCreated(meme, msg.sender, name, symbol, uri);
         return meme;
     }
 

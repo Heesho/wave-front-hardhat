@@ -242,6 +242,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Meme__StatusFee(address indexed account, uint256 amountBase);
     event Meme__StatusUpdated(address indexed account, string status);
     event Meme__Donation(address indexed account, uint256 amountBase);
+    event Meme__MarketOpened();
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -486,6 +487,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         if (msg.sender != preMeme) revert Meme__NotAuthorized();
         open = true;
+        emit Meme__MarketOpened();
     }
 
     /**

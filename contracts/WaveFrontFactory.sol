@@ -66,7 +66,7 @@ contract WaveFrontFactory is Ownable {
 
     /*----------  EVENTS ------------------------------------------------*/
     
-    event WaveFrontFactory__MemeCreated(uint256 index, address meme);
+    event WaveFrontFactory__MemeCreated(uint256 index, address meme, string name, string symbol, string uri, address account);
     event WaveFrontFactory__TreasuryUpdated(address treasury);
     event WaveFrontFactory__MinAmountInUpdated(uint256 minAmountIn);
 
@@ -115,7 +115,7 @@ contract WaveFrontFactory is Ownable {
         meme_Index[meme] = currentIndex;
         symbol_Index[symbol] = currentIndex;
 
-        emit WaveFrontFactory__MemeCreated(currentIndex, meme);
+        emit WaveFrontFactory__MemeCreated(currentIndex, meme, name, symbol, uri, account);
         index++;
 
         IERC20(base).transferFrom(msg.sender, address(this), amountIn);
