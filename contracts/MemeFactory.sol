@@ -81,9 +81,9 @@ contract PreMeme is ReentrancyGuard {
 
     /*----------  EVENTS ------------------------------------------------*/
 
-    event PreMeme__Contributed(address indexed account, uint256 amount);
+    event PreMeme__Contributed(address indexed meme, address indexed account, uint256 amount);
     event PreMeme__MarketOpened(address indexed meme, uint256 totalMemeBalance, uint256 totalBaseContributed);
-    event PreMeme__Redeemed(address indexed account, uint256 amount);
+    event PreMeme__Redeemed(address indexed meme, address indexed account, uint256 amount);
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
@@ -108,7 +108,7 @@ contract PreMeme is ReentrancyGuard {
         totalBaseContributed += amount;
         account_BaseContributed[account] += amount;
         IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
-        emit PreMeme__Contributed(account, amount);
+        emit PreMeme__Contributed(meme, account, amount);
     }
 
     /**
@@ -137,7 +137,7 @@ contract PreMeme is ReentrancyGuard {
         account_BaseContributed[account] = 0;
         uint256 memeAmount = totalMemeBalance.mulWadDown(contribution).divWadDown(totalBaseContributed);
         IERC20(meme).safeTransfer(account, memeAmount);
-        emit PreMeme__Redeemed(account, memeAmount);
+        emit PreMeme__Redeemed(meme, account, memeAmount);
     }
     
 }

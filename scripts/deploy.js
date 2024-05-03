@@ -82,23 +82,23 @@ let meme, preMeme, MemeFees;
 async function getContracts() {
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0xB5A27c33bA2ADEcee8CdBE94cEF5576E2F364A8f"
+    "0xeaD12Cd8fcb3ed3Fc2e0FD881b53048eCEbD1290"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x5e608DfC40ACcBC1B830daA9350398e8017A2E0D"
+    "0x218c66c9092DC6025343e3d36B3Cc38ae49a3577"
   );
   multicallSubgraph = await ethers.getContractAt(
     "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0x3A0e70d7cc68Ea495821355f4289a09F32596532"
+    "0x6d6C42723Dea7C2077AFF8a8fdB6417c6e20D041"
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0xdDfD12Ed8bbD301B9B7B0baD6ef546A3CE3909Ad"
+    "0x329b3F5A680389D03EeFe6987dC8Fc82eE839EE1"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x2363BB86cD2ABF89cc059A654f89f11bCceffcA9"
+    "0x52a7648f60f672B93921504b0A90e3F6Cf8d3EC7"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -320,12 +320,12 @@ async function main() {
   // 2. Verify System
   //===================================================================
 
-  console.log("Starting System Verificatrion Deployment");
-  await verifyMemeFactory();
-  await verifyFactory();
-  await verifyMulticallSubgraph();
-  await verifyMulticallFrontend();
-  await verifyRouter();
+  // console.log("Starting System Verificatrion Deployment");
+  // await verifyMemeFactory();
+  // await verifyFactory();
+  // await verifyMulticallSubgraph();
+  // await verifyMulticallFrontend();
+  // await verifyRouter();
 
   //===================================================================
   // 3. Deploy Meme
@@ -352,21 +352,26 @@ async function main() {
   console.log("Starting Transactions");
 
   // set waveFrontFactory on memeFactory
-  // await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
-  // console.log("WaveFrontFactory Set");
+  await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
+  console.log("WaveFrontFactory Set");
 
   // await factory
   //   .connect(wallet)
   //   .setMinAmountIn(ethers.utils.parseEther("0.001"));
 
   // meme = await ethers.getContractAt(
-  //   "contracts/Meme.sol:Meme",
-  //   await factory.getMemeByIndex(1)
+  //   "contracts/MemeFactory.sol:Meme",
+  //   await factory.index_Meme(1)
   // );
+
+  //create
+  // await router.createMeme(meme2.name, meme2.symbol, meme2.uri, {
+  //   value: ethers.utils.parseEther("0.002"),
+  // });
 
   // contribute
   // await router.contribute(meme.address, {
-  //   value: ethers.utils.parseEther("0.01"),
+  //   value: ethers.utils.parseEther("0.001"),
   // });
 
   // redeem
@@ -378,8 +383,8 @@ async function main() {
   // });
 
   // sell
-  // await meme.approve(router.address, ethers.utils.parseEther("1"));
-  // await router.sell(meme.address, ethers.utils.parseEther("1"), 0, 0);
+  // await meme.approve(router.address, ethers.utils.parseEther("10000"));
+  // await router.sell(meme.address, ethers.utils.parseEther("10000"), 0, 0);
 
   // claim
   // await router.claimFees([meme.address]);

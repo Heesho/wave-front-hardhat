@@ -95,7 +95,7 @@ contract WaveFrontRouter {
         require(success, "Failed to send ETH");
         IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
 
-        emit WaveFrontRouter__Sell(meme, msg.sender, baseBalance, amountIn);
+        emit WaveFrontRouter__Sell(meme, msg.sender, amountIn, baseBalance);
     }
 
     function claimFees(address[] calldata memes) external {

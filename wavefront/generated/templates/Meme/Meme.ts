@@ -246,6 +246,20 @@ export class Meme__Fees__Params {
   }
 }
 
+export class Meme__MarketOpened extends ethereum.Event {
+  get params(): Meme__MarketOpened__Params {
+    return new Meme__MarketOpened__Params(this);
+  }
+}
+
+export class Meme__MarketOpened__Params {
+  _event: Meme__MarketOpened;
+
+  constructor(event: Meme__MarketOpened) {
+    this._event = event;
+  }
+}
+
 export class Meme__ProtocolFee extends ethereum.Event {
   get params(): Meme__ProtocolFee__Params {
     return new Meme__ProtocolFee__Params(this);

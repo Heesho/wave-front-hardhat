@@ -23,12 +23,16 @@ export class PreMeme__Contributed__Params {
     this._event = event;
   }
 
-  get account(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
+  get account(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
   get amount(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
+    return this._event.parameters[2].value.toBigInt();
   }
 }
 
@@ -71,12 +75,16 @@ export class PreMeme__Redeemed__Params {
     this._event = event;
   }
 
-  get account(): Address {
+  get meme(): Address {
     return this._event.parameters[0].value.toAddress();
   }
 
+  get account(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
   get amount(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
+    return this._event.parameters[2].value.toBigInt();
   }
 }
 

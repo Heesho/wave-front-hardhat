@@ -45,12 +45,28 @@ export class WaveFrontFactory__MemeCreated__Params {
     this._event = event;
   }
 
-  get index(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
+  get meme(): Address {
+    return this._event.parameters[0].value.toAddress();
   }
 
-  get meme(): Address {
+  get preMeme(): Address {
     return this._event.parameters[1].value.toAddress();
+  }
+
+  get name(): string {
+    return this._event.parameters[2].value.toString();
+  }
+
+  get symbol(): string {
+    return this._event.parameters[3].value.toString();
+  }
+
+  get uri(): string {
+    return this._event.parameters[4].value.toString();
+  }
+
+  get account(): Address {
+    return this._event.parameters[5].value.toAddress();
   }
 }
 
