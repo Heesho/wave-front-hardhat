@@ -13,6 +13,8 @@ interface IMeme {
     function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to) external;
     function claimFees(address account) external;
     function updateStatus(address account, string memory status) external;
+    function getMarketPrice() external view returns (uint256);
+    function getFloorPrice() external view returns (uint256);
 }
 
 interface IPreMeme {
@@ -39,12 +41,12 @@ contract WaveFrontRouter {
 
     mapping(address => address) public referrals;
 
-    event WaveFrontRouter__Buy(address indexed meme, address indexed account, address indexed affiliate, uint256 amountIn, uint256 amountOut);
-    event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut);
+    event WaveFrontRouter__Buy(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut, uint256 marketPrice, uint256 floorPrice);
+    event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
     event WaveFrontRouter__ClaimFees(address indexed meme, address indexed account);
     event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, string name, string symbol, string uri);
-    event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status);
+    event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
     event WaveFrontRouter__Redeemed(address indexed meme, address indexed account, uint256 amount);
     event WaveFrontRouter__MarketOpened(address indexed meme, uint256 totalBaseContributed, uint256 totalMemeBalance);
@@ -76,7 +78,7 @@ contract WaveFrontRouter {
         (bool success, ) = msg.sender.call{value: baseBalance}("");
         require(success, "Failed to send ETH");
 
-        emit WaveFrontRouter__Buy(meme, msg.sender, referrals[msg.sender], msg.value, memeBalance);
+        emit WaveFrontRouter__Buy(meme, msg.sender, msg.value, memeBalance, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
 
     function sell(
@@ -95,7 +97,7 @@ contract WaveFrontRouter {
         require(success, "Failed to send ETH");
         IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
 
-        emit WaveFrontRouter__Sell(meme, msg.sender, amountIn, baseBalance);
+        emit WaveFrontRouter__Sell(meme, msg.sender, amountIn, baseBalance, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
 
     function claimFees(address[] calldata memes) external {
@@ -147,7 +149,7 @@ contract WaveFrontRouter {
     function updateStatus(address meme, string memory status) external {
         IERC20(meme).transferFrom(msg.sender, address(this), STATUS_UPDATE_FEE);
         IMeme(meme).updateStatus(msg.sender, status);
-        emit WaveFrontRouter__StatusUpdated(meme, msg.sender, status);
+        emit WaveFrontRouter__StatusUpdated(meme, msg.sender, status, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
 
     // Function to receive Ether. msg.data must be empty

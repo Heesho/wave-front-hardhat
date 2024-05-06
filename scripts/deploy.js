@@ -82,23 +82,23 @@ let meme, preMeme, MemeFees;
 async function getContracts() {
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0xeaD12Cd8fcb3ed3Fc2e0FD881b53048eCEbD1290"
+    "0x1AC70c868628c5027D69AF4EE891F549B4F9DD32"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x218c66c9092DC6025343e3d36B3Cc38ae49a3577"
+    "0x25a12591e63a4367e5fB3Af66cc4CDDB7F02aDec"
   );
   multicallSubgraph = await ethers.getContractAt(
     "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0x6d6C42723Dea7C2077AFF8a8fdB6417c6e20D041"
+    "0x446d53082A967c037189fcf289DC1D87402085eB"
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x329b3F5A680389D03EeFe6987dC8Fc82eE839EE1"
+    "0x2FFdF4d09ca6473CE4Eddb47371FC098FE758c52"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x52a7648f60f672B93921504b0A90e3F6Cf8d3EC7"
+    "0x5D1dd559fdA41D45a7e9A3cbF85FdeA0298A892f"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -352,8 +352,8 @@ async function main() {
   console.log("Starting Transactions");
 
   // set waveFrontFactory on memeFactory
-  await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
-  console.log("WaveFrontFactory Set");
+  // await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
+  // console.log("WaveFrontFactory Set");
 
   // await factory
   //   .connect(wallet)
