@@ -53,16 +53,20 @@ export class WaveFrontRouter__Buy__Params {
     return this._event.parameters[1].value.toAddress();
   }
 
-  get affiliate(): Address {
-    return this._event.parameters[2].value.toAddress();
-  }
-
   get amountIn(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
+    return this._event.parameters[2].value.toBigInt();
   }
 
   get amountOut(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get marketPrice(): BigInt {
     return this._event.parameters[4].value.toBigInt();
+  }
+
+  get floorPrice(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
   }
 }
 
@@ -228,6 +232,14 @@ export class WaveFrontRouter__Sell__Params {
   get amountOut(): BigInt {
     return this._event.parameters[3].value.toBigInt();
   }
+
+  get marketPrice(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
+  }
+
+  get floorPrice(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
+  }
 }
 
 export class WaveFrontRouter__StatusUpdated extends ethereum.Event {
@@ -253,6 +265,14 @@ export class WaveFrontRouter__StatusUpdated__Params {
 
   get status(): string {
     return this._event.parameters[2].value.toString();
+  }
+
+  get marketPrice(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
+  get floorPrice(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
   }
 }
 
