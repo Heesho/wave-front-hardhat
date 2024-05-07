@@ -6,64 +6,10 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===================================================================*/
 /*===========================  SETTINGS  ============================*/
 
-const BASE_ADDRESS = "0x4200000000000000000000000000000000000006"; // BASE token Address (eg wETH on Base)
+// const BASE_ADDRESS = "0x4200000000000000000000000000000000000006"; // Base Sepolia wETH
+// const BASE_ADDRESS = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"; // Arbitrum Sepolia wETH
+const BASE_ADDRESS = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F"; // Berachain Artio wBERA
 const TREASURY_ADDRESS = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712"; // Treasury Address
-
-const meme1 = {
-  index: 1,
-  name: "HenloWorld",
-  symbol: "HENLO",
-  uri: "https://m.media-amazon.com/images/I/51jctBmVm5L._AC_UF894,1000_QL80_.jpg",
-};
-
-const meme2 = {
-  index: 2,
-  name: "PepeBusiness",
-  symbol: "PEPEBIZ",
-  uri: "https://www.tbstat.com/cdn-cgi/image/format=webp,q=75/wp/uploads/2023/05/Fvz9hOIXwAEaIR8.jpeg",
-};
-
-const meme3 = {
-  index: 3,
-  name: "Doge in a Taco",
-  symbol: "DOGETACO",
-  uri: "https://external-preview.redd.it/56OAprDalFy7aI2_Ve2kdFfBPenTYAh23T9PnKktTro.jpg?auto=webp&s=f2687b16f02330117e20931c0e177423519803fc",
-};
-
-const meme4 = {
-  index: 4,
-  name: "Cat Wif Hat",
-  symbol: "CWH",
-  uri: "https://i.etsystatic.com/18460845/r/il/d7df20/3538227185/il_fullxfull.3538227185_lotd.jpg",
-};
-
-const meme5 = {
-  index: 5,
-  name: "Conspiracies",
-  symbol: "CHARLIE",
-  uri: "https://i.kym-cdn.com/entries/icons/original/000/022/524/pepe_silvia_meme_banner.jpg",
-};
-
-const meme6 = {
-  index: 6,
-  name: "LilGuy",
-  symbol: "HAMSTER",
-  uri: "https://i.kym-cdn.com/news_feeds/icons/mobile/000/035/373/c98.jpg",
-};
-
-const meme7 = {
-  index: 7,
-  name: "Shrek Knows Something We Don't",
-  symbol: "SHREK",
-  uri: "https://snworksceo.imgix.net/dth/84e832cc-b853-40d1-bcf9-bd0d2aae2bec.sized-1000x1000.png?w=800&h=600",
-};
-
-const meme8 = {
-  index: 8,
-  name: "CarSalesman",
-  symbol: "CARS",
-  uri: "https://helios-i.mashable.com/imagery/articles/068tGOwxBzz2IjPMTXee8SH/hero-image.fill.size_1200x900.v1614270504.jpg",
-};
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -82,23 +28,23 @@ let meme, preMeme, MemeFees;
 async function getContracts() {
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0x1AC70c868628c5027D69AF4EE891F549B4F9DD32"
+    "0x81c076bf8c808c7dd4DaC0aab2A88629F8439089"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x25a12591e63a4367e5fB3Af66cc4CDDB7F02aDec"
+    "0x91B59B206E2884C63455F11435afAC70B3bD3f4A"
   );
   multicallSubgraph = await ethers.getContractAt(
     "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0x446d53082A967c037189fcf289DC1D87402085eB"
+    "0x1764319955D0E57bcb05C2257CaE4bA5b8153cC6"
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x2FFdF4d09ca6473CE4Eddb47371FC098FE758c52"
+    "0x85EB6224D920D4349c2182d18491D1f282107f07"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x5D1dd559fdA41D45a7e9A3cbF85FdeA0298A892f"
+    "0x7F52636b42678989a6CdBc4f7CF549455D874C25"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",

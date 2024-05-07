@@ -7,7 +7,9 @@ require("solidity-coverage");
 /*===================================================================*/
 /*===========================  SETTINGS  ============================*/
 
-const CHAIN_ID = 84532; // Base Sepolia
+// const CHAIN_ID = 84532; // Base Sepolia
+// const CHAIN_ID = 421614; // Arbitrum Sepolia
+const CHAIN_ID = 80085; // Berachain Artio
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -61,6 +63,14 @@ module.exports = {
         urls: {
           apiURL: "https://api-sepolia.basescan.org/api",
           browserURL: "https://sepolia.basescan.org/",
+        },
+      },
+      {
+        network: "arbitrum-sepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io/",
         },
       },
     ],

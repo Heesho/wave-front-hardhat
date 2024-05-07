@@ -1,0 +1,111 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: WaveFrontFactory
+    network: berachain-public-testnet
+    source:
+      address: "0x91B59B206E2884C63455F11435afAC70B3bD3f4A"
+      abi: WaveFrontFactory
+      startBlock: 1985225
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Directory
+        - Token
+      abis:
+        - name: WaveFrontFactory
+          file: ./abis/WaveFrontFactory.json
+      eventHandlers:
+        - event: WaveFrontFactory__MemeCreated(address,address,string,string,string,address)
+          handler: handleWaveFrontFactory__MemeCreated
+      file: ./src/wave-front-factory.ts
+  - kind: ethereum
+    name: WaveFrontRouter
+    network: berachain-public-testnet
+    source:
+      address: "0x7F52636b42678989a6CdBc4f7CF549455D874C25"
+      abi: WaveFrontRouter
+      startBlock: 1985225
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Directory
+        - Token
+        - Account
+        - Swap
+      abis:
+        - name: WaveFrontRouter
+          file: ./abis/WaveFrontRouter.json
+      eventHandlers:
+        - event: WaveFrontRouter__AffiliateSet(indexed address,indexed address)
+          handler: handleWaveFrontRouter__AffiliateSet
+        - event: WaveFrontRouter__Buy(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleWaveFrontRouter__Buy
+        - event: WaveFrontRouter__Sell(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleWaveFrontRouter__Sell
+      file: ./src/wave-front-router.ts
+templates:
+  - kind: ethereum/contract
+    name: Meme
+    network: berachain-public-testnet
+    source:
+      abi: Meme
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/meme.ts
+      entities:
+        - Directory
+        - Token
+      abis:
+        - name: Meme
+          file: ./abis/Meme.json
+      eventHandlers:
+        - event: Meme__Buy(indexed address,indexed address,uint256,uint256)
+          handler: handleMeme__Buy
+        - event: Meme__Sell(indexed address,indexed address,uint256,uint256)
+          handler: handleMeme__Sell
+        - event: Meme__Claim(indexed address,uint256)
+          handler: handleMeme__Claim
+        - event: Meme__StatusFee(indexed address,uint256)
+          handler: handleMeme__StatusFee
+        - event: Meme__ProviderFee(indexed address,uint256)
+          handler: handleMeme__ProviderFee
+        - event: Meme__ProtocolFee(indexed address,uint256)
+          handler: handleMeme__ProtocolFee
+        - event: Meme__StatusUpdated(indexed address,string)
+          handler: handleMeme__StatusUpdated
+        - event: Meme__MarketOpened()
+          handler: handleMeme__MarketOpened
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+  - kind: ethereum/contract
+    name: PreMeme
+    network: berachain-public-testnet
+    source:
+      abi: PreMeme
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/pre-meme.ts
+      entities:
+        - Directory
+        - Token
+      abis:
+        - name: PreMeme
+          file: ./abis/PreMeme.json
+      eventHandlers:
+        - event: PreMeme__Contributed(indexed address,indexed address,uint256)
+          handler: handlePreMeme__Contributed
+        - event: PreMeme__Redeemed(indexed address,indexed address,uint256)
+          handler: handlePreMeme__Redeemed
