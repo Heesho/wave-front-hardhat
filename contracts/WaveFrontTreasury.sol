@@ -16,6 +16,9 @@ contract WaveFrontTreasury is Ownable {
     address public treasury;
 
     event WaveFrontTreasury__ClaimFees(address indexed meme, address indexed account);
+    event WaveFrontTreasury__Withdraw(address indexed treasury, uint256 amount);
+    event WaveFrontTreasury__Borrowed(address indexed meme, uint256 amount);
+    event WaveFrontTreasury__SetTreasury(address indexed oldTreasury, address indexed newTreasury);
 
     constructor(address _base, address _treasury) {
         base = _base;
@@ -23,12 +26,18 @@ contract WaveFrontTreasury is Ownable {
     }
 
     function withdraw() external {
-        IERC20(base).transfer(treasury, IERC20(base).balanceOf(address(this)));
+        uint256 balance = IERC20(base).balanceOf(address(this));
+        emit WaveFrontTreasury__Withdraw(treasury, balance);
+        IERC20(base).transfer(treasury, balance);
     }
 
     function borrow(address[] calldata memes) external {
         for (uint256 i = 0; i < memes.length; i++) {
-            IMeme(memes[i]).borrow(IMeme(memes[i]).getAccountCredit(address(this)));
+            uint256 credit = IMeme(memes[i]).getAccountCredit(address(this));
+            if (credit > 0) {
+                IMeme(memes[i]).borrow(credit);
+                emit WaveFrontTreasury__Borrowed(memes[i], credit);
+            }
         }
     }
 
@@ -39,8 +48,9 @@ contract WaveFrontTreasury is Ownable {
         }
     }
 
-    function setTreasury(address _treasury) external onlyOwner {
-        treasury = _treasury;
+    function setTreasury(address newTreasury) external onlyOwner {
+        emit WaveFrontTreasury__SetTreasury(treasury, newTreasury);
+        treasury = newTreasury;
     }
     
 }
