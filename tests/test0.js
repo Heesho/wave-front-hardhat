@@ -6,6 +6,7 @@ const { ethers, network } = require("hardhat");
 const { execPath } = require("process");
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
+const pointZeroZeroOne = convert("0.001", 18);
 const one = convert("1", 18);
 const two = convert("2", 18);
 const three = convert("3", 18);
@@ -25,7 +26,7 @@ const tenThousand = convert("10000", 18);
 const oneHundredThousand = convert("100000", 18);
 
 let owner, multisig, treasury, user0, user1, user2;
-let memeFactory, meme1, meme2;
+let memeFactory, meme1, meme2, meme3;
 let factory, multicallSubgraph, multicallFrontend, router;
 let base;
 
@@ -825,5 +826,126 @@ describe("local: test0", function () {
     await expect(factory.connect(user0).setMinAmountIn(one)).to.be.reverted;
     await factory.connect(owner).setTreasury(treasury.address);
     await factory.connect(owner).setMinAmountIn(one);
+    await factory.connect(owner).setMinAmountIn(pointZeroZeroOne);
+  });
+
+  it("User0 creates meme3", async function () {
+    console.log("******************************************************");
+    await router.connect(user0).createMeme("Meme 3", "MEME3", "http/ipfs.com", {
+      value: pointZeroZeroOne,
+    });
+    meme3 = await ethers.getContractAt("Meme", await factory.index_Meme(3));
+    console.log("Meme3 Created");
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme3.address, user0.address);
+    console.log(res);
+  });
+
+  it("Forward 2 hour", async function () {
+    console.log("******************************************************");
+    await network.provider.send("evm_increaseTime", [7200]);
+    await network.provider.send("evm_mine");
+  });
+
+  it("User0 redeems meme3 contribution", async function () {
+    console.log("******************************************************");
+    await router.connect(user0).redeem(meme3.address);
+  });
+
+  it("User0 sells meme3", async function () {
+    console.log("******************************************************");
+    await meme3
+      .connect(user0)
+      .approve(router.address, await meme3.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sell(meme3.address, await meme3.balanceOf(user0.address), 0, 1904422437);
+  });
+
+  it("User0 sells meme3", async function () {
+    console.log("******************************************************");
+    await meme3
+      .connect(user0)
+      .approve(router.address, await meme3.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sell(meme3.address, await meme3.balanceOf(user0.address), 0, 1904422437);
+  });
+
+  it("User0 sells meme3", async function () {
+    console.log("******************************************************");
+    await meme3
+      .connect(user0)
+      .approve(router.address, await meme3.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sell(meme3.address, await meme3.balanceOf(user0.address), 0, 1904422437);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme3.address, user0.address);
+    console.log(res);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(
+      meme3.address,
+      treasury.address
+    );
+    console.log(res);
+  });
+
+  it("Treasury sells meme3", async function () {
+    console.log("******************************************************");
+    await meme3
+      .connect(treasury)
+      .approve(router.address, await meme3.balanceOf(treasury.address));
+    await router
+      .connect(treasury)
+      .sell(
+        meme3.address,
+        await meme3.balanceOf(treasury.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 sells meme3", async function () {
+    console.log("******************************************************");
+    await meme3
+      .connect(user0)
+      .approve(router.address, await meme3.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sell(meme3.address, await meme3.balanceOf(user0.address), 0, 1904422437);
+  });
+
+  it("Treasury sells meme3", async function () {
+    console.log("******************************************************");
+    await meme3
+      .connect(treasury)
+      .approve(router.address, await meme3.balanceOf(treasury.address));
+    await router
+      .connect(treasury)
+      .sell(
+        meme3.address,
+        await meme3.balanceOf(treasury.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(
+      meme3.address,
+      treasury.address
+    );
+    console.log(res);
   });
 });

@@ -7,8 +7,8 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 // const BASE_ADDRESS = "0x4200000000000000000000000000000000000006"; // Base Sepolia wETH
-// const BASE_ADDRESS = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"; // Arbitrum Sepolia wETH
-const BASE_ADDRESS = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F"; // Berachain Artio wBERA
+const BASE_ADDRESS = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"; // Arbitrum Sepolia wETH
+// const BASE_ADDRESS = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F"; // Berachain Artio wBERA
 const TREASURY_ADDRESS = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712"; // Treasury Address
 
 /*===========================  END SETTINGS  ========================*/
@@ -28,23 +28,23 @@ let meme, preMeme, MemeFees;
 async function getContracts() {
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0x81c076bf8c808c7dd4DaC0aab2A88629F8439089"
+    "0x067Cd33e00b7719853447362654D900A68077f70"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x91B59B206E2884C63455F11435afAC70B3bD3f4A"
+    "0x1552b0DCAC344fFA9702Dbafa6EfA5ebEFB62A82"
   );
   multicallSubgraph = await ethers.getContractAt(
     "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0x1764319955D0E57bcb05C2257CaE4bA5b8153cC6"
+    "0xB5ccEA2Ebb813EA818f2571b89A686E137E67889"
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x85EB6224D920D4349c2182d18491D1f282107f07"
+    "0x531A7BC1a8B75107ee3ce76C5D906e0AA7aEd61f"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x7F52636b42678989a6CdBc4f7CF549455D874C25"
+    "0x158CB676938b57475Da1007E66480E19D99F3c26"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -298,8 +298,8 @@ async function main() {
   console.log("Starting Transactions");
 
   // set waveFrontFactory on memeFactory
-  // await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
-  // console.log("WaveFrontFactory Set");
+  await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
+  console.log("WaveFrontFactory Set");
 
   // await factory
   //   .connect(wallet)

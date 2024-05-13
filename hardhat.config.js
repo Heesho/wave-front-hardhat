@@ -8,8 +8,8 @@ require("solidity-coverage");
 /*===========================  SETTINGS  ============================*/
 
 // const CHAIN_ID = 84532; // Base Sepolia
-// const CHAIN_ID = 421614; // Arbitrum Sepolia
-const CHAIN_ID = 80085; // Berachain Artio
+const CHAIN_ID = 421614; // Arbitrum Sepolia
+// const CHAIN_ID = 80085; // Berachain Artio
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/

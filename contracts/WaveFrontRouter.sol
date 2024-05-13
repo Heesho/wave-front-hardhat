@@ -10,7 +10,7 @@ interface IWaveFrontFactory {
 interface IMeme {
     function preMeme() external view returns (address);
     function buy(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) external;
-    function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to) external;
+    function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) external;
     function claimFees(address account) external;
     function updateStatus(address account, string memory status) external;
     function getMarketPrice() external view returns (uint256);
@@ -89,7 +89,7 @@ contract WaveFrontRouter {
     ) external {
         IERC20(meme).transferFrom(msg.sender, address(this), amountIn);
         IERC20(meme).approve(meme, amountIn);
-        IMeme(meme).sell(amountIn, minAmountOut, expireTimestamp, address(this));
+        IMeme(meme).sell(amountIn, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
 
         uint256 baseBalance = IERC20(base).balanceOf(address(this));
         IBase(base).withdraw(baseBalance);
