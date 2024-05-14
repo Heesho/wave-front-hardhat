@@ -126,9 +126,21 @@ describe("local: test0", function () {
     await network.provider.send("evm_mine");
   });
 
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
+    console.log(res);
+  });
+
   it("User1 redeems meme1 contribution", async function () {
     console.log("******************************************************");
     await router.connect(user1).redeem(meme1.address);
+  });
+
+  it("Page Data", async function () {
+    console.log("******************************************************");
+    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
+    console.log(res);
   });
 
   it("User1 redeems meme1 contribution", async function () {
@@ -234,11 +246,6 @@ describe("local: test0", function () {
       });
   });
 
-  it("User0 claims meme1 fees", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).claimFees([meme1.address]);
-  });
-
   it("User0 buys meme0", async function () {
     console.log("******************************************************");
     await router.connect(user0).buy(meme1.address, AddressZero, 0, 1904422437, {
@@ -261,16 +268,6 @@ describe("local: test0", function () {
     await router
       .connect(user1)
       .sell(meme1.address, await meme1.balanceOf(user1.address), 0, 1904422437);
-  });
-
-  it("User0 claims meme1 fees", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).claimFees([meme1.address]);
-  });
-
-  it("User1 claims meme1 fees", async function () {
-    console.log("******************************************************");
-    await router.connect(user1).claimFees([meme1.address]);
   });
 
   it("User1 buys meme1", async function () {
@@ -439,21 +436,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -466,21 +463,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme2", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme2.reserveBase();
+    const reserveRealBase = await meme2.reserveRealBase();
     const reserveMeme = await meme2.reserveMeme();
     const totalSupply = await meme2.totalSupply();
     const maxSupply = await meme2.maxSupply();
     const baseBalance = await base.balanceOf(meme2.address);
-    const initialBase = await meme2.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme2.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -529,21 +526,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -574,21 +571,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -611,21 +608,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -675,21 +672,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -738,21 +735,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -784,21 +781,21 @@ describe("local: test0", function () {
 
   it("Invariants Meme1", async function () {
     console.log("******************************************************");
-    const reserveBase = await meme1.reserveBase();
+    const reserveRealBase = await meme1.reserveRealBase();
     const reserveMeme = await meme1.reserveMeme();
     const totalSupply = await meme1.totalSupply();
     const maxSupply = await meme1.maxSupply();
     const baseBalance = await base.balanceOf(meme1.address);
-    const initialBase = await meme1.RESERVE_VIRTUAL_BASE();
+    const initialBase = await meme1.reserveVirtualBase();
     const maxReserve = reserveMeme.add(totalSupply);
-    const remainingBase = reserveBase
+    const remainingBase = reserveRealBase
       .add(initialBase)
       .mul(reserveMeme)
       .div(maxReserve);
 
     console.log("Base Balance: ", baseBalance);
-    console.log("Reserve Base: ", reserveBase);
-    expect(baseBalance).to.be.at.least(reserveBase);
+    console.log("Reserve Base: ", reserveRealBase);
+    expect(baseBalance).to.be.at.least(reserveRealBase);
 
     console.log("Max Reserve: ", maxReserve);
     console.log("Max Supply: ", maxSupply);
@@ -953,7 +950,6 @@ describe("local: test0", function () {
 
   it("Treasury operations", async function () {
     console.log("******************************************************");
-    await treasury.claimFees([meme1.address, meme2.address, meme3.address]);
     await treasury.borrow([meme1.address, meme2.address, meme3.address]);
     await treasury.withdraw();
   });
@@ -962,5 +958,7 @@ describe("local: test0", function () {
     console.log("******************************************************");
     let res = await multicallFrontend.getPageData(meme3.address, owner.address);
     console.log(res);
+    console.log();
+    console.log(pointZeroZeroOne.toString());
   });
 });

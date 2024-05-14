@@ -11,7 +11,6 @@ interface IMeme {
     function preMeme() external view returns (address);
     function buy(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) external;
     function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) external;
-    function claimFees(address account) external;
     function updateStatus(address account, string memory status) external;
     function getMarketPrice() external view returns (uint256);
     function getFloorPrice() external view returns (uint256);
@@ -44,7 +43,6 @@ contract WaveFrontRouter {
     event WaveFrontRouter__Buy(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
-    event WaveFrontRouter__ClaimFees(address indexed meme, address indexed account);
     event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, string name, string symbol, string uri);
     event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
@@ -98,13 +96,6 @@ contract WaveFrontRouter {
         IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
 
         emit WaveFrontRouter__Sell(meme, msg.sender, amountIn, baseBalance, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
-    }
-
-    function claimFees(address[] calldata memes) external {
-        for (uint256 i = 0; i < memes.length; i++) {
-            IMeme(memes[i]).claimFees(msg.sender);
-            emit WaveFrontRouter__ClaimFees(memes[i], msg.sender);
-        }
     }
 
     function createMeme(

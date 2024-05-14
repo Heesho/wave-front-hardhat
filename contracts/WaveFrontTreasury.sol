@@ -41,13 +41,6 @@ contract WaveFrontTreasury is Ownable {
         }
     }
 
-    function claimFees(address[] calldata memes) external {
-        for (uint256 i = 0; i < memes.length; i++) {
-            IMeme(memes[i]).claimFees(address(this));
-            emit WaveFrontTreasury__ClaimFees(memes[i], address(this));
-        }
-    }
-
     function setTreasury(address newTreasury) external onlyOwner {
         emit WaveFrontTreasury__SetTreasury(treasury, newTreasury);
         treasury = newTreasury;

@@ -142,43 +142,13 @@ contract PreMeme is ReentrancyGuard {
     
 }
 
-contract MemeFees {
-    using SafeERC20 for IERC20;
-
-    address internal immutable base; // Base token address (e.g., wETH or a stablecoin).
-    address internal immutable meme; // Address of the meme token that this contract manages fees for.
-
-    /**
-     * @dev Constructs the contract by setting the base token and associating this contract with a token.
-     * @param _base The address of the base token.
-     */
-    constructor(address _base) {
-        meme = msg.sender;
-        base = _base;
-    }
-
-    /**
-     * @dev Allows the Meme contract to claim fees on behalf of a user or entity.
-     * This function is meant to be called by the Meme contract to distribute fees
-     * to various stakeholders.
-     * @param recipient The address receiving the claimed fees.
-     * @param amountBase The amount of base token to be transferred as fees.
-     */
-    function claimFeesFor(address recipient, uint amountBase) external {
-        require(msg.sender == meme);
-        if (amountBase > 0) IERC20(base).safeTransfer(recipient, amountBase);
-    }
-
-}
-
-contract Meme is ERC20, ReentrancyGuard {
+contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
     uint256 public constant PRECISION = 1e18; // Precision for math
-    uint256 public constant RESERVE_VIRTUAL_BASE = 100 * PRECISION; // Initial virtual base reserve
     uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION; // Initial supply of the meme token
     uint256 public constant FEE = 200; // 2% fee rate for buy/sell operations
     uint256 public constant FEE_AMOUNT = 1250; // Additional fee parameters for ditributing to stakeholders
@@ -189,7 +159,6 @@ contract Meme is ERC20, ReentrancyGuard {
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     address public immutable base; // Address of the base token (e.g., wETH)
-    address public immutable fees; // Address of the MemeFees contract
     address public immutable waveFrontFactory; // Address of the WaveFrontFactory contract
     address public immutable preMeme; // Address of the PreMeme contract
 
@@ -197,14 +166,9 @@ contract Meme is ERC20, ReentrancyGuard {
     bool public open = false; // Flag indicating if the market is open, only the preMeme can open it
 
     // bonding curve state
-    uint256 public reserveBase = 0; // Base reserve of the token
+    uint256 public reserveRealBase = 0; // Base reserve of the token
+    uint256 public reserveVirtualBase = 100 * PRECISION; // Virtual base reserve of the token
     uint256 public reserveMeme = INITIAL_SUPPLY; // Token reserve of the meme. Initially set to the max supply
-
-    // fees state
-    uint256 public totalFeesBase; // Total fees collected in base token
-    uint256 public indexBase; // Index for calculating fees for token holders
-    mapping(address => uint256) public supplyIndexBase; // Index for calculating fees for meme holders
-    mapping(address => uint256) public claimableBase; // Claimable fees for meme holders
 
     // borrowing
     uint256 public totalDebt; // Total debt of the meme
@@ -232,18 +196,18 @@ contract Meme is ERC20, ReentrancyGuard {
 
     event Meme__Buy(address indexed from, address indexed to, uint256 amountIn, uint256 amountOut);
     event Meme__Sell(address indexed from, address indexed to, uint256 amountIn, uint256 amountOut);
-    event Meme__Fees(address indexed account, uint256 amountBase, uint256 amountMeme);
-    event Meme__Claim(address indexed account, uint256 amountBase);
     event Meme__ProviderFee(address indexed account, uint256 amountBase, uint256 amountMeme);
     event Meme__ProtocolFee(address indexed account, uint256 amountBase, uint256 amountMeme);
     event Meme__CreatorFee(address indexed account, uint256 amountBase, uint256 amountMeme);
     event Meme__StatusFee(address indexed account, uint256 amountBase, uint256 amountMeme);
     event Meme__Burn(address indexed account, uint256 amountMeme);
-    event Meme__ReserveBurn(uint256 amountMeme);
+    event Meme__Donated(address indexed account, uint256 amountBase);
+    event Meme__ReserveMemeBurn(uint256 amountMeme);
+    event Meme__ReserveVirtualBaseAdd(uint256 amountBase);
+    event Meme__ReserveRealBaseAdd(uint256 amountBase);
     event Meme__Borrow(address indexed account, uint256 amountBase);
     event Meme__Repay(address indexed account, uint256 amountBase);
     event Meme__StatusUpdated(address indexed oldAccount, address indexed newAccount, string status);
-    event Meme__Donation(address indexed account, uint256 amountBase);
     event Meme__MarketOpened();
     event Meme__CreatorUpdated(address indexed oldCreator, address indexed newCreator);
 
@@ -279,6 +243,7 @@ contract Meme is ERC20, ReentrancyGuard {
         address _statusHolder
     )
         ERC20(_name, _symbol)
+        ERC20Permit(_name)
     {
         uri = _uri;
         status = "Overwrite to own the meme and earn swap fees.";
@@ -286,7 +251,6 @@ contract Meme is ERC20, ReentrancyGuard {
         creator = _statusHolder;
         waveFrontFactory = _waveFrontFactory;
         base = _base;
-        fees = address(new MemeFees(_base));
         preMeme = address(new PreMeme(_base));
     }
 
@@ -307,20 +271,20 @@ contract Meme is ERC20, ReentrancyGuard {
     {
         if (!open && msg.sender != preMeme) revert Meme__MarketNotOpen();
 
-        uint256 feeBase = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
-        uint256 newReserveBase = RESERVE_VIRTUAL_BASE + reserveBase + amountIn - feeBase;
-        uint256 newReserveMeme = (RESERVE_VIRTUAL_BASE + reserveBase).mulWadUp(reserveMeme).divWadUp(newReserveBase);
+        uint256 feeBase = amountIn * FEE / DIVISOR;
+        uint256 newReserveBase = reserveVirtualBase + reserveRealBase + amountIn - feeBase;
+        uint256 newReserveMeme = (reserveVirtualBase + reserveRealBase).mulWadUp(reserveMeme).divWadUp(newReserveBase);
         uint256 amountOut = reserveMeme - newReserveMeme;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
-        reserveBase = newReserveBase - RESERVE_VIRTUAL_BASE;
+        reserveRealBase = newReserveBase - reserveVirtualBase;
         reserveMeme = newReserveMeme;
 
         emit Meme__Buy(msg.sender, to, amountIn, amountOut);
 
         IERC20(base).safeTransferFrom(msg.sender, address(this), amountIn);
-        uint256 feeAmount = feeBase.mulWadDown(FEE_AMOUNT).divWadDown(DIVISOR);
+        uint256 feeAmount = feeBase * FEE_AMOUNT / DIVISOR;
         if (provider != address(0)) {
             IERC20(base).safeTransfer(provider, feeAmount);
             emit Meme__ProviderFee(provider, feeAmount, 0);
@@ -336,7 +300,7 @@ contract Meme is ERC20, ReentrancyGuard {
         feeBase -= (3 * feeAmount);
 
         _mint(to, amountOut);
-        _updateBase(feeBase); 
+        _add(feeBase); 
     }
 
     /**
@@ -353,19 +317,19 @@ contract Meme is ERC20, ReentrancyGuard {
         notZeroInput(amountIn)
         notExpired(expireTimestamp) 
     {
-        uint256 feeMeme = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
+        uint256 feeMeme = amountIn * FEE / DIVISOR;
         uint256 newReserveMeme = reserveMeme + amountIn - feeMeme;
-        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + reserveBase).mulWadUp(reserveMeme).divWadUp(newReserveMeme);
-        uint256 amountOut = RESERVE_VIRTUAL_BASE + reserveBase - newReserveBase;
+        uint256 newReserveBase = (reserveVirtualBase + reserveRealBase).mulWadUp(reserveMeme).divWadUp(newReserveMeme);
+        uint256 amountOut = reserveVirtualBase + reserveRealBase - newReserveBase;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
-        reserveBase = newReserveBase - RESERVE_VIRTUAL_BASE;
+        reserveRealBase = newReserveBase - reserveVirtualBase;
         reserveMeme = newReserveMeme;
 
         emit Meme__Sell(msg.sender, to, amountIn, amountOut);
         
-        uint256 feeAmount = feeMeme.mulWadDown(FEE_AMOUNT).divWadDown(DIVISOR);
+        uint256 feeAmount = feeMeme * FEE_AMOUNT / DIVISOR;
         if (provider != address(0)) {
             _mint(provider, feeAmount);
             emit Meme__ProviderFee(provider, 0, feeAmount);
@@ -418,28 +382,6 @@ contract Meme is ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Allows meme holders to claim their accumulated fees in base tokens.
-     * @param account The address of the meme holder claiming their fees.
-     * @return claimedBase The amount of base tokens claimed as fees.
-     */
-    function claimFees(address account) 
-        external 
-        returns (uint256 claimedBase) 
-    {
-        _updateFor(account);
-
-        claimedBase = claimableBase[account];
-
-        if (claimedBase > 0) {
-            claimableBase[account] = 0;
-
-            MemeFees(fees).claimFeesFor(account, claimedBase);
-
-            emit Meme__Claim(account, claimedBase);
-        }
-    }
-
-    /**
      * @dev Updates the status associated with the meme, which can be a feature like a pinned message.
      * @param account The address setting the new status.
      * @param newStatus The new status message to be set.
@@ -469,7 +411,7 @@ contract Meme is ERC20, ReentrancyGuard {
             uint256 reserveBurn = reserveMeme.mulWadDown(amount).divWadDown(maxSupply - reserveMeme);
             reserveMeme -= reserveBurn;
             maxSupply -= (amount + reserveBurn);
-            emit Meme__ReserveBurn(reserveBurn);
+            emit Meme__ReserveMemeBurn(reserveBurn);
         } else {
             maxSupply -= amount;
         }
@@ -477,21 +419,33 @@ contract Meme is ERC20, ReentrancyGuard {
         emit Meme__Burn(msg.sender, amount);
     }
 
-    /**
-     * @dev Allows anyone to donate base tokens to the contract, to distribute as fees to token holders.
-     * @param amount The amount of base tokens to donate.
-     */
+
     function donate(uint256 amount) 
         external 
         nonReentrant
         notZeroInput(amount)
     {
+        emit Meme__Donated(msg.sender, amount);
         IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
-        _updateBase(amount);
-        emit Meme__Donation(msg.sender, amount);
+        _add(amount);
     }
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
+
+    function _add(uint256 amount) 
+        internal 
+        notZeroInput(amount)
+    {
+        if (maxSupply > reserveMeme) {
+            uint256 reserveAdd = reserveMeme.mulWadDown(amount).divWadDown(maxSupply - reserveMeme);
+            reserveRealBase += amount;
+            reserveVirtualBase += reserveAdd;
+            emit Meme__ReserveVirtualBaseAdd(reserveAdd);
+        } else {
+            reserveRealBase += amount;
+        }
+        emit Meme__ReserveRealBaseAdd(amount);
+    }
 
     /**
      * @dev Opens the meme token market for trading, allowing buy and sell operations. Can only be called by the PreMeme contract.
@@ -512,49 +466,11 @@ contract Meme is ERC20, ReentrancyGuard {
         creator = newCreator;
     }
 
-    /**
-     * @dev Internal function to update the fee distribution index based on the total supply and collected fees.
-     * @param amount The amount of base token fees collected.
-     */
-    function _updateBase(uint256 amount) 
-        internal 
-    {
-        IERC20(base).safeTransfer(fees, amount);
-        totalFeesBase += amount;
-        uint256 _ratio = amount.mulWadDown(1e18).divWadDown(totalSupply());
-        if (_ratio > 0) {
-            indexBase += _ratio;
-        }
-        emit Meme__Fees(msg.sender, amount, 0);
-    }
-    
-    /**
-     * @dev Internal function to update the claimable fees for an account based on its meme token holdings and fee index.
-     * @param recipient The address for which to update the claimable fees.
-     */
-    function _updateFor(address recipient) 
-        internal 
-    {
-        uint256 _supplied = balanceOf(recipient);
-        if (_supplied > 0) {
-            uint256 _supplyIndexBase = supplyIndexBase[recipient];
-            uint256 _indexBase = indexBase; 
-            supplyIndexBase[recipient] = _indexBase;
-            uint256 _deltaBase = _indexBase - _supplyIndexBase;
-            if (_deltaBase > 0) {
-                uint256 _share = _supplied.mulWadDown(_deltaBase).divWadDown(1e18);
-                claimableBase[recipient] += _share;
-            }
-        } else {
-            supplyIndexBase[recipient] = indexBase; 
-        }
-    }
-
     /*----------  FUNCTION OVERRIDES  -----------------------------------*/
 
     function _afterTokenTransfer(address from, address to, uint256 amount)
         internal
-        override(ERC20)
+        override(ERC20, ERC20Votes)
     {
         super._afterTokenTransfer(from, to, amount);
     }
@@ -573,20 +489,18 @@ contract Meme is ERC20, ReentrancyGuard {
     {
         super._beforeTokenTransfer(from, to, amount);
         if (account_Debt[from] > 0 && amount > getAccountTransferrable(from)) revert Meme__CollateralRequirement();
-        _updateFor(from);
-        _updateFor(to);
     }
 
     function _mint(address to, uint256 amount)
         internal
-        override(ERC20)
+        override(ERC20, ERC20Votes)
     {
         super._mint(to, amount);
     }
 
     function _burn(address account, uint256 amount)
         internal
-        override(ERC20)
+        override(ERC20, ERC20Votes)
     {
         super._burn(account, amount);
     }
@@ -603,7 +517,7 @@ contract Meme is ERC20, ReentrancyGuard {
         view
         returns (uint256) 
     {
-        return ((RESERVE_VIRTUAL_BASE + reserveBase).mulWadDown(PRECISION)).divWadDown(reserveMeme);
+        return ((reserveVirtualBase + reserveRealBase).mulWadDown(PRECISION)).divWadDown(reserveMeme);
     }
 
     /**
@@ -616,7 +530,7 @@ contract Meme is ERC20, ReentrancyGuard {
         view 
         returns (uint256) 
     {
-        return (RESERVE_VIRTUAL_BASE.mulWadDown(PRECISION)).divWadDown(maxSupply);
+        return (reserveVirtualBase.mulWadDown(PRECISION)).divWadDown(maxSupply);
     }
 
     /**
@@ -631,7 +545,7 @@ contract Meme is ERC20, ReentrancyGuard {
         returns (uint256) 
     {
         if (balanceOf(account) == 0) return 0;
-        return ((RESERVE_VIRTUAL_BASE.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
+        return ((reserveVirtualBase.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - reserveVirtualBase) - account_Debt[account];
     }
 
     /**
@@ -646,7 +560,7 @@ contract Meme is ERC20, ReentrancyGuard {
         returns (uint256) 
     {
         if (account_Debt[account] == 0) return balanceOf(account);
-        return balanceOf(account) - (maxSupply - (RESERVE_VIRTUAL_BASE.mulWadUp(maxSupply).divWadUp(account_Debt[account] + RESERVE_VIRTUAL_BASE)));
+        return balanceOf(account) - (maxSupply - (reserveVirtualBase.mulWadUp(maxSupply).divWadUp(account_Debt[account] + reserveVirtualBase)));
     }
 
 }
