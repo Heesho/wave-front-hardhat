@@ -52,6 +52,26 @@ dataSources:
         - event: WaveFrontRouter__Sell(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handleWaveFrontRouter__Sell
       file: ./src/wave-front-router.ts
+  - kind: ethereum
+    name: WaveFrontTreasury
+    network: arbitrum-sepolia
+    source:
+      address: "0x7F52636b42678989a6CdBc4f7CF549455D874C25"
+      abi: WaveFrontTreasury
+      startBlock: 44105529
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Directory
+      abis:
+        - name: WaveFrontTreasury
+          file: ./abis/WaveFrontTreasury.json
+      eventHandlers:
+        - event: WaveFrontTreasury__Withdraw(indexed address,uint256)
+          handler: handleWaveFrontTreasury__Withdraw
+      file: ./src/wave-front-treasury.ts
 templates:
   - kind: ethereum/contract
     name: Meme
