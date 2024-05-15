@@ -90,7 +90,24 @@ export function handleMeme__ProviderFee(event: Meme__ProviderFee): void {
 
   let tokenPosition = TokenPosition.load(
     event.address.toHexString() + "-" + event.params.account.toHexString()
-  )!;
+  );
+  if (tokenPosition === null) {
+    tokenPosition = new TokenPosition(
+      event.address.toHexString() + "-" + event.params.account.toHexString()
+    );
+    tokenPosition.account = event.params.account;
+    tokenPosition.token = event.address;
+    tokenPosition.contributed = ZERO_BD;
+    tokenPosition.balance = ZERO_BD;
+    tokenPosition.created = false;
+    tokenPosition.leader = false;
+    tokenPosition.creatorFeesBase = ZERO_BD;
+    tokenPosition.creatorFeesMeme = ZERO_BD;
+    tokenPosition.leaderFeesBase = ZERO_BD;
+    tokenPosition.leaderFeesMeme = ZERO_BD;
+    tokenPosition.providerFeesBase = ZERO_BD;
+    tokenPosition.providerFeesMeme = ZERO_BD;
+  }
   tokenPosition.providerFeesBase = tokenPosition.providerFeesBase.plus(
     convertEthToDecimal(event.params.amountBase)
   );
