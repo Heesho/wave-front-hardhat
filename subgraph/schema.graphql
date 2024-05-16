@@ -7,6 +7,7 @@ type Directory @entity {
 
 type Account @entity {
   id: Bytes!
+  points: BigInt!
   providerFees: BigDecimal!
   leaderFees: BigDecimal!
   creatorFees: BigDecimal!

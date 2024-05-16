@@ -3,17 +3,25 @@ import {
   PreMeme__Contributed,
   PreMeme__Redeemed,
 } from "../generated/templates/PreMeme/PreMeme";
-import { ONE_BI, ZERO_BD, ZERO_BI, convertEthToDecimal } from "./helpers";
+import {
+  ONE_BI,
+  TEN_BI,
+  ZERO_BD,
+  ZERO_BI,
+  convertEthToDecimal,
+} from "./helpers";
 
 export function handlePreMeme__Contributed(event: PreMeme__Contributed): void {
   let account = Account.load(event.params.account);
   if (account === null) {
     account = new Account(event.params.account);
+    account.points = TEN_BI;
     account.providerFees = ZERO_BD;
     account.leaderFees = ZERO_BD;
     account.creatorFees = ZERO_BD;
     account.referrals = ZERO_BI;
   }
+  account.points = account.points.plus(ONE_BI);
   account.save();
 
   let token = Token.load(event.params.meme)!;

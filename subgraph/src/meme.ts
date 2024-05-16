@@ -65,6 +65,7 @@ export function handleMeme__StatusFee(event: Meme__StatusFee): void {
   account.leaderFees = account.leaderFees.plus(
     convertEthToDecimal(event.params.amountBase)
   );
+  account.points = account.points.plus(ONE_BI);
   account.save();
 
   let tokenPosition = TokenPosition.load(
@@ -84,6 +85,7 @@ export function handleMeme__ProviderFee(event: Meme__ProviderFee): void {
   account.providerFees = account.providerFees.plus(
     convertEthToDecimal(event.params.amountBase)
   );
+  account.points = account.points.plus(ONE_BI);
   account.save();
 
   let tokenPosition = TokenPosition.load(
@@ -120,6 +122,7 @@ export function handleMeme__CreatorFee(event: Meme__CreatorFee): void {
   account.creatorFees = account.creatorFees.plus(
     convertEthToDecimal(event.params.amountBase)
   );
+  account.points = account.points.plus(ONE_BI);
   account.save();
 
   let tokenPosition = TokenPosition.load(
@@ -152,6 +155,10 @@ export function handleMeme__StatusUpdated(event: Meme__StatusUpdated): void {
 
   token.leader = event.params.newAccount;
   token.save();
+
+  let account = Account.load(event.params.newAccount)!;
+  account.points = account.points.plus(ONE_BI);
+  account.save();
 }
 
 export function handleMeme__MarketOpened(event: Meme__MarketOpened): void {

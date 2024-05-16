@@ -9,6 +9,7 @@ import {
   INITIAL_PRICE,
   ZERO_BD,
   ZERO_BI,
+  TEN_BI,
 } from "./helpers";
 
 export function handleWaveFrontFactory__MemeCreated(
@@ -27,11 +28,13 @@ export function handleWaveFrontFactory__MemeCreated(
   let account = Account.load(event.params.account);
   if (account === null) {
     account = new Account(event.params.account);
+    account.points = TEN_BI;
     account.providerFees = ZERO_BD;
     account.leaderFees = ZERO_BD;
     account.creatorFees = ZERO_BD;
     account.referrals = ZERO_BI;
   }
+  account.points = account.points.plus(ONE_BI);
   account.save();
 
   Meme.create(event.params.meme);
