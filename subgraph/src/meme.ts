@@ -28,11 +28,9 @@ export function handleMeme__Buy(event: Meme__Buy): void {
   directory.save();
 
   let token = Token.load(event.address)!;
-  if (convertEthToDecimal(event.params.amountOut) != ZERO_BD) {
-    token.marketPrice = convertEthToDecimal(event.params.amountIn).div(
-      convertEthToDecimal(event.params.amountOut)
-    );
-  }
+  token.marketPrice = convertEthToDecimal(event.params.amountIn).div(
+    convertEthToDecimal(event.params.amountOut)
+  );
   token.priceChange = "UP";
   token.circulatingSupply = token.circulatingSupply.plus(
     convertEthToDecimal(event.params.amountOut)
@@ -230,9 +228,6 @@ export function handleTransfer(event: Transfer): void {
   fromTokenPosition.balance = fromTokenPosition.balance.minus(
     convertEthToDecimal(event.params.value)
   );
-  if (fromTokenPosition.balance.lt(ZERO_BD)) {
-    fromTokenPosition.balance = ZERO_BD;
-  }
   if (
     oldFromBalance.gt(ZERO_BD) &&
     fromTokenPosition.balance.equals(ZERO_BD) &&

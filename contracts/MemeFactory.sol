@@ -17,30 +17,26 @@ import "./FixedPointMathLib.sol";
  * by a bonding curve. The bonding curve lives in the token and ensures liquidity at all price ranges 
  * with a constant product, facilitating dynamic pricing based on market demand. Memes are initially
  * launched via the PreMeme contract to ensure a bot-resistant and fair distribution. Once launched, 
- * meme tokens can be traded, used as collateral for borrowing, or held to earn transaction fees.
+ * meme tokens can be traded used to update the status, or used as collateral for borrowing.
  *
  * Meme: 
  * The primary asset with a built-in bonding curve, enabling buy/sell transactions
  * with price adjustments based on supply. A virtual bonding curve is used with a constant product
  * formula (XY = K). The meme can be bought, sold, allows for liqduition free borrowing against held 
  * memes and fee accumulation for meme holders. It also uses a bonding curve shift to adjuast the 
- * reserves based on the maxSupply of meme. Buy transactions incur a 2% fee, divided among
- * the protocol treasury (20%), status holder (20%), a provider (20% optional), with the remainder 
- * going to meme holders. Sell transactions also incur a 2% fee, which is fully burned, reducing
- * maxSupply and increasing the meme's floor and market prices, also increasing the borrowing
- * capacity of the meme. The status of the meme can be updated by anyone by burning meme. The
- * meme does not need to be deposited to earn fees or borrow against it, both can be done from
- * the user's wallet. Borrowing however will not let the user transfer the meme if the collateral
- * requirement is not met.
+ * reserves based on the maxSupply of meme. Buy and sell transactions incur a 2% fee, divided among
+ * the protocol treasury (12.5%), status holder (12.5%), creator (12.5%), a provider (12.5% optional),
+ * For buys the remainder (50%) is used to shift the bonding curve (increasing the base reserves). 
+ * For sells the remainder (50%) is used to shift the bonding curve (decreasing the meme reserves). 
+ * Both cases increase the floor price, market price, and borrowing capacity of the meme. The meme
+ * The status of the meme can be updated by anyone by burning meme. The meme does not need to be 
+ * deposited to borrow against it, this can be done from the user's wallet. Borrowing however will 
+ * not let the user transfer the meme if the collateral requirement is not met.
 
  * PreMeme: 
  * Manages the initial distribution phase, collecting base tokens (e.g., wETH) and
  * transitioning to the open market phase for the Meme, ensuring a fair launch. Everyone
  * that participates in the PreMeme phase receives memes at the same price.
- * 
- * MemeFees: 
- * Handles the collection and distribution of transaction fees. A portion of
- * buying fees is distributed to meme holders.
  * 
  * MemeFactory: 
  * Facilitates the creation of new Meme instances, integrating them with the
@@ -419,11 +415,13 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Meme__Burn(msg.sender, amount);
     }
 
-
+    /**
+     * @dev Allows users to donate base tokens to the meme contract, increasing the base reserves.
+     * @param amount The amount of base tokens to donate.
+     */
     function donate(uint256 amount) 
         external 
         nonReentrant
-        notZeroInput(amount)
     {
         emit Meme__Donated(msg.sender, amount);
         IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
