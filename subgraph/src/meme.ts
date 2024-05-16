@@ -1,10 +1,12 @@
 import { Address } from "@graphprotocol/graph-ts";
 import { Account, Directory, Token, TokenPosition } from "../generated/schema";
 import {
+  Meme__Borrow,
   Meme__Buy,
   Meme__CreatorFee,
   Meme__MarketOpened,
   Meme__ProviderFee,
+  Meme__Repay,
   Meme__Sell,
   Meme__StatusFee,
   Meme__StatusUpdated,
@@ -15,6 +17,8 @@ import {
   FACTORY_ADDRESS,
   ONE_BI,
   STATUS_UPDATE_FEE,
+  TEN_BI,
+  THREE_BI,
   ZERO_BD,
   ZERO_BI,
   convertEthToDecimal,
@@ -58,6 +62,18 @@ export function handleMeme__Sell(event: Meme__Sell): void {
   token.marketCap = token.marketPrice.times(token.circulatingSupply);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountOut));
   token.save();
+}
+
+export function handleMeme__Borrow(event: Meme__Borrow): void {
+  let account = Account.load(event.params.account)!;
+  account.points = account.points.plus(THREE_BI);
+  account.save();
+}
+
+export function handleMeme__Repay(event: Meme__Repay): void {
+  let account = Account.load(event.params.account)!;
+  account.points = account.points.plus(THREE_BI);
+  account.save();
 }
 
 export function handleMeme__StatusFee(event: Meme__StatusFee): void {
@@ -157,7 +173,7 @@ export function handleMeme__StatusUpdated(event: Meme__StatusUpdated): void {
   token.save();
 
   let account = Account.load(event.params.newAccount)!;
-  account.points = account.points.plus(ONE_BI);
+  account.points = account.points.plus(THREE_BI);
   account.save();
 }
 
@@ -173,6 +189,7 @@ export function handleTransfer(event: Transfer): void {
   let toAccount = Account.load(event.params.to);
   if (toAccount === null) {
     toAccount = new Account(event.params.to);
+    toAccount.points = TEN_BI;
     toAccount.providerFees = ZERO_BD;
     toAccount.leaderFees = ZERO_BD;
     toAccount.creatorFees = ZERO_BD;

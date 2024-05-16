@@ -10,6 +10,7 @@ import {
   ZERO_BD,
   ZERO_BI,
   TEN_BI,
+  THREE_BI,
 } from "./helpers";
 
 export function handleWaveFrontFactory__MemeCreated(
@@ -34,7 +35,7 @@ export function handleWaveFrontFactory__MemeCreated(
     account.creatorFees = ZERO_BD;
     account.referrals = ZERO_BI;
   }
-  account.points = account.points.plus(ONE_BI);
+  account.points = account.points.plus(THREE_BI);
   account.save();
 
   Meme.create(event.params.meme);

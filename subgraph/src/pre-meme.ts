@@ -6,6 +6,7 @@ import {
 import {
   ONE_BI,
   TEN_BI,
+  THREE_BI,
   ZERO_BD,
   ZERO_BI,
   convertEthToDecimal,
@@ -21,7 +22,7 @@ export function handlePreMeme__Contributed(event: PreMeme__Contributed): void {
     account.creatorFees = ZERO_BD;
     account.referrals = ZERO_BI;
   }
-  account.points = account.points.plus(ONE_BI);
+  account.points = account.points.plus(THREE_BI);
   account.save();
 
   let token = Token.load(event.params.meme)!;

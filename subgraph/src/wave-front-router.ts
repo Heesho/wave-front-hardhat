@@ -8,6 +8,7 @@ import { Account, Swap, SwapHourData, SwapDayData } from "../generated/schema";
 import {
   ONE_BI,
   TEN_BI,
+  THREE_BI,
   ZERO_BD,
   ZERO_BI,
   convertEthToDecimal,
@@ -40,7 +41,7 @@ export function handleWaveFrontRouter__Buy(event: WaveFrontRouter__Buy): void {
     account.creatorFees = ZERO_BD;
     account.referrals = ZERO_BI;
   }
-  account.points = account.points.plus(ONE_BI);
+  account.points = account.points.plus(THREE_BI);
   account.save();
   let swap = Swap.load(event.transaction.hash);
   if (swap === null) {
@@ -101,7 +102,7 @@ export function handleWaveFrontRouter__Sell(
   event: WaveFrontRouter__Sell
 ): void {
   let account = Account.load(event.params.account)!;
-  account.points = account.points.plus(ONE_BI);
+  account.points = account.points.plus(THREE_BI);
   account.save();
 
   let swap = Swap.load(event.transaction.hash);

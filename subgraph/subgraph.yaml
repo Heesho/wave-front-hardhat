@@ -94,6 +94,10 @@ templates:
           handler: handleMeme__Buy
         - event: Meme__Sell(indexed address,indexed address,uint256,uint256)
           handler: handleMeme__Sell
+        - event: Meme__Borrow(indexed address,uint256)
+          handler: handleMeme__Borrow
+        - event: Meme__Repay(indexed address,uint256)
+          handler: handleMeme__Repay
         - event: Meme__StatusFee(indexed address,uint256,uint256)
           handler: handleMeme__StatusFee
         - event: Meme__CreatorFee(indexed address,uint256,uint256)
