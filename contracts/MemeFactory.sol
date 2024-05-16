@@ -476,7 +476,6 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /**
      * @dev Internal function that is called before any meme token transfer, including minting and burning.
      * This function checks if the sender has enough transferrable memes after considering any existing debt (used as collateral).
-     * It also updates the fee distribution for both the sender and the receiver.
      * @param from The address sending the tokens.
      * @param to The address receiving the tokens.
      * @param amount The amount of tokens being transferred.
