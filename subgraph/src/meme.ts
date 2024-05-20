@@ -2,11 +2,13 @@ import { Address } from "@graphprotocol/graph-ts";
 import { Account, Directory, Token, TokenPosition } from "../generated/schema";
 import {
   Meme__Borrow,
+  Meme__Burn,
   Meme__Buy,
   Meme__CreatorFee,
   Meme__MarketOpened,
   Meme__ProviderFee,
   Meme__Repay,
+  Meme__ReserveMemeBurn,
   Meme__Sell,
   Meme__StatusFee,
   Meme__StatusUpdated,
@@ -36,10 +38,7 @@ export function handleMeme__Buy(event: Meme__Buy): void {
     convertEthToDecimal(event.params.amountOut)
   );
   token.priceChange = "UP";
-  token.circulatingSupply = token.circulatingSupply.plus(
-    convertEthToDecimal(event.params.amountOut)
-  );
-  token.marketCap = token.marketPrice.times(token.circulatingSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountIn));
   token.save();
 }
@@ -56,10 +55,7 @@ export function handleMeme__Sell(event: Meme__Sell): void {
     convertEthToDecimal(event.params.amountIn)
   );
   token.priceChange = "DOWN";
-  token.circulatingSupply = token.circulatingSupply.minus(
-    convertEthToDecimal(event.params.amountIn)
-  );
-  token.marketCap = token.marketPrice.times(token.circulatingSupply);
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountOut));
   token.save();
 }
@@ -155,7 +151,6 @@ export function handleMeme__CreatorFee(event: Meme__CreatorFee): void {
 
 export function handleMeme__StatusUpdated(event: Meme__StatusUpdated): void {
   let token = Token.load(event.address)!;
-  token.circulatingSupply = token.circulatingSupply.minus(STATUS_UPDATE_FEE);
 
   let oldLeaderTokenPosition = TokenPosition.load(
     event.address.toHexString() + "-" + event.params.oldAccount.toHexString()
@@ -180,6 +175,26 @@ export function handleMeme__StatusUpdated(event: Meme__StatusUpdated): void {
 export function handleMeme__MarketOpened(event: Meme__MarketOpened): void {
   let token = Token.load(event.address)!;
   token.open = true;
+  token.save();
+}
+
+export function handleMeme__Burn(event: Meme__Burn): void {
+  let token = Token.load(event.address)!;
+  token.totalSupply = token.totalSupply.minus(
+    convertEthToDecimal(event.params.amountMeme)
+  );
+  token.marketCap = token.marketPrice.times(token.totalSupply);
+  token.save();
+}
+
+export function handleMeme__ReserveMemeBurn(
+  event: Meme__ReserveMemeBurn
+): void {
+  let token = Token.load(event.address)!;
+  token.totalSupply = token.totalSupply.minus(
+    convertEthToDecimal(event.params.amountMeme)
+  );
+  token.marketCap = token.marketPrice.times(token.totalSupply);
   token.save();
 }
 

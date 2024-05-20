@@ -8,9 +8,9 @@ dataSources:
     name: WaveFrontFactory
     network: arbitrum-sepolia
     source:
-      address: "0x2AE7dFfbFFf8d3444AE359c49fA0DDb7b2308eFc"
+      address: "0x2f7BEF0490297a794e1263209272b4581D6E6C4c"
       abi: WaveFrontFactory
-      startBlock: 44738541
+      startBlock: 45081857
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,9 +29,9 @@ dataSources:
     name: WaveFrontRouter
     network: arbitrum-sepolia
     source:
-      address: "0x1468AB4263ae01b788C9A5Cf741b3693bDf4970B"
+      address: "0x853464f2A45177c7C0435bEf9eD2d364A12F42a4"
       abi: WaveFrontRouter
-      startBlock: 44738541
+      startBlock: 45081857
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -56,9 +56,9 @@ dataSources:
     name: WaveFrontTreasury
     network: arbitrum-sepolia
     source:
-      address: "0x8A832cd3f401f6D32689B2ea2f2E1f7009BE00AC"
+      address: "0x4dA4483C9E726f6E3E0184D7375EFE90a521ff91"
       abi: WaveFrontTreasury
-      startBlock: 44738541
+      startBlock: 45081857
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -110,6 +110,10 @@ templates:
           handler: handleMeme__MarketOpened
         - event: Meme__CreatorUpdated(indexed address,indexed address)
           handler: handleMeme__CreatorUpdated
+        - event: Meme__Burn(indexed address,uint256)
+          handler: handleMeme__Burn
+        - event: Meme__ReserveMemeBurn(uint256)
+          handler: handleMeme__ReserveMemeBurn
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
   - kind: ethereum/contract

@@ -1,8 +1,9 @@
 import { BigInt, BigDecimal } from "@graphprotocol/graph-ts";
 
 export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
-export const FACTORY_ADDRESS = "0x2AE7dFfbFFf8d3444AE359c49fA0DDb7b2308eFc";
+export const FACTORY_ADDRESS = "0x2f7BEF0490297a794e1263209272b4581D6E6C4c";
 export const INITIAL_PRICE = BigDecimal.fromString("0.0000001");
+export const INITIAL_SUPPLY = BigDecimal.fromString("1000000000");
 export const PREMARKET_DURATION = BigInt.fromI32(600);
 export const STATUS_UPDATE_FEE = BigDecimal.fromString("1000");
 
@@ -10,6 +11,7 @@ export let ZERO_BI = BigInt.fromI32(0);
 export let ONE_BI = BigInt.fromI32(1);
 export let THREE_BI = BigInt.fromI32(3);
 export let TEN_BI = BigInt.fromI32(10);
+
 export let ZERO_BD = BigDecimal.fromString("0");
 export let ONE_BD = BigDecimal.fromString("1");
 export function bigDecimalExp18(): BigDecimal {

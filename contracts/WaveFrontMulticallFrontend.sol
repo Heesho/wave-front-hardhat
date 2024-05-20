@@ -138,7 +138,7 @@ contract WaveFrontMulticallFrontend {
 
         pageData.marketOpenTimestamp = IPreMeme(preMeme).endTimestamp();
 
-        pageData.marketCap = (marketOpen ? IMeme(meme).totalSupply() * IMeme(meme).getMarketPrice() / 1e18 : totalContributed);
+        pageData.marketCap = (marketOpen ? IMeme(meme).maxSupply() * IMeme(meme).getMarketPrice() / 1e18 : totalContributed);
         pageData.liquidity = (IMeme(meme).reserveRealBase() + reserveVirtualBase) * 2;
         pageData.floorPrice = IMeme(meme).getFloorPrice();
         pageData.marketPrice = (marketOpen ? IMeme(meme).getMarketPrice() : newReserveBase * 1e18 / newReserveMeme);

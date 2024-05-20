@@ -7,7 +7,7 @@ type Directory @entity {
 
 type Account @entity {
   id: Bytes!
-  points: BigInt!
+  points: BigDecimal!
   providerFees: BigDecimal!
   leaderFees: BigDecimal!
   creatorFees: BigDecimal!
@@ -31,7 +31,7 @@ type Token @entity {
   contributed: BigDecimal!
   marketPrice: BigDecimal!
   priceChange: PriceChange!
-  circulatingSupply: BigDecimal!
+  totalSupply: BigDecimal!
   marketCap: BigDecimal!
   volume: BigDecimal!
   contributors: BigInt!

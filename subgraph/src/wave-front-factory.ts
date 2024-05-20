@@ -11,6 +11,7 @@ import {
   ZERO_BI,
   TEN_BI,
   THREE_BI,
+  INITIAL_SUPPLY,
 } from "./helpers";
 
 export function handleWaveFrontFactory__MemeCreated(
@@ -51,8 +52,8 @@ export function handleWaveFrontFactory__MemeCreated(
     token.leader = event.params.account;
     token.contributed = ZERO_BD;
     token.marketPrice = INITIAL_PRICE;
-    token.circulatingSupply = ZERO_BD;
-    token.marketCap = ZERO_BD;
+    token.totalSupply = INITIAL_SUPPLY;
+    token.marketCap = INITIAL_PRICE.times(INITIAL_SUPPLY);
     token.contributors = ZERO_BI;
     token.holders = ZERO_BI;
     token.volume = ZERO_BD;
