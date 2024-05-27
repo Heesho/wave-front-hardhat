@@ -8,9 +8,9 @@ dataSources:
     name: WaveFrontFactory
     network: arbitrum-sepolia
     source:
-      address: "0x2f7BEF0490297a794e1263209272b4581D6E6C4c"
+      address: "0xc7874cF809440AFe975077656681E153560908eE"
       abi: WaveFrontFactory
-      startBlock: 45081857
+      startBlock: 48599530
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,9 +29,9 @@ dataSources:
     name: WaveFrontRouter
     network: arbitrum-sepolia
     source:
-      address: "0x853464f2A45177c7C0435bEf9eD2d364A12F42a4"
+      address: "0xb3B995567d6a4EF3D36b38252Cd70333d70bEe5e"
       abi: WaveFrontRouter
-      startBlock: 45081857
+      startBlock: 48599530
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -58,7 +58,7 @@ dataSources:
     source:
       address: "0x4dA4483C9E726f6E3E0184D7375EFE90a521ff91"
       abi: WaveFrontTreasury
-      startBlock: 45081857
+      startBlock: 48599530
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -72,6 +72,26 @@ dataSources:
         - event: WaveFrontTreasury__Withdraw(indexed address,uint256)
           handler: handleWaveFrontTreasury__Withdraw
       file: ./src/wave-front-treasury.ts
+  - kind: ethereum
+    name: WaveFrontAdmin
+    network: arbitrum-sepolia
+    source:
+      address: "0xC2A7CC7add5f9fE1304Fa934590342d76950B878"
+      abi: WaveFrontAdmin
+      startBlock: 48599530
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Account
+      abis:
+        - name: WaveFrontAdmin
+          file: ./abis/WaveFrontAdmin.json
+      eventHandlers:
+        - event: WaveFrontAdmin__PointsAdded(indexed address,uint256)
+          handler: handleWaveFrontAdmin__PointsAdded
+      file: ./src/wave-front-admin.ts
 templates:
   - kind: ethereum/contract
     name: Meme

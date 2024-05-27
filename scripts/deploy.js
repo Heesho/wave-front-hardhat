@@ -24,6 +24,7 @@ let memeFactory,
   multicallSubgraph,
   multicallFrontend,
   router,
+  admin,
   treasury;
 let meme, preMeme;
 
@@ -31,29 +32,33 @@ let meme, preMeme;
 /*===========================  CONTRACT DATA  =======================*/
 
 async function getContracts() {
+  admin = await ethers.getContractAt(
+    "contracts/WaveFrontAdmin.sol:WaveFrontAdmin",
+    "0xC2A7CC7add5f9fE1304Fa934590342d76950B878"
+  );
   treasury = await ethers.getContractAt(
     "contracts/WaveFrontTreasury.sol:WaveFrontTreasury",
-    "0x4dA4483C9E726f6E3E0184D7375EFE90a521ff91"
+    "0xC7071B0C823F4032B5838F9118295B7C7699c016"
   );
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0x00491ae6Add5D8D85fF94dDC55C1B1bfDc5A5010"
+    "0xEba78B51b9c82868e66ad836276346b5f2067348"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0x2f7BEF0490297a794e1263209272b4581D6E6C4c"
+    "0xc7874cF809440AFe975077656681E153560908eE"
   );
   multicallSubgraph = await ethers.getContractAt(
     "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0x009Fe3570A3d0872985b72Df72F2355033CB1a93"
+    "0x92Ff7Dcc75083321F6a78603dD9692435eB40aCa"
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x8917984EDf57faBACEEa973CA741B2f03f18E1E1"
+    "0x234B117064289C6f6c9da582d52a4AF8c4A3343e"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x853464f2A45177c7C0435bEf9eD2d364A12F42a4"
+    "0xb3B995567d6a4EF3D36b38252Cd70333d70bEe5e"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -64,6 +69,17 @@ async function getContracts() {
 
 /*===========================  END CONTRACT DATA  ===================*/
 /*===================================================================*/
+
+async function deployAdmin() {
+  console.log("Starting Admin Deployment");
+  const adminArtifact = await ethers.getContractFactory("WaveFrontAdmin");
+  const adminContract = await adminArtifact.deploy({
+    gasPrice: ethers.gasPrice,
+  });
+  admin = await adminContract.deployed();
+  await sleep(5000);
+  console.log("Admin Deployed at:", admin.address);
+}
 
 async function deployTreasury() {
   console.log("Starting WaveFrontTreasury Deployment");
@@ -165,6 +181,16 @@ async function printDeployment() {
   console.log("MulticallFrontend: ", multicallFrontend.address);
   console.log("Router: ", router.address);
   console.log("**************************************************************");
+}
+
+async function verifyAdmin() {
+  console.log("Starting WaveFrontAdmin Verification");
+  await hre.run("verify:verify", {
+    address: admin.address,
+    contract: "contracts/WaveFrontAdmin.sol:WaveFrontAdmin",
+    constructorArguments: [],
+  });
+  console.log("WaveFrontAdmin Verified");
 }
 
 async function verifyTreasury() {
@@ -278,6 +304,7 @@ async function main() {
   //===================================================================
 
   // console.log("Starting System Deployment");
+  // await deployAdmin();
   // await deployTreasury();
   // await deployMemeFactory();
   // await deployFactory();
@@ -293,11 +320,12 @@ async function main() {
   //===================================================================
 
   // console.log("Starting System Verificatrion Deployment");
+  // await verifyAdmin();
   // await verifyTreasury();
   // await verifyMemeFactory();
   // await verifyFactory();
   // await verifyMulticallSubgraph();
-  await verifyMulticallFrontend();
+  // await verifyMulticallFrontend();
   // await verifyRouter();
 
   //===================================================================
@@ -324,8 +352,8 @@ async function main() {
   console.log("Starting Transactions");
 
   // set waveFrontFactory on memeFactory
-  // await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
-  // console.log("WaveFrontFactory Set");
+  await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
+  console.log("WaveFrontFactory Set");
 
   // await factory
   //   .connect(wallet)
