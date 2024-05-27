@@ -104,7 +104,7 @@ templates:
           handler: handleMeme__CreatorFee
         - event: Meme__ProviderFee(indexed address,uint256,uint256)
           handler: handleMeme__ProviderFee
-        - event: Meme__StatusUpdated(indexed address,indexed address,string)
+        - event: Meme__StatusUpdated(indexed address,indexed address,uint256,string)
           handler: handleMeme__StatusUpdated
         - event: Meme__MarketOpened()
           handler: handleMeme__MarketOpened

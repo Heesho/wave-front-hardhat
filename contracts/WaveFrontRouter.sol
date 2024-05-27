@@ -14,6 +14,7 @@ interface IMeme {
     function updateStatus(address account, string memory status) external;
     function getMarketPrice() external view returns (uint256);
     function getFloorPrice() external view returns (uint256);
+    function getNextStatusFee() external view returns (uint256);
 }
 
 interface IPreMeme {
@@ -44,7 +45,7 @@ contract WaveFrontRouter {
     event WaveFrontRouter__Sell(address indexed meme, address indexed account, uint256 amountIn, uint256 amountOut, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
     event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, string name, string symbol, string uri);
-    event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status, uint256 marketPrice, uint256 floorPrice);
+    event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status, uint256 statusFee, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
     event WaveFrontRouter__Redeemed(address indexed meme, address indexed account, uint256 amount);
     event WaveFrontRouter__MarketOpened(address indexed meme, uint256 totalBaseContributed, uint256 totalMemeBalance);
@@ -138,9 +139,10 @@ contract WaveFrontRouter {
     }
 
     function updateStatus(address meme, string memory status) external {
-        IERC20(meme).transferFrom(msg.sender, address(this), STATUS_UPDATE_FEE);
+        uint256 statusFee = IMeme(meme).getNextStatusFee();
+        IERC20(meme).transferFrom(msg.sender, address(this), statusFee);
         IMeme(meme).updateStatus(msg.sender, status);
-        emit WaveFrontRouter__StatusUpdated(meme, msg.sender, status, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
+        emit WaveFrontRouter__StatusUpdated(meme, msg.sender, status, statusFee, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
 
     // Function to receive Ether. msg.data must be empty

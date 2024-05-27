@@ -35,6 +35,7 @@ interface IMeme {
     function getAccountTransferrable(address account) external view returns (uint256);
     function account_Debt(address account) external view returns (uint256);
     function totalDebt() external view returns (uint256);
+    function getNextStatusFee() external view returns (uint256);
 }
 
 contract WaveFrontMulticallFrontend {
@@ -75,6 +76,7 @@ contract WaveFrontMulticallFrontend {
         uint256 marketPrice;
         uint256 totalSupply;
         uint256 totalContributed;
+        uint256 nextStatusFee;
 
         uint256 accountNativeBalance;
         uint256 accountBaseBalance;
@@ -144,6 +146,7 @@ contract WaveFrontMulticallFrontend {
         pageData.marketPrice = (marketOpen ? IMeme(meme).getMarketPrice() : newReserveBase * 1e18 / newReserveMeme);
         pageData.totalSupply = IMeme(meme).maxSupply();
         pageData.totalContributed = totalContributed;
+        pageData.nextStatusFee = IMeme(meme).getNextStatusFee();
 
         if (account != address(0)) {
             pageData.accountNativeBalance = account.balance;

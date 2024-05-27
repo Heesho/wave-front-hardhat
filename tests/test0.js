@@ -505,7 +505,9 @@ describe("local: test0", function () {
 
   it("User0 updates status through router", async function () {
     console.log("******************************************************");
-    await meme1.connect(user0).approve(router.address, oneThousand);
+    await meme1
+      .connect(user0)
+      .approve(router.address, await meme1.getNextStatusFee());
     await router.connect(user0).updateStatus(meme1.address, "Sup everybody?");
   });
 
@@ -706,7 +708,9 @@ describe("local: test0", function () {
 
   it("User1 updates status through router", async function () {
     console.log("******************************************************");
-    await meme1.connect(user1).approve(router.address, oneThousand);
+    await meme1
+      .connect(user1)
+      .approve(router.address, await meme1.getNextStatusFee());
     await router
       .connect(user1)
       .updateStatus(meme1.address, "Buy pepecoin for my familia");
