@@ -3,6 +3,10 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+interface IChainlinkOracle {
+    function latestAnswer() external view returns (uint256);
+}
+
 interface IWaveFrontFactory {
     function index() external view returns (uint256);
     function index_Meme(uint256 index) external view returns (address);
@@ -45,6 +49,7 @@ contract WaveFrontMulticallFrontend {
     uint256 public constant FEE = 200;
     uint256 public constant DIVISOR = 10000;
     uint256 public constant PRECISION = 1e18;
+    address public constant ORACLE = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
@@ -99,6 +104,14 @@ contract WaveFrontMulticallFrontend {
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
+
+    function getEthPrice() external view returns (uint256) {
+        if (ORACLE == address(0)) {
+            return 1e18;
+        } else {
+            return IChainlinkOracle(ORACLE).latestAnswer() * 1e18 / 1e8;
+        }
+    }
 
     function getMemeCount() external view returns (uint256) {
         return IWaveFrontFactory(waveFrontFactory).index() - 1;

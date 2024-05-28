@@ -54,7 +54,7 @@ async function getContracts() {
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x234B117064289C6f6c9da582d52a4AF8c4A3343e"
+    "0x0aA085b223482d3552474cd2cDEB0e2Ef1599337"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
