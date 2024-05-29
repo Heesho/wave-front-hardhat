@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal } from "@graphprotocol/graph-ts";
 
 export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
-export const FACTORY_ADDRESS = "0xc7874cF809440AFe975077656681E153560908eE";
+export const FACTORY_ADDRESS = "0xeb1ffb51E1144C42DAE82c60E04974D4eeB3e270";
 export const INITIAL_PRICE = BigDecimal.fromString("0.000000069");
 export const INITIAL_SUPPLY = BigDecimal.fromString("1000000000");
 export const PREMARKET_DURATION = BigInt.fromI32(1800);

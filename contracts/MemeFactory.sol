@@ -150,6 +150,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     uint256 public constant FEE_AMOUNT = 1250; // Additional fee parameters for ditributing to stakeholders
     uint256 public constant STATUS_MAX_LENGTH = 280; // Maximum length of status string
     uint256 public constant DIVISOR = 10000; // Divisor for fee calculations
+    uint256 public constant STATUS_FEE_INTERCEPT = 1000 * PRECISION; 
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
@@ -162,14 +163,14 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     // bonding curve state
     uint256 public reserveRealBase = 0; // Base reserve of the token
-    uint256 public reserveVirtualBase = 100 * PRECISION; // Virtual base reserve of the token
+    uint256 public reserveVirtualBase = 69 * PRECISION; // Virtual base reserve of the token
     uint256 public reserveMeme = INITIAL_SUPPLY; // Token reserve of the meme. Initially set to the max supply
 
     // borrowing
     uint256 public totalDebt; // Total debt of the meme
     mapping(address => uint256) public account_Debt; // Debt of each account
 
-    uint256 public statusFee = 10000 * PRECISION; // Fee for status update 1000 tokens
+    uint256 public statusFee; // Fee for status update 1000 tokens
     string public uri; // URI for the meme image
     string public status; // Status of the meme
     address public statusHolder; // Address of the account holding the status
@@ -390,13 +391,14 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         if (bytes(newStatus).length == 0) revert Meme__StatusRequired();
         if (bytes(newStatus).length > STATUS_MAX_LENGTH) revert Meme__StatusLimitExceeded();
 
-        uint256 newStatusFee = statusFee * 110 / 100;
-        uint256 halfSurplus = (newStatusFee - statusFee) / 2;
-        uint256 payout = statusFee + halfSurplus;
+        uint256 newStatusFee = getNextStatusFee();
+        uint256 surplus = newStatusFee - statusFee;
+        uint256 burnAmount = surplus / 2;
+        uint256 prevOwnerPayment = statusFee + burnAmount;
         emit Meme__StatusUpdated(statusHolder, account, newStatusFee, newStatus);
-        _burn(msg.sender, payout);
-        burn(halfSurplus); 
-        _mint(statusHolder, payout);
+        _burn(msg.sender, prevOwnerPayment);
+        burn(burnAmount); 
+        _mint(statusHolder, prevOwnerPayment);
         status = newStatus;
         statusHolder = account;
         statusFee = newStatusFee;
@@ -547,11 +549,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @return The next status fee amount.
      */
     function getNextStatusFee() 
-        external 
+        public 
         view 
         returns (uint256) 
     {
-        return statusFee * 110 / 100;
+        return statusFee * 110 / 100 + STATUS_FEE_INTERCEPT;
     }   
 
     /**

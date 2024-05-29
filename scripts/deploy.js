@@ -34,31 +34,31 @@ let meme, preMeme;
 async function getContracts() {
   admin = await ethers.getContractAt(
     "contracts/WaveFrontAdmin.sol:WaveFrontAdmin",
-    "0xC2A7CC7add5f9fE1304Fa934590342d76950B878"
+    "0xA72FA1b9f2632b69a31cB558E721ACF8b7556D7A"
   );
   treasury = await ethers.getContractAt(
     "contracts/WaveFrontTreasury.sol:WaveFrontTreasury",
-    "0xC7071B0C823F4032B5838F9118295B7C7699c016"
+    "0x9D7A7198eCfe07414C5e9B3e233878Fcc30B9048"
   );
   memeFactory = await ethers.getContractAt(
     "contracts/MemeFactory.sol:MemeFactory",
-    "0xEba78B51b9c82868e66ad836276346b5f2067348"
+    "0x0EA76c1cdfd123fE30dd1C9952616477Cd15c85F"
   );
   factory = await ethers.getContractAt(
     "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-    "0xc7874cF809440AFe975077656681E153560908eE"
+    "0xeb1ffb51E1144C42DAE82c60E04974D4eeB3e270"
   );
   multicallSubgraph = await ethers.getContractAt(
     "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-    "0x92Ff7Dcc75083321F6a78603dD9692435eB40aCa"
+    "0x2B096F2bB4a9a3ef8d965cAaDe7e876ec56b1365"
   );
   multicallFrontend = await ethers.getContractAt(
     "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-    "0x0aA085b223482d3552474cd2cDEB0e2Ef1599337"
+    "0x7F1266993dE9eAfF3F8dECC3B1D2d5Bc836A996C"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0xb3B995567d6a4EF3D36b38252Cd70333d70bEe5e"
+    "0x0A1691313543C78B68F54EA7Cb06a3b20BD7819A"
   );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
@@ -174,6 +174,7 @@ async function deployRouter() {
 
 async function printDeployment() {
   console.log("**************************************************************");
+  console.log("WaveFrontAdmin: ", admin.address);
   console.log("WaveFrontTreasury: ", treasury.address);
   console.log("MemeFactory: ", memeFactory.address);
   console.log("WaveFrontFactory: ", factory.address);
