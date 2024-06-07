@@ -10,6 +10,7 @@ export function handleWaveFrontAdmin__PointsAdded(
   if (account === null) {
     account = new Account(event.params.account);
     account.points = TEN_BI;
+    account.debt = ZERO_BD;
     account.providerFees = ZERO_BD;
     account.leaderFees = ZERO_BD;
     account.creatorFees = ZERO_BD;

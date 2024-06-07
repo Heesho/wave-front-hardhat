@@ -62,12 +62,18 @@ export function handleMeme__Sell(event: Meme__Sell): void {
 export function handleMeme__Borrow(event: Meme__Borrow): void {
   let account = Account.load(event.params.account)!;
   account.points = account.points.plus(THREE_BI);
+  account.debt = account.debt.plus(
+    convertEthToDecimal(event.params.amountBase)
+  );
   account.save();
 }
 
 export function handleMeme__Repay(event: Meme__Repay): void {
   let account = Account.load(event.params.account)!;
   account.points = account.points.plus(THREE_BI);
+  account.debt = account.debt.minus(
+    convertEthToDecimal(event.params.amountBase)
+  );
   account.save();
 }
 
@@ -204,6 +210,7 @@ export function handleTransfer(event: Transfer): void {
   if (toAccount === null) {
     toAccount = new Account(event.params.to);
     toAccount.points = TEN_BI;
+    toAccount.debt = ZERO_BD;
     toAccount.providerFees = ZERO_BD;
     toAccount.leaderFees = ZERO_BD;
     toAccount.creatorFees = ZERO_BD;

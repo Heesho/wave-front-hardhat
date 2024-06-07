@@ -21,6 +21,7 @@ export function handleWaveFrontRouter__AffiliateSet(
   if (account === null) {
     account = new Account(event.params.affiliate);
     account.points = TEN_BI;
+    account.debt = ZERO_BD;
     account.providerFees = ZERO_BD;
     account.leaderFees = ZERO_BD;
     account.creatorFees = ZERO_BD;
@@ -36,6 +37,7 @@ export function handleWaveFrontRouter__Buy(event: WaveFrontRouter__Buy): void {
   if (account === null) {
     account = new Account(event.params.account);
     account.points = TEN_BI;
+    account.debt = ZERO_BD;
     account.providerFees = ZERO_BD;
     account.leaderFees = ZERO_BD;
     account.creatorFees = ZERO_BD;
