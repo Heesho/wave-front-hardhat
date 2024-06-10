@@ -771,6 +771,13 @@ describe("local: test0", function () {
       divDec(await base.balanceOf(user0.address))
     );
     await base.connect(user0).approve(meme1.address, one);
+    await expect(meme1.connect(user0).donate(one)).to.be.revertedWith(
+      "Meme__NotAuthorized"
+    );
+    await expect(
+      meme1.connect(owner).setCanDonateBurn(user0.address, true)
+    ).to.be.revertedWith("Meme__NotAuthorized");
+    await meme1.connect(user0).setCanDonateBurn(user0.address, true);
     await meme1.connect(user0).donate(one);
     console.log(
       "User0 BASE balance: ",

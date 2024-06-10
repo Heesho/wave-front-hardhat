@@ -176,6 +176,8 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     address public statusHolder; // Address of the account holding the status
     address public creator; // Address of the meme creator
 
+    mapping(address => bool) public account_CanDonateBurn; // Accounts that can donate and burn meme tokens
+
     /*----------  ERRORS ------------------------------------------------*/
 
     error Meme__ZeroInput();
@@ -188,6 +190,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error Meme__InvalidAccount();
     error Meme__StatusRequired();
     error Meme__StatusLimitExceeded();
+    error Meme__InvalidShift();
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -199,6 +202,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Meme__StatusFee(address indexed account, uint256 amountBase, uint256 amountMeme);
     event Meme__Burn(address indexed account, uint256 amountMeme);
     event Meme__Donated(address indexed account, uint256 amountBase);
+    event Meme__ExternalBurn(address indexed account, uint256 amountMeme);
     event Meme__ReserveMemeBurn(uint256 amountMeme);
     event Meme__ReserveVirtualBaseAdd(uint256 amountBase);
     event Meme__ReserveRealBaseAdd(uint256 amountBase);
@@ -207,6 +211,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Meme__StatusUpdated(address indexed oldAccount, address indexed newAccount, uint256 newStatusFee, string status);
     event Meme__MarketOpened();
     event Meme__CreatorUpdated(address indexed oldCreator, address indexed newCreator);
+    event Meme__CanDonateBurnSet(address indexed account, bool flag);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -217,6 +222,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     modifier notZeroInput(uint256 _amount) {
         if (_amount == 0) revert Meme__ZeroInput();
+        _;
+    }
+    
+    modifier canDonateBurn() {
+        if (!account_CanDonateBurn[msg.sender]) revert Meme__NotAuthorized();
         _;
     }
 
@@ -297,7 +307,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         feeBase -= (3 * feeAmount);
 
         _mint(to, amountOut);
-        _add(feeBase); 
+        _addBaseReserves(feeBase); 
     }
 
     /**
@@ -342,7 +352,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         feeMeme -= (3 * feeAmount);
 
         _burn(msg.sender, amountIn - feeMeme);
-        burn(feeMeme);
+        _burnMemeReserves(feeMeme);
         IERC20(base).safeTransfer(to, amountOut);
     }
 
@@ -397,65 +407,40 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         uint256 prevOwnerPayment = statusFee + burnAmount;
         emit Meme__StatusUpdated(statusHolder, account, newStatusFee, newStatus);
         _burn(msg.sender, prevOwnerPayment);
-        burn(burnAmount); 
+        _burnMemeReserves(burnAmount);
         _mint(statusHolder, prevOwnerPayment);
         status = newStatus;
         statusHolder = account;
         statusFee = newStatusFee;
     }
 
+    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
+
     /**
-     * @dev Allows meme holders to burn their meme tokens, reducing the total supply and shifting the bonding curve.
+     * @dev Burns meme tokenms from the senders account, causing a bonding curve shift.
      * @param amount The amount of this meme token to be burned.
      */
     function burn(uint256 amount) 
-        public 
-        notZeroInput(amount)
+        external 
+        canDonateBurn()
+        nonReentrant
     {
-        uint256 savedMaxSupply = maxSupply;
-        uint256 savedReserveMeme = reserveMeme;
-        if (savedMaxSupply > savedReserveMeme) {
-            uint256 reserveBurn = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
-            reserveMeme -= reserveBurn;
-            maxSupply -= (amount + reserveBurn);
-            emit Meme__ReserveMemeBurn(reserveBurn);
-        } else {
-            maxSupply -= amount;
-        }
-        _burn(msg.sender, amount);
-        emit Meme__Burn(msg.sender, amount);
+        _burnMemeReserves(amount);
+        emit Meme__ExternalBurn(msg.sender, amount);
     }
 
     /**
-     * @dev Allows users to donate base tokens to the meme contract, increasing the base reserves.
+     * @dev Adds base tokens to the meme contract, causing a bonding curve shift. 
      * @param amount The amount of base tokens to donate.
      */
     function donate(uint256 amount) 
         external 
+        canDonateBurn()
         nonReentrant
     {
-        emit Meme__Donated(msg.sender, amount);
         IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
-        _add(amount);
-    }
-
-    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
-
-    function _add(uint256 amount) 
-        internal 
-        notZeroInput(amount)
-    {
-        uint256 savedMaxSupply = maxSupply;
-        uint256 savedReserveMeme = reserveMeme;
-        if (savedMaxSupply > savedReserveMeme) {
-            uint256 reserveAdd = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
-            reserveRealBase += amount;
-            reserveVirtualBase += reserveAdd;
-            emit Meme__ReserveVirtualBaseAdd(reserveAdd);
-        } else {
-            reserveRealBase += amount;
-        }
-        emit Meme__ReserveRealBaseAdd(amount);
+        _addBaseReserves(amount);
+        emit Meme__Donated(msg.sender, amount);
     }
 
     /**
@@ -475,6 +460,51 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         if (msg.sender != creator) revert Meme__NotAuthorized();
         emit Meme__CreatorUpdated(creator, newCreator);
         creator = newCreator;
+    }
+
+    function setCanDonateBurn(address account, bool flag) 
+        external 
+    {
+        if (msg.sender != creator) revert Meme__NotAuthorized();
+        account_CanDonateBurn[account] = flag;
+        emit Meme__CanDonateBurnSet(account, flag);
+    }
+
+    /**
+     * @dev Shifts base reserves up, increasing the floor price and market price.
+     * @param amount The amount of base tokens to add and cause a reserve shift.
+     */
+    function _addBaseReserves(uint256 amount) 
+        internal 
+        notZeroInput(amount)
+    {
+        uint256 savedMaxSupply = maxSupply;
+        uint256 savedReserveMeme = reserveMeme;
+        if (savedMaxSupply <= savedReserveMeme) revert Meme__InvalidShift();
+        uint256 reserveAdd = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
+        reserveRealBase += amount;
+        reserveVirtualBase += reserveAdd;
+        emit Meme__ReserveVirtualBaseAdd(reserveAdd);
+        emit Meme__ReserveRealBaseAdd(amount);
+    }
+
+    /**
+     * @dev Shifts meme reserves down, increasing the floor price and market price.
+     * @param amount The amount of meme tokens to burn and cause a reserve shift.
+     */
+    function _burnMemeReserves(uint256 amount)
+        internal
+        notZeroInput(amount)
+    {
+        uint256 savedMaxSupply = maxSupply;
+        uint256 savedReserveMeme = reserveMeme;
+        if (savedMaxSupply <= savedReserveMeme) revert Meme__InvalidShift();
+        uint256 reserveBurn = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
+        reserveMeme -= reserveBurn;
+        maxSupply -= (amount + reserveBurn);
+        _burn(msg.sender, amount);
+        emit Meme__ReserveMemeBurn(reserveBurn);
+        emit Meme__Burn(msg.sender, amount);
     }
 
     /*----------  FUNCTION OVERRIDES  -----------------------------------*/
@@ -583,7 +613,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         returns (uint256) 
     {
         if (account_Debt[account] == 0) return balanceOf(account);
-        return balanceOf(account) - (maxSupply - (reserveVirtualBase.mulWadUp(maxSupply).divWadUp(account_Debt[account] + reserveVirtualBase)));
+        return balanceOf(account) - (maxSupply - (reserveVirtualBase.mulWadDown(maxSupply).divWadDown(account_Debt[account] + reserveVirtualBase)));
     }
 
 }
@@ -595,6 +625,7 @@ contract MemeFactory is Ownable {
     error MemeFactory__NotAuthorized();
 
     event MemeFactory__MemeCreated(address meme);
+    event MemeFactory__WaveFrontFactoryUpdated(address waveFrontFactory);
 
     constructor() {
         waveFrontFactory = msg.sender;
@@ -637,5 +668,6 @@ contract MemeFactory is Ownable {
         onlyOwner
     {
         waveFrontFactory = _waveFrontFactory;
+        emit MemeFactory__WaveFrontFactoryUpdated(_waveFrontFactory);
     }
 }

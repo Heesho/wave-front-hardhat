@@ -272,6 +272,7 @@ describe("local: test1", function () {
     console.log("******************************************************");
     await base.connect(user0).deposit({ value: oneHundred });
     await base.connect(user0).approve(meme2.address, oneHundred);
+    await meme2.connect(user0).setCanDonateBurn(user0.address, true);
     await meme2.connect(user0).donate(oneHundred);
   });
 
@@ -344,5 +345,17 @@ describe("local: test1", function () {
       .reverted;
     await treasury.withdraw();
     await treasury.connect(owner).setTreasury(owner.address);
+  });
+
+  it("User1 burns 10 meme", async function () {
+    console.log("******************************************************");
+    await expect(meme2.connect(user1).burn(ten)).to.be.revertedWith(
+      "Meme__NotAuthorized"
+    );
+    await expect(
+      meme2.connect(user0).setCanDonateBurn(user1.address, true)
+    ).to.be.revertedWith("Meme__NotAuthorized");
+    await meme2.connect(user1).setCanDonateBurn(user1.address, true);
+    await meme2.connect(user1).burn(ten);
   });
 });

@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IWaveFrontFactory {
     function createMeme(string memory name, string memory symbol, string memory uri, address account, uint256 amountIn) external returns (address);
@@ -33,8 +34,7 @@ interface IBase {
 }
 
 contract WaveFrontRouter {
-
-    uint256 public constant STATUS_UPDATE_FEE = 1000 * 1e18;
+    using SafeERC20 for IERC20;
 
     address public immutable base;
     address public immutable factory;
@@ -47,7 +47,7 @@ contract WaveFrontRouter {
     event WaveFrontRouter__MemeCreated(address indexed meme, address indexed account, string name, string symbol, string uri);
     event WaveFrontRouter__StatusUpdated(address indexed meme, address indexed account, string status, uint256 statusFee, uint256 marketPrice, uint256 floorPrice);
     event WaveFrontRouter__Contributed(address indexed meme, address indexed account, uint256 amount);
-    event WaveFrontRouter__Redeemed(address indexed meme, address indexed account, uint256 amount);
+    event WaveFrontRouter__Redeemed(address indexed meme, address indexed account);
     event WaveFrontRouter__MarketOpened(address indexed meme, uint256 totalBaseContributed, uint256 totalMemeBalance);
 
     constructor(address _factory, address _base) {
@@ -71,7 +71,7 @@ contract WaveFrontRouter {
         IMeme(meme).buy(msg.value, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
 
         uint256 memeBalance = IERC20(meme).balanceOf(address(this));
-        IERC20(meme).transfer(msg.sender, memeBalance);
+        IERC20(meme).safeTransfer(msg.sender, memeBalance);
         uint256 baseBalance = IERC20(base).balanceOf(address(this));
         IBase(base).withdraw(baseBalance);
         (bool success, ) = msg.sender.call{value: baseBalance}("");
@@ -86,7 +86,7 @@ contract WaveFrontRouter {
         uint256 minAmountOut,
         uint256 expireTimestamp
     ) external {
-        IERC20(meme).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(meme).safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(meme).approve(meme, amountIn);
         IMeme(meme).sell(amountIn, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
 
@@ -94,7 +94,7 @@ contract WaveFrontRouter {
         IBase(base).withdraw(baseBalance);
         (bool success, ) = msg.sender.call{value: baseBalance}("");
         require(success, "Failed to send ETH");
-        IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
+        IERC20(meme).safeTransfer(msg.sender, IERC20(meme).balanceOf(address(this)));
 
         emit WaveFrontRouter__Sell(meme, msg.sender, amountIn, baseBalance, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
@@ -107,8 +107,6 @@ contract WaveFrontRouter {
         IBase(base).deposit{value: msg.value}();
         IERC20(base).approve(factory, msg.value);
         address meme = IWaveFrontFactory(factory).createMeme(name, symbol, uri, msg.sender, msg.value);
-        IERC20(meme).transfer(msg.sender, IERC20(meme).balanceOf(address(this)));
-        IERC20(base).transfer(msg.sender, IERC20(base).balanceOf(address(this)));
         emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value);
         emit WaveFrontRouter__MemeCreated(meme, msg.sender, name, symbol, uri);
         return meme;
@@ -133,14 +131,12 @@ contract WaveFrontRouter {
             emit WaveFrontRouter__MarketOpened(meme, IPreMeme(preMeme).totalBaseContributed(), IPreMeme(preMeme).totalMemeBalance());
         }
         IPreMeme(preMeme).redeem(msg.sender);
-        uint256 memeBalance = IERC20(meme).balanceOf(address(this));
-        IERC20(meme).transfer(msg.sender, memeBalance);
-        emit WaveFrontRouter__Redeemed(meme, msg.sender, memeBalance);
+        emit WaveFrontRouter__Redeemed(meme, msg.sender);
     }
 
     function updateStatus(address meme, string memory status) external {
         uint256 statusFee = IMeme(meme).getNextStatusFee();
-        IERC20(meme).transferFrom(msg.sender, address(this), statusFee);
+        IERC20(meme).safeTransferFrom(msg.sender, address(this), statusFee);
         IMeme(meme).updateStatus(msg.sender, status);
         emit WaveFrontRouter__StatusUpdated(meme, msg.sender, status, statusFee, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }

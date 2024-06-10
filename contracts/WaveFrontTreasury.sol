@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IMeme {
@@ -11,6 +12,7 @@ interface IMeme {
 }
 
 contract WaveFrontTreasury is Ownable {
+    using SafeERC20 for IERC20;
 
     address public immutable base;
     address public treasury;
@@ -28,7 +30,7 @@ contract WaveFrontTreasury is Ownable {
     function withdraw() external {
         uint256 balance = IERC20(base).balanceOf(address(this));
         emit WaveFrontTreasury__Withdraw(treasury, balance);
-        IERC20(base).transfer(treasury, balance);
+        IERC20(base).safeTransfer(treasury, balance);
     }
 
     function borrow(address[] calldata memes) external {
