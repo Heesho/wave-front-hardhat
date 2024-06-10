@@ -62,6 +62,9 @@ type TokenPosition @entity {
 enum Action {
   BUY
   SELL
+  CONTRIBUTE
+  REDEEM
+  OVERWRITE
 }
 
 type Swap @entity {
@@ -95,4 +98,11 @@ type SwapDayData @entity {
   marketPrice: BigDecimal!
   floorPrice: BigDecimal!
   dailyVolume: BigDecimal!
+}
+
+type FeedAction @entity {
+  id: ID!
+  timestamp: BigInt!
+  action: Action!
+  token: Token!
 }

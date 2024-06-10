@@ -1,5 +1,11 @@
 import { Address } from "@graphprotocol/graph-ts";
-import { Account, Directory, Token, TokenPosition } from "../generated/schema";
+import {
+  Account,
+  Directory,
+  Token,
+  TokenPosition,
+  FeedAction,
+} from "../generated/schema";
 import {
   Meme__Borrow,
   Meme__Burn,
@@ -40,6 +46,15 @@ export function handleMeme__Buy(event: Meme__Buy): void {
   token.marketCap = token.marketPrice.times(token.totalSupply);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountIn));
   token.save();
+
+  let feedAction = FeedAction.load(event.transaction.hash.toHexString());
+  if (feedAction === null) {
+    feedAction = new FeedAction(event.transaction.hash.toHexString());
+    feedAction.action = "BUY";
+    feedAction.timestamp = event.block.timestamp;
+    feedAction.token = event.address;
+  }
+  feedAction.save();
 }
 
 export function handleMeme__Sell(event: Meme__Sell): void {
@@ -57,6 +72,15 @@ export function handleMeme__Sell(event: Meme__Sell): void {
   token.marketCap = token.marketPrice.times(token.totalSupply);
   token.volume = token.volume.plus(convertEthToDecimal(event.params.amountOut));
   token.save();
+
+  let feedAction = FeedAction.load(event.transaction.hash.toHexString());
+  if (feedAction === null) {
+    feedAction = new FeedAction(event.transaction.hash.toHexString());
+    feedAction.action = "SELL";
+    feedAction.timestamp = event.block.timestamp;
+    feedAction.token = event.address;
+  }
+  feedAction.save();
 }
 
 export function handleMeme__Borrow(event: Meme__Borrow): void {
@@ -175,6 +199,15 @@ export function handleMeme__StatusUpdated(event: Meme__StatusUpdated): void {
   let account = Account.load(event.params.newAccount)!;
   account.points = account.points.plus(THREE_BI);
   account.save();
+
+  let feedAction = FeedAction.load(event.transaction.hash.toHexString());
+  if (feedAction === null) {
+    feedAction = new FeedAction(event.transaction.hash.toHexString());
+    feedAction.action = "OVERWRITE";
+    feedAction.timestamp = event.block.timestamp;
+    feedAction.token = event.address;
+  }
+  feedAction.save();
 }
 
 export function handleMeme__MarketOpened(event: Meme__MarketOpened): void {

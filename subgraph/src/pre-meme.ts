@@ -1,4 +1,4 @@
-import { Account, Token, TokenPosition } from "../generated/schema";
+import { Account, Token, TokenPosition, FeedAction } from "../generated/schema";
 import {
   PreMeme__Contributed,
   PreMeme__Redeemed,
@@ -59,6 +59,15 @@ export function handlePreMeme__Contributed(event: PreMeme__Contributed): void {
   );
   tokenPosition.save();
   token.save();
+
+  let feedAction = FeedAction.load(event.transaction.hash.toHexString());
+  if (feedAction === null) {
+    feedAction = new FeedAction(event.transaction.hash.toHexString());
+    feedAction.action = "CONTRIBUTE";
+    feedAction.timestamp = event.block.timestamp;
+    feedAction.token = event.params.meme;
+  }
+  feedAction.save();
 }
 
 export function handlePreMeme__Redeemed(event: PreMeme__Redeemed): void {
@@ -67,4 +76,13 @@ export function handlePreMeme__Redeemed(event: PreMeme__Redeemed): void {
   )!;
   tokenPosition.contributed = ZERO_BD;
   tokenPosition.save();
+
+  let feedAction = FeedAction.load(event.transaction.hash.toHexString());
+  if (feedAction === null) {
+    feedAction = new FeedAction(event.transaction.hash.toHexString());
+    feedAction.action = "REDEEM";
+    feedAction.timestamp = event.block.timestamp;
+    feedAction.token = event.params.meme;
+  }
+  feedAction.save();
 }

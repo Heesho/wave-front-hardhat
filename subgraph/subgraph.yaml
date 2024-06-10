@@ -106,6 +106,7 @@ templates:
       entities:
         - Directory
         - Token
+        - FeedAction
       abis:
         - name: Meme
           file: ./abis/Meme.json
@@ -149,6 +150,7 @@ templates:
       entities:
         - Directory
         - Token
+        - FeedAction
       abis:
         - name: PreMeme
           file: ./abis/PreMeme.json
