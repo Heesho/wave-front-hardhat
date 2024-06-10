@@ -69,13 +69,8 @@ contract WaveFrontRouter {
         IBase(base).deposit{value: msg.value}();
         IERC20(base).approve(meme, msg.value);
         IMeme(meme).buy(msg.value, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
-
         uint256 memeBalance = IERC20(meme).balanceOf(address(this));
         IERC20(meme).safeTransfer(msg.sender, memeBalance);
-        uint256 baseBalance = IERC20(base).balanceOf(address(this));
-        IBase(base).withdraw(baseBalance);
-        (bool success, ) = msg.sender.call{value: baseBalance}("");
-        require(success, "Failed to send ETH");
 
         emit WaveFrontRouter__Buy(meme, msg.sender, msg.value, memeBalance, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
@@ -94,7 +89,6 @@ contract WaveFrontRouter {
         IBase(base).withdraw(baseBalance);
         (bool success, ) = msg.sender.call{value: baseBalance}("");
         require(success, "Failed to send ETH");
-        IERC20(meme).safeTransfer(msg.sender, IERC20(meme).balanceOf(address(this)));
 
         emit WaveFrontRouter__Sell(meme, msg.sender, amountIn, baseBalance, IMeme(meme).getMarketPrice(), IMeme(meme).getFloorPrice());
     }
