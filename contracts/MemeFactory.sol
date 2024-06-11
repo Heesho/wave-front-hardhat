@@ -253,7 +253,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         ERC20Permit(_name)
     {
         uri = _uri;
-        status = "Overwrite to own the meme and earn swap fees.";
+        status = "Overwrite to set the caption and earn.";
         statusHolder = _statusHolder;
         creator = _statusHolder;
         waveFrontFactory = _waveFrontFactory;

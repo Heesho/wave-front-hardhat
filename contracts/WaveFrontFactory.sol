@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title WaveFrontFactory
@@ -35,6 +36,7 @@ interface IPreMeme {
 }
 
 contract WaveFrontFactory is Ownable {
+    using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
@@ -118,7 +120,7 @@ contract WaveFrontFactory is Ownable {
         emit WaveFrontFactory__MemeCreated(meme, preMeme, name, symbol, uri, account);
         index++;
 
-        IERC20(base).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(base).safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(base).approve(preMeme, amountIn);
         IPreMeme(preMeme).contribute(account, amountIn);
 
