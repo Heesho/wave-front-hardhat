@@ -121,7 +121,8 @@ contract WaveFrontFactory is Ownable {
         index++;
 
         IERC20(base).safeTransferFrom(msg.sender, address(this), amountIn);
-        IERC20(base).approve(preMeme, amountIn);
+        IERC20(base).safeApprove(preMeme, 0);
+        IERC20(base).safeApprove(preMeme, amountIn);
         IPreMeme(preMeme).contribute(account, amountIn);
 
         return meme;

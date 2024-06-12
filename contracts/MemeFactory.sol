@@ -115,7 +115,8 @@ contract PreMeme is ReentrancyGuard {
         if (endTimestamp > block.timestamp) revert PreMeme__InProgress();
         if (ended) revert PreMeme__Concluded();
         ended = true;
-        IERC20(base).approve(meme, totalBaseContributed);
+        IERC20(base).safeApprove(meme, 0);
+        IERC20(base).safeApprove(meme, totalBaseContributed);
         Meme(meme).buy(totalBaseContributed, 0, 0, address(this), address(0));
         totalMemeBalance = IERC20(meme).balanceOf(address(this));
         Meme(meme).openMarket();

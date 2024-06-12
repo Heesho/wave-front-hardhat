@@ -68,7 +68,8 @@ contract WaveFrontRouter {
         }
 
         IBase(base).deposit{value: msg.value}();
-        IERC20(base).approve(meme, msg.value);
+        IERC20(base).safeApprove(meme, 0);
+        IERC20(base).safeApprove(meme, msg.value);
         IMeme(meme).buy(msg.value, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
         uint256 memeBalance = IERC20(meme).balanceOf(address(this));
         IERC20(meme).safeTransfer(msg.sender, memeBalance);
@@ -83,7 +84,8 @@ contract WaveFrontRouter {
         uint256 expireTimestamp
     ) external {
         IERC20(meme).safeTransferFrom(msg.sender, address(this), amountIn);
-        IERC20(meme).approve(meme, amountIn);
+        IERC20(meme).safeApprove(meme, 0);
+        IERC20(meme).safeApprove(meme, amountIn);
         IMeme(meme).sell(amountIn, minAmountOut, expireTimestamp, address(this), referrals[msg.sender]);
 
         uint256 baseBalance = IERC20(base).balanceOf(address(this));
@@ -100,7 +102,8 @@ contract WaveFrontRouter {
         string memory uri
     ) external payable returns (address) {
         IBase(base).deposit{value: msg.value}();
-        IERC20(base).approve(factory, msg.value);
+        IERC20(base).safeApprove(factory, 0);
+        IERC20(base).safeApprove(factory, msg.value);
         address meme = IWaveFrontFactory(factory).createMeme(name, symbol, uri, msg.sender, msg.value);
         emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value, IMeme(meme).uri());
         emit WaveFrontRouter__MemeCreated(meme, msg.sender, name, symbol, uri);
@@ -110,7 +113,8 @@ contract WaveFrontRouter {
     function contribute(address meme) external payable {
         address preMeme = IMeme(meme).preMeme();
         IBase(base).deposit{value: msg.value}();
-        IERC20(base).approve(preMeme, msg.value);
+        IERC20(base).safeApprove(preMeme, 0);
+        IERC20(base).safeApprove(preMeme, msg.value);
         IPreMeme(preMeme).contribute(msg.sender, msg.value);
         emit WaveFrontRouter__Contributed(meme, msg.sender, msg.value, IMeme(meme).uri());
         if (block.timestamp > IPreMeme(preMeme).endTimestamp() && !IPreMeme(preMeme).ended()) {
