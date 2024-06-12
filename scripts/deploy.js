@@ -7,8 +7,8 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 // const BASE_ADDRESS = "0x4200000000000000000000000000000000000006"; // Base Sepolia wETH
-// const BASE_ADDRESS = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"; // Arbitrum Sepolia wETH
-const BASE_ADDRESS = "0x7507c1dc16935B82698e4C63f2746A2fCf994dF8"; // Berachain Artio wBERA
+const BASE_ADDRESS = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"; // Arbitrum Sepolia wETH
+// const BASE_ADDRESS = "0x7507c1dc16935B82698e4C63f2746A2fCf994dF8"; // Berachain Artio wBERA
 const TREASURY_ADDRESS = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712"; // Treasury Address
 
 /*===========================  END SETTINGS  ========================*/
@@ -32,34 +32,34 @@ let meme, preMeme;
 /*===========================  CONTRACT DATA  =======================*/
 
 async function getContracts() {
-  // admin = await ethers.getContractAt(
-  //   "contracts/WaveFrontAdmin.sol:WaveFrontAdmin",
-  //   "0xA72FA1b9f2632b69a31cB558E721ACF8b7556D7A"
-  // );
-  // treasury = await ethers.getContractAt(
-  //   "contracts/WaveFrontTreasury.sol:WaveFrontTreasury",
-  //   "0x9D7A7198eCfe07414C5e9B3e233878Fcc30B9048"
-  // );
-  // memeFactory = await ethers.getContractAt(
-  //   "contracts/MemeFactory.sol:MemeFactory",
-  //   "0x0EA76c1cdfd123fE30dd1C9952616477Cd15c85F"
-  // );
-  // factory = await ethers.getContractAt(
-  //   "contracts/WaveFrontFactory.sol:WaveFrontFactory",
-  //   "0xeb1ffb51E1144C42DAE82c60E04974D4eeB3e270"
-  // );
-  // multicallSubgraph = await ethers.getContractAt(
-  //   "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
-  //   "0x2B096F2bB4a9a3ef8d965cAaDe7e876ec56b1365"
-  // );
-  // multicallFrontend = await ethers.getContractAt(
-  //   "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
-  //   "0x7F1266993dE9eAfF3F8dECC3B1D2d5Bc836A996C"
-  // );
-  // router = await ethers.getContractAt(
-  //   "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-  //   "0x0A1691313543C78B68F54EA7Cb06a3b20BD7819A"
-  // );
+  admin = await ethers.getContractAt(
+    "contracts/WaveFrontAdmin.sol:WaveFrontAdmin",
+    "0x52a7648f60f672B93921504b0A90e3F6Cf8d3EC7"
+  );
+  treasury = await ethers.getContractAt(
+    "contracts/WaveFrontTreasury.sol:WaveFrontTreasury",
+    "0xe35157B66067018275C64AF7d76BF18263857349"
+  );
+  memeFactory = await ethers.getContractAt(
+    "contracts/MemeFactory.sol:MemeFactory",
+    "0x1AC70c868628c5027D69AF4EE891F549B4F9DD32"
+  );
+  factory = await ethers.getContractAt(
+    "contracts/WaveFrontFactory.sol:WaveFrontFactory",
+    "0x25a12591e63a4367e5fB3Af66cc4CDDB7F02aDec"
+  );
+  multicallSubgraph = await ethers.getContractAt(
+    "contracts/WaveFrontMulticallSubgraph.sol:WaveFrontMulticallSubgraph",
+    "0x446d53082A967c037189fcf289DC1D87402085eB"
+  );
+  multicallFrontend = await ethers.getContractAt(
+    "contracts/WaveFrontMulticallFrontend.sol:WaveFrontMulticallFrontend",
+    "0x2FFdF4d09ca6473CE4Eddb47371FC098FE758c52"
+  );
+  router = await ethers.getContractAt(
+    "contracts/WaveFrontRouter.sol:WaveFrontRouter",
+    "0x5D1dd559fdA41D45a7e9A3cbF85FdeA0298A892f"
+  );
   // meme = await ethers.getContractAt(
   //   "contracts/MemeFactory.sol:Meme",
   //   ""
@@ -304,15 +304,15 @@ async function main() {
   // 1. Deploy System
   //===================================================================
 
-  console.log("Starting System Deployment");
-  await deployAdmin();
-  await deployTreasury();
-  await deployMemeFactory();
-  await deployFactory();
-  await deployMulticallSubgraph();
-  await deployMulticallFrontend();
-  await deployRouter();
-  await printDeployment();
+  // console.log("Starting System Deployment");
+  // await deployAdmin();
+  // await deployTreasury();
+  // await deployMemeFactory();
+  // await deployFactory();
+  // await deployMulticallSubgraph();
+  // await deployMulticallFrontend();
+  // await deployRouter();
+  // await printDeployment();
 
   /*********** UPDATE getContracts() with new addresses *************/
 
@@ -353,8 +353,8 @@ async function main() {
   console.log("Starting Transactions");
 
   // set waveFrontFactory on memeFactory
-  // await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
-  // console.log("WaveFrontFactory Set");
+  await memeFactory.connect(wallet).setWaveFrontFactory(factory.address);
+  console.log("WaveFrontFactory Set");
 
   // await factory
   //   .connect(wallet)

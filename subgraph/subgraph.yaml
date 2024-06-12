@@ -8,9 +8,9 @@ dataSources:
     name: WaveFrontFactory
     network: arbitrum-sepolia
     source:
-      address: "0xeb1ffb51E1144C42DAE82c60E04974D4eeB3e270"
+      address: "0x25a12591e63a4367e5fB3Af66cc4CDDB7F02aDec"
       abi: WaveFrontFactory
-      startBlock: 48958376
+      startBlock: 54031384
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,9 +29,9 @@ dataSources:
     name: WaveFrontRouter
     network: arbitrum-sepolia
     source:
-      address: "0x0A1691313543C78B68F54EA7Cb06a3b20BD7819A"
+      address: "0x5D1dd559fdA41D45a7e9A3cbF85FdeA0298A892f"
       abi: WaveFrontRouter
-      startBlock: 48958376
+      startBlock: 54031384
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -56,9 +56,9 @@ dataSources:
     name: WaveFrontTreasury
     network: arbitrum-sepolia
     source:
-      address: "0x9D7A7198eCfe07414C5e9B3e233878Fcc30B9048"
+      address: "0xe35157B66067018275C64AF7d76BF18263857349"
       abi: WaveFrontTreasury
-      startBlock: 48958376
+      startBlock: 54031384
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -76,9 +76,9 @@ dataSources:
     name: WaveFrontAdmin
     network: arbitrum-sepolia
     source:
-      address: "0xA72FA1b9f2632b69a31cB558E721ACF8b7556D7A"
+      address: "0x52a7648f60f672B93921504b0A90e3F6Cf8d3EC7"
       abi: WaveFrontAdmin
-      startBlock: 48958376
+      startBlock: 54031384
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
