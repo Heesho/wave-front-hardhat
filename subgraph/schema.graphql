@@ -1,0 +1,108 @@
+type Directory @entity {
+  id: Bytes!
+  index: BigInt!
+  volume: BigDecimal!
+  treasuryFees: BigDecimal!
+}
+
+type Account @entity {
+  id: Bytes!
+  points: BigInt!
+  debt: BigDecimal!
+  providerFees: BigDecimal!
+  leaderFees: BigDecimal!
+  creatorFees: BigDecimal!
+  referrals: BigInt!
+  swaps: [Swap!]! @derivedFrom(field: "account")
+  tokenPositions: [TokenPosition!]! @derivedFrom(field: "account")
+}
+
+enum PriceChange {
+  UP
+  DOWN
+}
+
+type Token @entity {
+  id: Bytes!
+  name: String!
+  symbol: String!
+  uri: String!
+  creator: Bytes!
+  leader: Bytes!
+  contributed: BigDecimal!
+  marketPrice: BigDecimal!
+  priceChange: PriceChange!
+  totalSupply: BigDecimal!
+  marketCap: BigDecimal!
+  volume: BigDecimal!
+  contributors: BigInt!
+  holders: BigInt!
+  open: Boolean!
+  openAt: BigInt!
+  swaps: [Swap!]! @derivedFrom(field: "token")
+  tokenPositions: [TokenPosition!]! @derivedFrom(field: "token")
+}
+
+type TokenPosition @entity {
+  id: String!
+  account: Account!
+  token: Token!
+  contributed: BigDecimal!
+  balance: BigDecimal!
+  created: Boolean!
+  leader: Boolean!
+  creatorFeesBase: BigDecimal!
+  creatorFeesMeme: BigDecimal!
+  leaderFeesBase: BigDecimal!
+  leaderFeesMeme: BigDecimal!
+  providerFeesBase: BigDecimal!
+  providerFeesMeme: BigDecimal!
+}
+
+enum Action {
+  BUY
+  SELL
+  CONTRIBUTE
+  REDEEM
+  OVERWRITE
+}
+
+type Swap @entity {
+  id: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  account: Account!
+  token: Token!
+  action: Action!
+  baseIn: BigDecimal!
+  baseOut: BigDecimal!
+  tokenIn: BigDecimal!
+  tokenOut: BigDecimal!
+  marketPrice: BigDecimal!
+  floorPrice: BigDecimal!
+}
+
+type SwapHourData @entity {
+  id: ID!
+  token: Token!
+  timestamp: BigInt!
+  marketPrice: BigDecimal!
+  floorPrice: BigDecimal!
+  hourlyVolume: BigDecimal!
+}
+
+type SwapDayData @entity {
+  id: ID!
+  token: Token!
+  timestamp: BigInt!
+  marketPrice: BigDecimal!
+  floorPrice: BigDecimal!
+  dailyVolume: BigDecimal!
+}
+
+type FeedAction @entity {
+  id: ID!
+  timestamp: BigInt!
+  action: Action!
+  token: Token!
+}

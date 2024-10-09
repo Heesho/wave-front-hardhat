@@ -3,6 +3,10 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+interface IChainlinkOracle {
+    function latestAnswer() external view returns (uint256);
+}
+
 interface IWaveFrontFactory {
     function index() external view returns (uint256);
     function index_Meme(uint256 index) external view returns (address);
@@ -20,23 +24,22 @@ interface IPreMeme {
 
 interface IMeme {
     function preMeme() external view returns (address);
-    function fees() external view returns (address);
     function uri() external view returns (string memory);
     function status() external view returns (string memory);
     function statusHolder() external view returns (address);
-    function reserveBase() external view returns (uint256);
-    function RESERVE_VIRTUAL_BASE() external view returns (uint256);
+    function creator() external view returns (address);
+    function reserveRealBase() external view returns (uint256);
+    function reserveVirtualBase() external view returns (uint256);
     function reserveMeme() external view returns (uint256);
     function maxSupply() external view returns (uint256);
     function totalSupply() external view returns (uint256);
     function getMarketPrice() external view returns (uint256);
     function getFloorPrice() external view returns (uint256);
-    function claimableBase(address account) external view returns (uint256);
-    function totalFeesBase() external view returns (uint256);
     function getAccountCredit(address account) external view returns (uint256);
     function getAccountTransferrable(address account) external view returns (uint256);
     function account_Debt(address account) external view returns (uint256);
     function totalDebt() external view returns (uint256);
+    function getNextStatusFee() external view returns (uint256);
 }
 
 contract WaveFrontMulticallFrontend {
@@ -46,6 +49,7 @@ contract WaveFrontMulticallFrontend {
     uint256 public constant FEE = 200;
     uint256 public constant DIVISOR = 10000;
     uint256 public constant PRECISION = 1e18;
+    address public constant ORACLE = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
@@ -66,6 +70,8 @@ contract WaveFrontMulticallFrontend {
         string symbol;
         string uri;
         string status;
+        address statusHolder;
+        address creator;
 
         uint256 marketOpenTimestamp;
 
@@ -75,6 +81,7 @@ contract WaveFrontMulticallFrontend {
         uint256 marketPrice;
         uint256 totalSupply;
         uint256 totalContributed;
+        uint256 nextStatusFee;
 
         uint256 accountNativeBalance;
         uint256 accountBaseBalance;
@@ -83,7 +90,6 @@ contract WaveFrontMulticallFrontend {
         uint256 accountDebt;
         uint256 accountCredit;
         uint256 accountTransferable;
-        uint256 accountClaimable;
         uint256 accountContributed;
         uint256 accountRedeemable;
 
@@ -98,6 +104,14 @@ contract WaveFrontMulticallFrontend {
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
+
+    function getEthPrice() external view returns (uint256) {
+        if (ORACLE == address(0)) {
+            return 1e18;
+        } else {
+            return IChainlinkOracle(ORACLE).latestAnswer() * 1e18 / 1e8;
+        }
+    }
 
     function getMemeCount() external view returns (uint256) {
         return IWaveFrontFactory(waveFrontFactory).index() - 1;
@@ -119,12 +133,12 @@ contract WaveFrontMulticallFrontend {
         address preMeme = IMeme(meme).preMeme();
         bool marketOpen = IPreMeme(preMeme).ended();
         uint256 totalContributed = IPreMeme(preMeme).totalBaseContributed();
-        uint256 reserveVirtualBase = IMeme(meme).RESERVE_VIRTUAL_BASE();
-        uint256 reserveBase = IMeme(meme).reserveBase();
+        uint256 reserveVirtualBase = IMeme(meme).reserveVirtualBase();
+        uint256 reserveRealBase = IMeme(meme).reserveRealBase();
         uint256 reserveMeme = IMeme(meme).reserveMeme();
 
-        uint256 newReserveBase = reserveBase + reserveVirtualBase + totalContributed - (totalContributed * FEE / DIVISOR);
-        uint256 newReserveMeme = (reserveBase + reserveVirtualBase) * reserveMeme / newReserveBase;
+        uint256 newReserveBase = reserveRealBase + reserveVirtualBase + totalContributed - (totalContributed * FEE / DIVISOR);
+        uint256 newReserveMeme = (reserveRealBase + reserveVirtualBase) * reserveMeme / newReserveBase;
         uint256 expectedMemeAmount = reserveMeme - newReserveMeme;
 
         pageData.index = IWaveFrontFactory(waveFrontFactory).meme_Index(meme);
@@ -134,15 +148,18 @@ contract WaveFrontMulticallFrontend {
         pageData.symbol = IERC20Metadata(meme).symbol();
         pageData.uri = IMeme(meme).uri();
         pageData.status = IMeme(meme).status();
+        pageData.statusHolder = IMeme(meme).statusHolder();
+        pageData.creator = IMeme(meme).creator();
 
         pageData.marketOpenTimestamp = IPreMeme(preMeme).endTimestamp();
 
-        pageData.marketCap = (marketOpen ? IMeme(meme).totalSupply() * IMeme(meme).getMarketPrice() / 1e18 : totalContributed);
-        pageData.liquidity = (IMeme(meme).reserveBase() + reserveVirtualBase) * 2;
+        pageData.marketCap = (marketOpen ? IMeme(meme).maxSupply() * IMeme(meme).getMarketPrice() / 1e18 : totalContributed);
+        pageData.liquidity = (IMeme(meme).reserveRealBase() + reserveVirtualBase) * 2;
         pageData.floorPrice = IMeme(meme).getFloorPrice();
         pageData.marketPrice = (marketOpen ? IMeme(meme).getMarketPrice() : newReserveBase * 1e18 / newReserveMeme);
         pageData.totalSupply = IMeme(meme).maxSupply();
         pageData.totalContributed = totalContributed;
+        pageData.nextStatusFee = IMeme(meme).getNextStatusFee();
 
         if (account != address(0)) {
             pageData.accountNativeBalance = account.balance;
@@ -152,7 +169,6 @@ contract WaveFrontMulticallFrontend {
             pageData.accountDebt = IMeme(meme).account_Debt(account);
             pageData.accountCredit = IMeme(meme).getAccountCredit(account);
             pageData.accountTransferable = IMeme(meme).getAccountTransferrable(account);
-            pageData.accountClaimable = IMeme(meme).claimableBase(account);
             pageData.accountContributed = IPreMeme(preMeme).account_BaseContributed(account);
             pageData.accountRedeemable = (marketOpen ? IPreMeme(preMeme).totalMemeBalance() * pageData.accountContributed / totalContributed : expectedMemeAmount * pageData.accountContributed / totalContributed);
         }
@@ -176,8 +192,8 @@ contract WaveFrontMulticallFrontend {
 
     function quoteBuyIn(address meme, uint256 input, uint256 slippageTolerance) external view returns(uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
         uint256 fee = input * FEE / DIVISOR;
-        uint256 newReserveBase = IMeme(meme).reserveBase() + IMeme(meme).RESERVE_VIRTUAL_BASE() + input - fee;
-        uint256 newReserveMeme = (IMeme(meme).reserveBase() + IMeme(meme).RESERVE_VIRTUAL_BASE()) * IMeme(meme).reserveMeme() / newReserveBase;
+        uint256 newReserveBase = IMeme(meme).reserveRealBase() + IMeme(meme).reserveVirtualBase() + input - fee;
+        uint256 newReserveMeme = (IMeme(meme).reserveRealBase() + IMeme(meme).reserveVirtualBase()) * IMeme(meme).reserveMeme() / newReserveBase;
 
         output = IMeme(meme).reserveMeme() - newReserveMeme;
         slippage = 100 * (1e18 - (output * IMeme(meme).getMarketPrice() / input));
@@ -186,7 +202,7 @@ contract WaveFrontMulticallFrontend {
     }
 
     function quoteBuyOut(address meme, uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
-        uint256 oldReserveBase = IMeme(meme).RESERVE_VIRTUAL_BASE() + IMeme(meme).reserveBase();
+        uint256 oldReserveBase = IMeme(meme).reserveVirtualBase() + IMeme(meme).reserveRealBase();
 
         output = DIVISOR * ((oldReserveBase * IMeme(meme).reserveMeme() / (IMeme(meme).reserveMeme() - input)) - oldReserveBase) / (DIVISOR - FEE);
         slippage = 100 * (1e18 - (input * IMeme(meme).getMarketPrice() / output));
@@ -197,16 +213,16 @@ contract WaveFrontMulticallFrontend {
     function quoteSellIn(address meme, uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
         uint256 fee = input * FEE / DIVISOR;
         uint256 newReserveMeme = IMeme(meme).reserveMeme() + input - fee;
-        uint256 newReserveBase = (IMeme(meme).RESERVE_VIRTUAL_BASE() + IMeme(meme).reserveBase()) * IMeme(meme).reserveMeme() / newReserveMeme;
+        uint256 newReserveBase = (IMeme(meme).reserveVirtualBase() + IMeme(meme).reserveRealBase()) * IMeme(meme).reserveMeme() / newReserveMeme;
 
-        output = (IMeme(meme).RESERVE_VIRTUAL_BASE() + IMeme(meme).reserveBase()) - newReserveBase;
+        output = (IMeme(meme).reserveVirtualBase() + IMeme(meme).reserveRealBase()) - newReserveBase;
         slippage = 100 * (1e18 - (output * 1e18 / (input * IMeme(meme).getMarketPrice() / 1e18)));
         minOutput = input * IMeme(meme).getMarketPrice() /1e18 * slippageTolerance / DIVISOR;
         autoMinOutput = input * IMeme(meme).getMarketPrice() /1e18 * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
     }
 
     function quoteSellOut(address meme, uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
-        uint256 oldReserveBase = IMeme(meme).RESERVE_VIRTUAL_BASE() + IMeme(meme).reserveBase();
+        uint256 oldReserveBase = IMeme(meme).reserveVirtualBase() + IMeme(meme).reserveRealBase();
         
         output = DIVISOR * ((oldReserveBase * IMeme(meme).reserveMeme()  / (oldReserveBase - input)) - IMeme(meme).reserveMeme()) / (DIVISOR - FEE);
         slippage = 100 * (1e18 - (input * 1e18 / (output * IMeme(meme).getMarketPrice() / 1e18)));

@@ -17,30 +17,26 @@ import "./FixedPointMathLib.sol";
  * by a bonding curve. The bonding curve lives in the token and ensures liquidity at all price ranges 
  * with a constant product, facilitating dynamic pricing based on market demand. Memes are initially
  * launched via the PreMeme contract to ensure a bot-resistant and fair distribution. Once launched, 
- * meme tokens can be traded, used as collateral for borrowing, or held to earn transaction fees.
+ * meme tokens can be traded used to update the status, or used as collateral for borrowing.
  *
  * Meme: 
  * The primary asset with a built-in bonding curve, enabling buy/sell transactions
  * with price adjustments based on supply. A virtual bonding curve is used with a constant product
  * formula (XY = K). The meme can be bought, sold, allows for liqduition free borrowing against held 
  * memes and fee accumulation for meme holders. It also uses a bonding curve shift to adjuast the 
- * reserves based on the maxSupply of meme. Buy transactions incur a 2% fee, divided among
- * the protocol treasury (20%), status holder (20%), a provider (20% optional), with the remainder 
- * going to meme holders. Sell transactions also incur a 2% fee, which is fully burned, reducing
- * maxSupply and increasing the meme's floor and market prices, also increasing the borrowing
- * capacity of the meme. The status of the meme can be updated by anyone by burning meme. The
- * meme does not need to be deposited to earn fees or borrow against it, both can be done from
- * the user's wallet. Borrowing however will not let the user transfer the meme if the collateral
- * requirement is not met.
+ * reserves based on the maxSupply of meme. Buy and sell transactions incur a 2% fee, divided among
+ * the protocol treasury (12.5%), status holder (12.5%), creator (12.5%), a provider (12.5% optional),
+ * For buys the remainder (50%) is used to shift the bonding curve (increasing the base reserves). 
+ * For sells the remainder (50%) is used to shift the bonding curve (decreasing the meme reserves). 
+ * Both cases increase the floor price, market price, and borrowing capacity of the meme. The meme
+ * The status of the meme can be updated by anyone by burning meme. The meme does not need to be 
+ * deposited to borrow against it, this can be done from the user's wallet. Borrowing however will 
+ * not let the user transfer the meme if the collateral requirement is not met.
 
  * PreMeme: 
  * Manages the initial distribution phase, collecting base tokens (e.g., wETH) and
  * transitioning to the open market phase for the Meme, ensuring a fair launch. Everyone
  * that participates in the PreMeme phase receives memes at the same price.
- * 
- * MemeFees: 
- * Handles the collection and distribution of transaction fees. A portion of
- * buying fees is distributed to meme holders.
  * 
  * MemeFactory: 
  * Facilitates the creation of new Meme instances, integrating them with the
@@ -58,7 +54,7 @@ contract PreMeme is ReentrancyGuard {
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
-    uint256 public constant DURATION = 600; // Duration in seconds for the pre-market phase
+    uint256 public constant DURATION = 1800; // Duration in seconds for the pre-market phase
 
     /*----------  STATE VARIABLES  --------------------------------------*/
     
@@ -119,7 +115,8 @@ contract PreMeme is ReentrancyGuard {
         if (endTimestamp > block.timestamp) revert PreMeme__InProgress();
         if (ended) revert PreMeme__Concluded();
         ended = true;
-        IERC20(base).approve(meme, totalBaseContributed);
+        IERC20(base).safeApprove(meme, 0);
+        IERC20(base).safeApprove(meme, totalBaseContributed);
         Meme(meme).buy(totalBaseContributed, 0, 0, address(this), address(0));
         totalMemeBalance = IERC20(meme).balanceOf(address(this));
         Meme(meme).openMarket();
@@ -142,35 +139,6 @@ contract PreMeme is ReentrancyGuard {
     
 }
 
-contract MemeFees {
-    using SafeERC20 for IERC20;
-
-    address internal immutable base; // Base token address (e.g., wETH or a stablecoin).
-    address internal immutable meme; // Address of the meme token that this contract manages fees for.
-
-    /**
-     * @dev Constructs the contract by setting the base token and associating this contract with a token.
-     * @param _base The address of the base token.
-     */
-    constructor(address _base) {
-        meme = msg.sender;
-        base = _base;
-    }
-
-    /**
-     * @dev Allows the Meme contract to claim fees on behalf of a user or entity.
-     * This function is meant to be called by the Meme contract to distribute fees
-     * to various stakeholders.
-     * @param recipient The address receiving the claimed fees.
-     * @param amountBase The amount of base token to be transferred as fees.
-     */
-    function claimFeesFor(address recipient, uint amountBase) external {
-        require(msg.sender == meme);
-        if (amountBase > 0) IERC20(base).safeTransfer(recipient, amountBase);
-    }
-
-}
-
 contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
@@ -178,18 +146,16 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /*----------  CONSTANTS  --------------------------------------------*/
 
     uint256 public constant PRECISION = 1e18; // Precision for math
-    uint256 public constant RESERVE_VIRTUAL_BASE = 100 * PRECISION; // Initial virtual base reserve
     uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION; // Initial supply of the meme token
     uint256 public constant FEE = 200; // 2% fee rate for buy/sell operations
-    uint256 public constant FEE_AMOUNT = 2000; // Additional fee parameters for ditributing to stakeholders
-    uint256 public constant STATUS_FEE = 1000 * PRECISION; // Fee for status update 10 tokens
+    uint256 public constant FEE_AMOUNT = 1250; // Additional fee parameters for ditributing to stakeholders
     uint256 public constant STATUS_MAX_LENGTH = 280; // Maximum length of status string
     uint256 public constant DIVISOR = 10000; // Divisor for fee calculations
+    uint256 public constant STATUS_FEE_INTERCEPT = 1000 * PRECISION; 
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     address public immutable base; // Address of the base token (e.g., wETH)
-    address public immutable fees; // Address of the MemeFees contract
     address public immutable waveFrontFactory; // Address of the WaveFrontFactory contract
     address public immutable preMeme; // Address of the PreMeme contract
 
@@ -197,22 +163,21 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     bool public open = false; // Flag indicating if the market is open, only the preMeme can open it
 
     // bonding curve state
-    uint256 public reserveBase = 0; // Base reserve of the token
+    uint256 public reserveRealBase = 0; // Base reserve of the token
+    uint256 public reserveVirtualBase = 69 * PRECISION; // Virtual base reserve of the token
     uint256 public reserveMeme = INITIAL_SUPPLY; // Token reserve of the meme. Initially set to the max supply
-
-    // fees state
-    uint256 public totalFeesBase; // Total fees collected in base token
-    uint256 public indexBase; // Index for calculating fees for token holders
-    mapping(address => uint256) public supplyIndexBase; // Index for calculating fees for meme holders
-    mapping(address => uint256) public claimableBase; // Claimable fees for meme holders
 
     // borrowing
     uint256 public totalDebt; // Total debt of the meme
     mapping(address => uint256) public account_Debt; // Debt of each account
 
+    uint256 public statusFee; // Fee for status update 1000 tokens
     string public uri; // URI for the meme image
     string public status; // Status of the meme
     address public statusHolder; // Address of the account holding the status
+    address public creator; // Address of the meme creator
+
+    mapping(address => bool) public account_CanDonateBurn; // Accounts that can donate and burn meme tokens
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -226,23 +191,28 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error Meme__InvalidAccount();
     error Meme__StatusRequired();
     error Meme__StatusLimitExceeded();
+    error Meme__InvalidShift();
 
     /*----------  ERRORS ------------------------------------------------*/
 
     event Meme__Buy(address indexed from, address indexed to, uint256 amountIn, uint256 amountOut);
     event Meme__Sell(address indexed from, address indexed to, uint256 amountIn, uint256 amountOut);
-    event Meme__Fees(address indexed account, uint256 amountBase, uint256 amountMeme);
-    event Meme__Claim(address indexed account, uint256 amountBase);
-    event Meme__ProviderFee(address indexed account, uint256 amountBase);
-    event Meme__ProtocolFee(address indexed account, uint256 amountBase);
+    event Meme__ProviderFee(address indexed account, uint256 amountBase, uint256 amountMeme);
+    event Meme__ProtocolFee(address indexed account, uint256 amountBase, uint256 amountMeme);
+    event Meme__CreatorFee(address indexed account, uint256 amountBase, uint256 amountMeme);
+    event Meme__StatusFee(address indexed account, uint256 amountBase, uint256 amountMeme);
     event Meme__Burn(address indexed account, uint256 amountMeme);
-    event Meme__ReserveBurn(uint256 amountMeme);
+    event Meme__Donated(address indexed account, uint256 amountBase);
+    event Meme__ExternalBurn(address indexed account, uint256 amountMeme);
+    event Meme__ReserveMemeBurn(uint256 amountMeme);
+    event Meme__ReserveVirtualBaseAdd(uint256 amountBase);
+    event Meme__ReserveRealBaseAdd(uint256 amountBase);
     event Meme__Borrow(address indexed account, uint256 amountBase);
     event Meme__Repay(address indexed account, uint256 amountBase);
-    event Meme__StatusFee(address indexed account, uint256 amountBase);
-    event Meme__StatusUpdated(address indexed oldAccount, address indexed newAccount, string status);
-    event Meme__Donation(address indexed account, uint256 amountBase);
+    event Meme__StatusUpdated(address indexed oldAccount, address indexed newAccount, uint256 newStatusFee, string status);
     event Meme__MarketOpened();
+    event Meme__CreatorUpdated(address indexed oldCreator, address indexed newCreator);
+    event Meme__CanDonateBurnSet(address indexed account, bool flag);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -253,6 +223,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     modifier notZeroInput(uint256 _amount) {
         if (_amount == 0) revert Meme__ZeroInput();
+        _;
+    }
+    
+    modifier canDonateBurn() {
+        if (!account_CanDonateBurn[msg.sender]) revert Meme__NotAuthorized();
         _;
     }
 
@@ -279,11 +254,11 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         ERC20Permit(_name)
     {
         uri = _uri;
-        status = "Overwrite to earn 20% of the swap fees.";
+        status = "Overwrite to set the caption and earn.";
         statusHolder = _statusHolder;
+        creator = _statusHolder;
         waveFrontFactory = _waveFrontFactory;
         base = _base;
-        fees = address(new MemeFees(_base));
         preMeme = address(new PreMeme(_base));
     }
 
@@ -304,36 +279,36 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         if (!open && msg.sender != preMeme) revert Meme__MarketNotOpen();
 
-        uint256 feeBase = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
-        uint256 savedReserveBase = reserveBase;
-        uint256 savedReserveMeme = reserveMeme;
-        uint256 newReserveBase = RESERVE_VIRTUAL_BASE + savedReserveBase + amountIn - feeBase;
-        uint256 newReserveMeme = (RESERVE_VIRTUAL_BASE + savedReserveBase).mulWadUp(savedReserveMeme).divWadUp(newReserveBase);
-        uint256 amountOut = savedReserveMeme - newReserveMeme;
+        uint256 feeBase = amountIn * FEE / DIVISOR;
+        uint256 newReserveBase = reserveVirtualBase + reserveRealBase + amountIn - feeBase;
+        uint256 newReserveMeme = (reserveVirtualBase + reserveRealBase).mulWadUp(reserveMeme).divWadUp(newReserveBase);
+        uint256 amountOut = reserveMeme - newReserveMeme;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
-        reserveBase = newReserveBase - RESERVE_VIRTUAL_BASE;
+        reserveRealBase = newReserveBase - reserveVirtualBase;
         reserveMeme = newReserveMeme;
 
         emit Meme__Buy(msg.sender, to, amountIn, amountOut);
 
         IERC20(base).safeTransferFrom(msg.sender, address(this), amountIn);
-        uint256 feeAmount = feeBase.mulWadDown(FEE_AMOUNT).divWadDown(DIVISOR);
+        uint256 feeAmount = feeBase * FEE_AMOUNT / DIVISOR;
         if (provider != address(0)) {
             IERC20(base).safeTransfer(provider, feeAmount);
-            emit Meme__ProviderFee(provider, feeAmount);
+            emit Meme__ProviderFee(provider, feeAmount, 0);
             feeBase -= feeAmount;
         }
         IERC20(base).safeTransfer(statusHolder, feeAmount);
-        emit Meme__StatusFee(statusHolder, feeAmount);
+        emit Meme__StatusFee(statusHolder, feeAmount, 0);
+        IERC20(base).safeTransfer(creator, feeAmount);
+        emit Meme__CreatorFee(creator, feeAmount, 0);
         address treasury = IWaveFrontFactory(waveFrontFactory).treasury();
         IERC20(base).safeTransfer(treasury, feeAmount);
-        emit Meme__ProtocolFee(treasury, feeAmount);
-        feeBase -= (2 * feeAmount);
+        emit Meme__ProtocolFee(treasury, feeAmount, 0);
+        feeBase -= (3 * feeAmount);
 
         _mint(to, amountOut);
-        _updateBase(feeBase); 
+        _addBaseReserves(feeBase); 
     }
 
     /**
@@ -344,28 +319,41 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @param expireTimestamp Timestamp after which the transaction is not valid.
      * @param to The address receiving the base token from the sale.
      */
-    function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to) 
+    function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) 
         external 
         nonReentrant
         notZeroInput(amountIn)
         notExpired(expireTimestamp) 
     {
-        uint256 feeMeme = amountIn.mulWadDown(FEE).divWadDown(DIVISOR);
-        uint256 savedReserveBase = reserveBase;
-        uint256 savedReserveMeme = reserveMeme;
-        uint256 newReserveMeme = savedReserveMeme + amountIn - feeMeme;
-        uint256 newReserveBase = (RESERVE_VIRTUAL_BASE + savedReserveBase).mulWadUp(savedReserveMeme).divWadUp(newReserveMeme);
-        uint256 amountOut = RESERVE_VIRTUAL_BASE + savedReserveBase - newReserveBase;
+        uint256 feeMeme = amountIn * FEE / DIVISOR;
+        uint256 newReserveMeme = reserveMeme + amountIn - feeMeme;
+        uint256 newReserveBase = (reserveVirtualBase + reserveRealBase).mulWadUp(reserveMeme).divWadUp(newReserveMeme);
+        uint256 amountOut = reserveVirtualBase + reserveRealBase - newReserveBase;
 
         if (amountOut < minAmountOut) revert Meme__SlippageToleranceExceeded();
 
-        reserveBase = newReserveBase - RESERVE_VIRTUAL_BASE;
+        reserveRealBase = newReserveBase - reserveVirtualBase;
         reserveMeme = newReserveMeme;
 
         emit Meme__Sell(msg.sender, to, amountIn, amountOut);
+        
+        uint256 feeAmount = feeMeme * FEE_AMOUNT / DIVISOR;
+        if (provider != address(0)) {
+            _mint(provider, feeAmount);
+            emit Meme__ProviderFee(provider, 0, feeAmount);
+            feeMeme -= feeAmount;
+        }
+        _mint(statusHolder, feeAmount);
+        emit Meme__StatusFee(statusHolder, 0, feeAmount);
+        _mint(creator, feeAmount);
+        emit Meme__CreatorFee(creator, 0, feeAmount);
+        address treasury = IWaveFrontFactory(waveFrontFactory).treasury();
+        _mint(treasury, feeAmount);
+        emit Meme__ProtocolFee(treasury, 0, feeAmount);
+        feeMeme -= (3 * feeAmount);
 
         _burn(msg.sender, amountIn - feeMeme);
-        burn(feeMeme);
+        _burnMemeReserves(feeMeme);
         IERC20(base).safeTransfer(to, amountOut);
     }
 
@@ -402,83 +390,59 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     }
 
     /**
-     * @dev Allows meme holders to claim their accumulated fees in base tokens.
-     * @param account The address of the meme holder claiming their fees.
-     * @return claimedBase The amount of base tokens claimed as fees.
-     */
-    function claimFees(address account) 
-        external 
-        returns (uint256 claimedBase) 
-    {
-        _updateFor(account);
-
-        claimedBase = claimableBase[account];
-
-        if (claimedBase > 0) {
-            claimableBase[account] = 0;
-
-            MemeFees(fees).claimFeesFor(account, claimedBase);
-
-            emit Meme__Claim(account, claimedBase);
-        }
-    }
-
-    /**
      * @dev Updates the status associated with the meme, which can be a feature like a pinned message.
      * @param account The address setting the new status.
-     * @param _status The new status message to be set.
+     * @param newStatus The new status message to be set.
      */
-    function updateStatus(address account, string memory _status)
+    function updateStatus(address account, string memory newStatus)
         external
         nonReentrant
     {
         if (account == address(0)) revert Meme__InvalidAccount();
-        if (bytes(_status).length == 0) revert Meme__StatusRequired();
-        if (bytes(_status).length > STATUS_MAX_LENGTH) revert Meme__StatusLimitExceeded();
-        address oldStatusHolder = statusHolder;
-        burn(STATUS_FEE);
-        status = _status;
+        if (bytes(newStatus).length == 0) revert Meme__StatusRequired();
+        if (bytes(newStatus).length > STATUS_MAX_LENGTH) revert Meme__StatusLimitExceeded();
+
+        uint256 newStatusFee = getNextStatusFee();
+        uint256 surplus = newStatusFee - statusFee;
+        uint256 burnAmount = surplus / 2;
+        uint256 prevOwnerPayment = statusFee + burnAmount;
+        emit Meme__StatusUpdated(statusHolder, account, newStatusFee, newStatus);
+        _burn(msg.sender, prevOwnerPayment);
+        _burnMemeReserves(burnAmount);
+        _mint(statusHolder, prevOwnerPayment);
+        status = newStatus;
         statusHolder = account;
-        emit Meme__StatusUpdated(oldStatusHolder, account, _status);
+        statusFee = newStatusFee;
     }
 
+    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
+
     /**
-     * @dev Allows meme holders to burn their meme tokens, reducing the total supply and shifting the bonding curve.
+     * @dev Burns meme tokenms from the senders account, causing a bonding curve shift.
      * @param amount The amount of this meme token to be burned.
      */
     function burn(uint256 amount) 
-        public 
-        notZeroInput(amount)
+        external 
+        canDonateBurn()
+        nonReentrant
     {
-        uint256 savedMaxSupply = maxSupply;
-        uint256 savedReserveMeme = reserveMeme;
-        if (savedMaxSupply > savedReserveMeme) {
-            uint256 reserveBurn = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
-            reserveMeme -= reserveBurn;
-            maxSupply -= (amount + reserveBurn);
-            emit Meme__ReserveBurn(reserveBurn);
-        } else {
-            maxSupply -= amount;
-        }
-        _burn(msg.sender, amount);
-        emit Meme__Burn(msg.sender, amount);
+        _burnMemeReserves(amount);
+        emit Meme__ExternalBurn(msg.sender, amount);
     }
 
     /**
-     * @dev Allows anyone to donate base tokens to the contract, to distribute as fees to token holders.
+     * @dev Adds base tokens to the meme contract, causing a bonding curve shift. 
      * @param amount The amount of base tokens to donate.
      */
     function donate(uint256 amount) 
         external 
+        canDonateBurn()
         nonReentrant
-        notZeroInput(amount)
     {
         IERC20(base).safeTransferFrom(msg.sender, address(this), amount);
-        _updateBase(amount);
-        emit Meme__Donation(msg.sender, amount);
+        _addBaseReserves(amount);
+        emit Meme__Donated(msg.sender, amount);
     }
-
-    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
     /**
      * @dev Opens the meme token market for trading, allowing buy and sell operations. Can only be called by the PreMeme contract.
@@ -491,42 +455,57 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Meme__MarketOpened();
     }
 
-    /**
-     * @dev Internal function to update the fee distribution index based on the total supply and collected fees.
-     * @param amount The amount of base token fees collected.
-     */
-    function _updateBase(uint256 amount) 
-        internal 
+    function setCreator(address newCreator) 
+        external 
     {
-        IERC20(base).safeTransfer(fees, amount);
-        totalFeesBase += amount;
-        uint256 _ratio = amount.mulWadDown(1e18).divWadDown(totalSupply());
-        if (_ratio > 0) {
-            indexBase += _ratio;
-        }
-        emit Meme__Fees(msg.sender, amount, 0);
+        if (msg.sender != creator) revert Meme__NotAuthorized();
+        emit Meme__CreatorUpdated(creator, newCreator);
+        creator = newCreator;
     }
-    
-    /**
-     * @dev Internal function to update the claimable fees for an account based on its meme token holdings and fee index.
-     * @param recipient The address for which to update the claimable fees.
-     */
-    function _updateFor(address recipient) 
-        internal 
+
+    function setCanDonateBurn(address account, bool flag) 
+        external 
     {
-        uint256 _supplied = balanceOf(recipient);
-        if (_supplied > 0) {
-            uint256 _supplyIndexBase = supplyIndexBase[recipient];
-            uint256 _indexBase = indexBase; 
-            supplyIndexBase[recipient] = _indexBase;
-            uint256 _deltaBase = _indexBase - _supplyIndexBase;
-            if (_deltaBase > 0) {
-                uint256 _share = _supplied.mulWadDown(_deltaBase).divWadDown(1e18);
-                claimableBase[recipient] += _share;
-            }
-        } else {
-            supplyIndexBase[recipient] = indexBase; 
-        }
+        if (msg.sender != creator) revert Meme__NotAuthorized();
+        account_CanDonateBurn[account] = flag;
+        emit Meme__CanDonateBurnSet(account, flag);
+    }
+
+    /**
+     * @dev Shifts base reserves up, increasing the floor price and market price.
+     * @param amount The amount of base tokens to add and cause a reserve shift.
+     */
+    function _addBaseReserves(uint256 amount) 
+        internal 
+        notZeroInput(amount)
+    {
+        uint256 savedMaxSupply = maxSupply;
+        uint256 savedReserveMeme = reserveMeme;
+        if (savedMaxSupply <= savedReserveMeme) revert Meme__InvalidShift();
+        uint256 reserveAdd = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
+        reserveRealBase += amount;
+        reserveVirtualBase += reserveAdd;
+        emit Meme__ReserveVirtualBaseAdd(reserveAdd);
+        emit Meme__ReserveRealBaseAdd(amount);
+    }
+
+    /**
+     * @dev Shifts meme reserves down, increasing the floor price and market price.
+     * @param amount The amount of meme tokens to burn and cause a reserve shift.
+     */
+    function _burnMemeReserves(uint256 amount)
+        internal
+        notZeroInput(amount)
+    {
+        uint256 savedMaxSupply = maxSupply;
+        uint256 savedReserveMeme = reserveMeme;
+        if (savedMaxSupply <= savedReserveMeme) revert Meme__InvalidShift();
+        uint256 reserveBurn = savedReserveMeme.mulWadDown(amount).divWadDown(savedMaxSupply - savedReserveMeme);
+        reserveMeme -= reserveBurn;
+        maxSupply -= (amount + reserveBurn);
+        _burn(msg.sender, amount);
+        emit Meme__ReserveMemeBurn(reserveBurn);
+        emit Meme__Burn(msg.sender, amount);
     }
 
     /*----------  FUNCTION OVERRIDES  -----------------------------------*/
@@ -541,7 +520,6 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /**
      * @dev Internal function that is called before any meme token transfer, including minting and burning.
      * This function checks if the sender has enough transferrable memes after considering any existing debt (used as collateral).
-     * It also updates the fee distribution for both the sender and the receiver.
      * @param from The address sending the tokens.
      * @param to The address receiving the tokens.
      * @param amount The amount of tokens being transferred.
@@ -552,8 +530,6 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         super._beforeTokenTransfer(from, to, amount);
         if (account_Debt[from] > 0 && amount > getAccountTransferrable(from)) revert Meme__CollateralRequirement();
-        _updateFor(from);
-        _updateFor(to);
     }
 
     function _mint(address to, uint256 amount)
@@ -582,7 +558,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         view
         returns (uint256) 
     {
-        return ((RESERVE_VIRTUAL_BASE + reserveBase).mulWadDown(PRECISION)).divWadDown(reserveMeme);
+        return ((reserveVirtualBase + reserveRealBase).mulWadDown(PRECISION)).divWadDown(reserveMeme);
     }
 
     /**
@@ -595,8 +571,21 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         view 
         returns (uint256) 
     {
-        return (RESERVE_VIRTUAL_BASE.mulWadDown(PRECISION)).divWadDown(maxSupply);
+        return (reserveVirtualBase.mulWadDown(PRECISION)).divWadDown(maxSupply);
     }
+
+    /**
+     * @dev Calculates the next status fee that will be charged for updating the meme status.
+     * The status fee increases by 10% each time it is updated.
+     * @return The next status fee amount.
+     */
+    function getNextStatusFee() 
+        public 
+        view 
+        returns (uint256) 
+    {
+        return statusFee * 110 / 100 + STATUS_FEE_INTERCEPT;
+    }   
 
     /**
      * @dev Calculates the borrowing credit available to an account based on its meme balance.
@@ -610,8 +599,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         returns (uint256) 
     {
         if (balanceOf(account) == 0) return 0;
-        uint256 savedMaxSupply = maxSupply;
-        return ((RESERVE_VIRTUAL_BASE.mulWadDown(savedMaxSupply).divWadDown(savedMaxSupply - balanceOf(account))) - RESERVE_VIRTUAL_BASE) - account_Debt[account];
+        return ((reserveVirtualBase.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - reserveVirtualBase) - account_Debt[account];
     }
 
     /**
@@ -626,8 +614,7 @@ contract Meme is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         returns (uint256) 
     {
         if (account_Debt[account] == 0) return balanceOf(account);
-        uint256 savedMaxSupply = maxSupply;
-        return balanceOf(account) - (savedMaxSupply - (RESERVE_VIRTUAL_BASE.mulWadUp(savedMaxSupply).divWadUp(account_Debt[account] + RESERVE_VIRTUAL_BASE)));
+        return balanceOf(account) - (maxSupply - (reserveVirtualBase.mulWadDown(maxSupply).divWadDown(account_Debt[account] + reserveVirtualBase)));
     }
 
 }
@@ -639,6 +626,7 @@ contract MemeFactory is Ownable {
     error MemeFactory__NotAuthorized();
 
     event MemeFactory__MemeCreated(address meme);
+    event MemeFactory__WaveFrontFactoryUpdated(address waveFrontFactory);
 
     constructor() {
         waveFrontFactory = msg.sender;
@@ -681,5 +669,6 @@ contract MemeFactory is Ownable {
         onlyOwner
     {
         waveFrontFactory = _waveFrontFactory;
+        emit MemeFactory__WaveFrontFactoryUpdated(_waveFrontFactory);
     }
 }
