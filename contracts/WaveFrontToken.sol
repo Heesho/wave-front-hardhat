@@ -267,8 +267,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
 
         emit WaveFrontToken__Swap(msg.sender, amountQuoteIn, 0, 0, amountTokenOut, to);
 
-        feeQuote = _processBuyFees(feeQuote, provider);
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
+        feeQuote = _processBuyFees(feeQuote, provider);
         _mint(to, amountTokenOut);
         _healQuoteReserves(feeQuote);
     }
@@ -306,8 +306,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
 
         emit WaveFrontToken__Swap(msg.sender, 0, amountTokenIn, amountQuoteOut, 0, to);
 
-        feeToken = _processSellFees(feeToken, provider);
         _burn(msg.sender, amountTokenIn);
+        feeToken = _processSellFees(feeToken, provider);
         _burnTokenReserves(feeToken);
         IERC20(quote).safeTransfer(to, amountQuoteOut);
     }
