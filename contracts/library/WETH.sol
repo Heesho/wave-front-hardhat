@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Base is ERC20 {
-    constructor() ERC20("Wrapped Ether", "WETH") {}
+contract WETH is ERC20 {
+    constructor() ERC20("WETH", "WETH") {}
 
     // Deposit ETH and mint WETH
     function deposit() public payable {
@@ -13,7 +13,7 @@ contract Base is ERC20 {
 
     // Withdraw ETH and burn WETH
     function withdraw(uint amount) public {
-        require(balanceOf(msg.sender) >= amount, "MockWETH: Insufficient balance");
+        require(balanceOf(msg.sender) >= amount, "WETH: Insufficient balance");
         _burn(msg.sender, amount);
         payable(msg.sender).transfer(amount);
     }

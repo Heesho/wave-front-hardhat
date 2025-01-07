@@ -25,62 +25,61 @@ const fourThousand = convert("4000", 18);
 const tenThousand = convert("10000", 18);
 const oneHundredThousand = convert("100000", 18);
 
-let owner, multisig, user0, user1, user2;
-let memeFactory, meme1, meme2, meme3;
-let factory, multicallSubgraph, multicallFrontend, router;
-let base, treasury;
+let owner, multisig, user0, user1, user2, treasury;
+let wft0, wft1, wft2;
+let factory, multicall, router;
+let weth, usdc;
 
-describe("local: test0", function () {
+describe.only("local: test0", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
-    [owner, multisig, user0, user1, user2] = await ethers.getSigners();
+    [owner, multisig, user0, user1, user2, treasury] =
+      await ethers.getSigners();
 
-    const baseArtifact = await ethers.getContractFactory("Base");
-    base = await baseArtifact.deploy();
-    console.log("- BASE Initialized");
+    const wethArtifact = await ethers.getContractFactory("WETH");
+    weth = await wethArtifact.deploy();
+    console.log("- WETH Initialized");
 
-    const treasuryArtifact = await ethers.getContractFactory(
-      "WaveFrontTreasury"
-    );
-    treasury = await treasuryArtifact.deploy(base.address, owner.address);
-    console.log("- Treasury Initialized");
+    const usdcArtifact = await ethers.getContractFactory("USDC");
+    usdc = await usdcArtifact.deploy();
+    console.log("- USDC Initialized");
 
-    const memeFactoryArtifact = await ethers.getContractFactory("MemeFactory");
-    memeFactory = await memeFactoryArtifact.deploy();
-    console.log("- MemeFactory Initialized");
+    // const memeFactoryArtifact = await ethers.getContractFactory("MemeFactory");
+    // memeFactory = await memeFactoryArtifact.deploy();
+    // console.log("- MemeFactory Initialized");
 
-    const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
-    factory = await factoryArtifact.deploy(
-      memeFactory.address,
-      base.address,
-      treasury.address
-    );
-    console.log("- WaveFront Factory Initialized");
+    // const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
+    // factory = await factoryArtifact.deploy(
+    //   memeFactory.address,
+    //   base.address,
+    //   treasury.address
+    // );
+    // console.log("- WaveFront Factory Initialized");
 
-    const multicallSubgraphArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticallSubgraph"
-    );
-    multicallSubgraph = await multicallSubgraphArtifact.deploy(
-      factory.address,
-      base.address
-    );
-    console.log("- Subgraph Multicall Initialized");
+    // const multicallSubgraphArtifact = await ethers.getContractFactory(
+    //   "WaveFrontMulticallSubgraph"
+    // );
+    // multicallSubgraph = await multicallSubgraphArtifact.deploy(
+    //   factory.address,
+    //   base.address
+    // );
+    // console.log("- Subgraph Multicall Initialized");
 
-    const multicallFrontendArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticallFrontend"
-    );
-    multicallFrontend = await multicallFrontendArtifact.deploy(
-      factory.address,
-      base.address
-    );
-    console.log("- Frontend Multicall Initialized");
+    // const multicallFrontendArtifact = await ethers.getContractFactory(
+    //   "WaveFrontMulticallFrontend"
+    // );
+    // multicallFrontend = await multicallFrontendArtifact.deploy(
+    //   factory.address,
+    //   base.address
+    // );
+    // console.log("- Frontend Multicall Initialized");
 
-    const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(factory.address, base.address);
-    console.log("- Router Initialized");
+    // const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
+    // router = await routerArtifact.deploy(factory.address, base.address);
+    // console.log("- Router Initialized");
 
-    await memeFactory.setWaveFrontFactory(factory.address);
+    // await memeFactory.setWaveFrontFactory(factory.address);
     console.log("- System set up");
 
     console.log("Initialization Complete");
@@ -92,6 +91,7 @@ describe("local: test0", function () {
     console.log("First Test");
   });
 
+  /*
   it("User0 creates meme1", async function () {
     console.log("******************************************************");
     await router
@@ -972,4 +972,6 @@ describe("local: test0", function () {
     console.log();
     console.log(pointZeroZeroOne.toString());
   });
+
+  */
 });

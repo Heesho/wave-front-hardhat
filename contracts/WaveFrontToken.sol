@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./FixedPointMathLib.sol";
+import "./library/FixedPointMathLib.sol";
 
 /**
  * @title WaveFrontToken
@@ -130,7 +130,7 @@ contract PreWaveFrontToken is ReentrancyGuard {
     
 }
 
-contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
+contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Ownable {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
@@ -138,8 +138,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     uint256 public constant PRECISION = 1e18; // Precision for math
     uint256 public constant INITIAL_SUPPLY = 1000000000 * PRECISION; // Initial supply of the WaveFrontToken
-    uint256 public constant FEE = 200; // 2% fee rate for buy/sell operations
-    uint256 public constant FEE_AMOUNT = 1250; // Additional fee parameters for ditributing to stakeholders
+    uint256 public constant FEE = 100; // 1% fee rate for buy/sell operations
+    uint256 public constant FEE_AMOUNT = 1500; // Additional fee parameters for ditributing to stakeholders
     uint256 public constant DIVISOR = 10000; // Divisor for fee calculations
 
     /*----------  STATE VARIABLES  --------------------------------------*/
@@ -183,7 +183,6 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event WaveFrontToken__ProtocolFee(address indexed account, uint256 amountQuote, uint256 amountToken);
     event WaveFrontToken__Burn(address indexed account, uint256 amountToken);
     event WaveFrontToken__Heal(address indexed account, uint256 amountQuote);
-    event WaveFrontToken__Burn(address indexed account, uint256 amountToken);
     event WaveFrontToken__ReserveTokenBurn(uint256 amountToken);
     event WaveFrontToken__ReserveVirtQuoteHeal(uint256 amountQuote);
     event WaveFrontToken__ReserveRealQuoteHeal(uint256 amountQuote);
@@ -218,6 +217,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         string memory _name, 
         string memory _symbol, 
         string memory _uri, 
+        address _treasury,
         address _quote,
         uint256 _reserveVirtQuote
     )
@@ -228,14 +228,15 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         quote = _quote;
         reserveVirtQuote = _reserveVirtQuote;
         factory = msg.sender;
+        treasury = _treasury;
         preToken = address(new PreWaveFrontToken(_quote));
     }
 
     /**
      * @dev Executes a WaveFrontToken purchase operation within the bonding curve mechanism.
      * Calculates the necessary fees, updates reserves, and mints the WaveFrontTokens to the buyer.
-     * @param amountIn The amount of quote tokens provided for the purchase.
-     * @param minAmountOut The minimum amount of WaveFrontTokens expected to be received, for slippage control.
+     * @param amountQuoteIn The amount of quote tokens provided for the purchase.
+     * @param minAmountTokenOut The minimum amount of WaveFrontTokens expected to be received, for slippage control.
      * @param expireTimestamp Timestamp after which the transaction is not valid.
      * @param to The address receiving the purchased tokens.
      * @param provider The address that may receive a portion of the fee, if applicable.
@@ -257,7 +258,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         uint256 feeQuote = amountQuoteIn * FEE / DIVISOR;
         uint256 newReserveQuote = reserveVirtQuote + reserveRealQuote + amountQuoteIn - feeQuote;
         uint256 newReserveToken = (reserveVirtQuote + reserveRealQuote).mulWadUp(reserveToken).divWadUp(newReserveQuote);
-        uint256 amountOut = reserveToken - newReserveToken;
+        uint256 amountTokenOut = reserveToken - newReserveToken;
 
         if (amountTokenOut < minAmountTokenOut) revert WaveFrontToken__SlippageToleranceExceeded();
 
@@ -335,7 +336,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     function repay(uint256 amountQuote) 
         external 
         nonReentrant
-        notZeroInput(amountBase)
+        notZeroInput(amountQuote)
     {
         totalDebt -= amountQuote;
         account_Debt[msg.sender] -= amountQuote;
@@ -343,33 +344,34 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuote);
     }
 
-    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
-
     /**
      * @dev Burns WaveFrontTokens from the senders account, causing a bonding curve shift.
-     * @param amount The amount of this WaveFrontToken to be burned.
+     * @param amountToken The amount of this WaveFrontToken to be burned.
      */
-    function burn(uint256 amount) 
+    function burn(uint256 amountToken) 
         external
         nonReentrant
+        notZeroInput(amountToken)
     {
-        _burn(msg.sender, amount);
-        _burnTokenReserves(amount);
-        emit WaveFrontToken__Burn(msg.sender, amount);
+        _burn(msg.sender, amountToken);
+        _burnTokenReserves(amountToken);
+        emit WaveFrontToken__Burn(msg.sender, amountToken);
     }
 
     /**
      * @dev Adds quote tokens to the WaveFrontToken contract, causing a bonding curve shift. 
-     * @param amount The amount of quote tokens to donate.
+     * @param amountQuote The amount of quote tokens to donate.
      */
-    function heal(uint256 amount) 
+    function heal(uint256 amountQuote) 
         external
         nonReentrant
     {
-        IERC20(quote).safeTransferFrom(msg.sender, address(this), amount);
-        _healQuoteReserves(amount);
-        emit WaveFrontToken__Heal(msg.sender, amount);
+        IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuote);
+        _healQuoteReserves(amountQuote);
+        emit WaveFrontToken__Heal(msg.sender, amountQuote);
     }
+
+    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
     /**
      * @dev Opens the WaveFrontToken market for trading, allowing buy and sell operations. Can only be called by the PreWaveFrontToken contract.
@@ -383,9 +385,9 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     }
 
     function setTreasury(address _treasury)             
-        external 
+        external
     {
-        if (msg.sender != owner) revert WaveFrontToken__NotAuthorized();
+        if (msg.sender != treasury) revert WaveFrontToken__NotAuthorized();
         emit WaveFrontToken__TreasurySet(treasury, _treasury);
         treasury = _treasury;
     }
@@ -402,7 +404,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         uint256 feeAmount = feeQuote * FEE_AMOUNT / DIVISOR;
         if (provider != address(0)) {
-            IERC20(base).safeTransfer(provider, feeAmount);
+            IERC20(quote).safeTransfer(provider, feeAmount);
             emit WaveFrontToken__ProviderFee(provider, feeAmount, 0);
             feeQuote -= feeAmount;
         }
@@ -442,7 +444,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     /**
      * @dev Shifts base reserves up, increasing the floor price and market price.
-     * @param amount The amount of base tokens to add and cause a reserve shift.
+     * @param amountQuote The amount of quote tokens to add and cause a reserve shift.
      */
     function _healQuoteReserves(uint256 amountQuote) 
         internal 
@@ -549,8 +551,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @return The amount of quote token credit available for borrowing.
      */
     function getAccountCredit(address account) 
-        public 
-        view 
+        public
+        view
         returns (uint256)
     {
         if (balanceOf(account) == 0) return 0;
@@ -564,8 +566,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @return The amount of this WaveFrontToken that the account can transfer.
      */
     function getAccountTransferrable(address account)
-        public 
-        view 
+        public
+        view
         returns (uint256) 
     {
         if (account_Debt[account] == 0) return balanceOf(account);
@@ -592,7 +594,7 @@ contract WaveFrontTokenFactory is Ownable {
         external 
         returns (address) 
     {
-        lastToken = address(new WaveFrontToken(_name, _symbol, _uri, _quote, _reserveVirtQuote));
+        lastToken = address(new WaveFrontToken(_name, _symbol, _uri, msg.sender, _quote, _reserveVirtQuote));
         emit WaveFrontTokenFactory__Created(lastToken);
         return lastToken;
     }
@@ -604,5 +606,5 @@ contract WaveFrontTokenFactory is Ownable {
         emit WaveFrontTokenFactory__ProtocolSet(protocol, _protocol);
         protocol = _protocol;
     }
-    
+
 }
