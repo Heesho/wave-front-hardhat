@@ -145,6 +145,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     // token state
+    address public immutable factory; // Address of the factory contract
     address public immutable quote; // Address of the quote token (e.g., wETH, USDC, etc.)
     address public immutable preToken; // Address of the PreWaveFrontToken contract
     uint256 public maxSupply = INITIAL_SUPPLY; // Maximum supply of the WFT, can only decrease
@@ -162,7 +163,6 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
     // treasury state
     address public treasury; // treasury address
-    address public protocol; // protocol address
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -190,6 +190,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event WaveFrontToken__Borrow(address indexed account, uint256 amountQuote);
     event WaveFrontToken__Repay(address indexed account, uint256 amountQuote);
     event WaveFrontToken__MarketOpened();
+    event WaveFrontToken__TreasurySet(address indexed oldTreasury, address indexed newTreasury);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -226,6 +227,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         uri = _uri;
         quote = _quote;
         reserveVirtQuote = _reserveVirtQuote;
+        factory = msg.sender;
         preToken = address(new PreWaveFrontToken(_quote));
     }
 
@@ -238,7 +240,13 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @param to The address receiving the purchased tokens.
      * @param provider The address that may receive a portion of the fee, if applicable.
      */
-    function buy(uint256 amountQuoteIn, uint256 minAmountTokenOut, uint256 expireTimestamp, address to, address provider) 
+    function buy(
+        uint256 amountQuoteIn,
+        uint256 minAmountTokenOut, 
+        uint256 expireTimestamp, 
+        address to, 
+        address provider
+    ) 
         external 
         nonReentrant
         notZeroInput(amountQuoteIn)
@@ -273,7 +281,13 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @param to The address receiving the quote token from the sale.
      * @param provider The address that may receive a portion of the fee, if applicable.
      */
-    function sell(uint256 amountTokenIn, uint256 minAmountQuoteOut, uint256 expireTimestamp, address to, address provider) 
+    function sell(
+        uint256 amountTokenIn, 
+        uint256 minAmountQuoteOut, 
+        uint256 expireTimestamp, 
+        address to, 
+        address provider
+    ) 
         external
         nonReentrant
         notZeroInput(amountTokenIn)
@@ -368,24 +382,12 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit WaveFrontToken__MarketOpened();
     }
 
-    function setTreasury(address newTreasury)             
+    function setTreasury(address _treasury)             
         external 
     {
         if (msg.sender != owner) revert WaveFrontToken__NotAuthorized();
-        emit WaveFrontToken__TreasuryUpdated(treasury, newTreasury);
-        treasury = newTreasury;
-    }
-
-    /**
-     * @dev Sets the protocol address.
-     * @param newProtocol The new protocol address.
-     */
-    function setProtocol(address newProtocol)             
-        external
-    {
-        if (msg.sender != protocol) revert WaveFrontToken__NotAuthorized();
-        emit WaveFrontToken__ProtocolUpdated(protocol, newProtocol);
-        protocol = newProtocol;
+        emit WaveFrontToken__TreasurySet(treasury, _treasury);
+        treasury = _treasury;
     }
 
     /**
@@ -406,6 +408,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
         IERC20(quote).safeTransfer(treasury, feeAmount);
         emit WaveFrontToken__TreasuryFee(treasury, feeAmount, 0);
+        address protocol = WaveFrontTokenFactory(factory).protocol();
         IERC20(quote).safeTransfer(protocol, feeAmount);
         emit WaveFrontToken__ProtocolFee(protocol, feeAmount, 0);
         feeQuote -= (2 * feeAmount);
@@ -430,6 +433,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
         _mint(treasury, feeAmount);
         emit WaveFrontToken__TreasuryFee(treasury, 0, feeAmount);
+        address protocol = WaveFrontTokenFactory(factory).protocol();
         _mint(protocol, feeAmount);
         emit WaveFrontToken__ProtocolFee(protocol, 0, feeAmount);
         feeToken -= (2 * feeAmount);
@@ -576,6 +580,7 @@ contract WaveFrontTokenFactory is Ownable {
     address public lastToken;
 
     event WaveFrontTokenFactory__Created(address indexed token);
+    event WaveFrontTokenFactory__ProtocolSet(address indexed oldProtocol, address indexed newProtocol);
 
     function createWaveFrontToken(
         string memory _name, 
@@ -583,13 +588,21 @@ contract WaveFrontTokenFactory is Ownable {
         string memory _uri, 
         address _quote, 
         uint256 _reserveVirtQuote
-    ) external returns (address) {
-        lastToken = address(new WaveFrontToken());
+    ) 
+        external 
+        returns (address) 
+    {
+        lastToken = address(new WaveFrontToken(_name, _symbol, _uri, _quote, _reserveVirtQuote));
         emit WaveFrontTokenFactory__Created(lastToken);
         return lastToken;
     }
 
-    function setProtocol(address _protocol) external {
+    function setProtocol(address _protocol) 
+        external 
+        onlyOwner 
+    {
+        emit WaveFrontTokenFactory__ProtocolSet(protocol, _protocol);
         protocol = _protocol;
     }
+    
 }
