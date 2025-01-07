@@ -173,7 +173,6 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error WaveFrontToken__NotAuthorized();
     error WaveFrontToken__CollateralRequirement();
     error WaveFrontToken__CreditLimit();
-    error WaveFrontToken__InvalidAccount();
     error WaveFrontToken__InvalidShift();
 
     /*----------  ERRORS ------------------------------------------------*/
@@ -183,8 +182,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event WaveFrontToken__TreasuryFee(address indexed account, uint256 amountQuote, uint256 amountToken);
     event WaveFrontToken__ProtocolFee(address indexed account, uint256 amountQuote, uint256 amountToken);
     event WaveFrontToken__Burn(address indexed account, uint256 amountToken);
-    event WaveFrontToken__Donated(address indexed account, uint256 amountQuote);
-    event WaveFrontToken__ExternalBurn(address indexed account, uint256 amountToken);
+    event WaveFrontToken__Heal(address indexed account, uint256 amountQuote);
+    event WaveFrontToken__Burn(address indexed account, uint256 amountToken);
     event WaveFrontToken__ReserveTokenBurn(uint256 amountToken);
     event WaveFrontToken__ReserveVirtQuoteHeal(uint256 amountQuote);
     event WaveFrontToken__ReserveRealQuoteHeal(uint256 amountQuote);
@@ -239,85 +238,63 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @param to The address receiving the purchased tokens.
      * @param provider The address that may receive a portion of the fee, if applicable.
      */
-    function buy(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) 
+    function buy(uint256 amountQuoteIn, uint256 minAmountTokenOut, uint256 expireTimestamp, address to, address provider) 
         external 
         nonReentrant
-        notZeroInput(amountIn)
+        notZeroInput(amountQuoteIn)
         notExpired(expireTimestamp) 
     {
         if (!open && msg.sender != preToken) revert WaveFrontToken__MarketNotOpen();
 
-        uint256 feeQuote= amountIn * FEE / DIVISOR;
-        uint256 newReserveQuote = reserveVirtQuote + reserveRealQuote + amountIn - feeQuote;
+        uint256 feeQuote = amountQuoteIn * FEE / DIVISOR;
+        uint256 newReserveQuote = reserveVirtQuote + reserveRealQuote + amountQuoteIn - feeQuote;
         uint256 newReserveToken = (reserveVirtQuote + reserveRealQuote).mulWadUp(reserveToken).divWadUp(newReserveQuote);
         uint256 amountOut = reserveToken - newReserveToken;
 
-        if (amountOut < minAmountOut) revert WaveFrontToken__SlippageToleranceExceeded();
+        if (amountTokenOut < minAmountTokenOut) revert WaveFrontToken__SlippageToleranceExceeded();
 
         reserveRealQuote = newReserveQuote - reserveVirtQuote;
         reserveToken = newReserveToken;
 
-        emit WaveFrontToken__Swap(msg.sender, amountIn, 0, amountOut, 0, to);
+        emit WaveFrontToken__Swap(msg.sender, amountQuoteIn, 0, 0, amountTokenOut, to);
 
-        IERC20(quote).safeTransferFrom(msg.sender, address(this), amountIn);
-        uint256 feeAmount = feeQuote * FEE_AMOUNT / DIVISOR;
-        if (provider != address(0)) {
-            IERC20(base).safeTransfer(provider, feeAmount);
-            emit WaveFrontToken__ProviderFee(provider, feeAmount, 0);
-            feeQuote -= feeAmount;
-        }
-        IERC20(quote).safeTransfer(treasury, feeAmount);
-        emit WaveFrontToken__TreasuryFee(treasury, feeAmount, 0);
-        IERC20(quote).safeTransfer(protocol, feeAmount);
-        emit WaveFrontToken__ProtocolFee(protocol, feeAmount, 0);
-        feeQuote -= (2 * feeAmount);
-
-        _mint(to, amountOut);
+        feeQuote = _processBuyFees(feeQuote, provider);
+        IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
+        _mint(to, amountTokenOut);
         _healQuoteReserves(feeQuote);
     }
 
     /**
      * @dev Executes a WaveFrontToken sale operation within the bonding curve mechanism.
      * A fee is applied to the sale, which is then burned, reducing the total supply and adjusting the bonding curve.
-     * @param amountIn The amount of this WaveFrontToken being sold.
-     * @param minAmountOut The minimum amount of quote token expected in return, for slippage control.
+     * @param amountTokenIn The amount of this WaveFrontToken being sold.
+     * @param minAmountQuoteOut The minimum amount of quote token expected in return, for slippage control.
      * @param expireTimestamp Timestamp after which the transaction is not valid.
      * @param to The address receiving the quote token from the sale.
      * @param provider The address that may receive a portion of the fee, if applicable.
      */
-    function sell(uint256 amountIn, uint256 minAmountOut, uint256 expireTimestamp, address to, address provider) 
-        external 
+    function sell(uint256 amountTokenIn, uint256 minAmountQuoteOut, uint256 expireTimestamp, address to, address provider) 
+        external
         nonReentrant
-        notZeroInput(amountIn)
-        notExpired(expireTimestamp) 
+        notZeroInput(amountTokenIn)
+        notExpired(expireTimestamp)
     {
-        uint256 feeToken = amountIn * FEE / DIVISOR;
-        uint256 newReserveToken = reserveToken + amountIn - feeToken;
+        uint256 feeToken = amountTokenIn * FEE / DIVISOR;
+        uint256 newReserveToken = reserveToken + amountTokenIn - feeToken;
         uint256 newReserveQuote = (reserveVirtQuote + reserveRealQuote).mulWadUp(reserveToken).divWadUp(newReserveToken);
-        uint256 amountOut = reserveVirtQuote + reserveRealQuote - newReserveQuote;
+        uint256 amountQuoteOut = reserveVirtQuote + reserveRealQuote - newReserveQuote;
 
-        if (amountOut < minAmountOut) revert WaveFrontToken__SlippageToleranceExceeded();
+        if (amountQuoteOut < minAmountQuoteOut) revert WaveFrontToken__SlippageToleranceExceeded();
 
         reserveRealQuote = newReserveQuote - reserveVirtQuote;
         reserveToken = newReserveToken;
 
-        emit WaveFrontToken__Swap(msg.sender, 0, amountIn, 0, amountOut, to);
-        
-        uint256 feeAmount = feeToken * FEE_AMOUNT / DIVISOR;
-        if (provider != address(0)) {
-            _mint(provider, feeAmount);
-            emit WaveFrontToken__ProviderFee(provider, 0, feeAmount);
-            feeToken -= feeAmount;
-        }
-        _mint(treasury, feeAmount);
-        emit WaveFrontToken__TreasuryFee(treasury, 0, feeAmount);
-        _mint(protocol, feeAmount);
-        emit WaveFrontToken__ProtocolFee(protocol, 0, feeAmount);
-        feeToken -= (2 * feeAmount);
+        emit WaveFrontToken__Swap(msg.sender, 0, amountTokenIn, amountQuoteOut, 0, to);
 
-        _burn(msg.sender, amountIn - feeToken);
+        feeToken = _processSellFees(feeToken, provider);
+        _burn(msg.sender, amountTokenIn);
         _burnTokenReserves(feeToken);
-        IERC20(quote).safeTransfer(to, amountOut);
+        IERC20(quote).safeTransfer(to, amountQuoteOut);
     }
 
     /**
@@ -399,12 +376,64 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         treasury = newTreasury;
     }
 
+    /**
+     * @dev Sets the protocol address.
+     * @param newProtocol The new protocol address.
+     */
     function setProtocol(address newProtocol)             
         external
     {
         if (msg.sender != protocol) revert WaveFrontToken__NotAuthorized();
         emit WaveFrontToken__ProtocolUpdated(protocol, newProtocol);
         protocol = newProtocol;
+    }
+
+    /**
+     * @dev Processes the buy fees, distributing them to the provider, treasury, and protocol.
+     * @param feeQuote The amount of quote tokens to be distributed as fees.
+     * @param provider The address that may receive a portion of the fee, if applicable.
+     * @return The remaining amount of quote tokens after processing the fees.
+     */
+    function _processBuyFees(uint256 feeQuote, address provider)
+        internal
+        returns (uint256)
+    {
+        uint256 feeAmount = feeQuote * FEE_AMOUNT / DIVISOR;
+        if (provider != address(0)) {
+            IERC20(base).safeTransfer(provider, feeAmount);
+            emit WaveFrontToken__ProviderFee(provider, feeAmount, 0);
+            feeQuote -= feeAmount;
+        }
+        IERC20(quote).safeTransfer(treasury, feeAmount);
+        emit WaveFrontToken__TreasuryFee(treasury, feeAmount, 0);
+        IERC20(quote).safeTransfer(protocol, feeAmount);
+        emit WaveFrontToken__ProtocolFee(protocol, feeAmount, 0);
+        feeQuote -= (2 * feeAmount);
+        return feeQuote;
+    }
+
+    /**
+     * @dev Processes the sell fees, distributing them to the provider, treasury, and protocol.
+     * @param feeToken The amount of WaveFrontTokens to be distributed as fees.
+     * @param provider The address that may receive a portion of the fee, if applicable.
+     * @return The remaining amount of WaveFrontTokens after processing the fees.
+     */
+    function _processSellFees(uint256 feeToken, address provider)
+        internal
+        returns (uint256)
+    {
+        uint256 feeAmount = feeToken * FEE_AMOUNT / DIVISOR;
+        if (provider != address(0)) {
+            _mint(provider, feeAmount);
+            emit WaveFrontToken__ProviderFee(provider, 0, feeAmount);
+            feeToken -= feeAmount;
+        }
+        _mint(treasury, feeAmount);
+        emit WaveFrontToken__TreasuryFee(treasury, 0, feeAmount);
+        _mint(protocol, feeAmount);
+        emit WaveFrontToken__ProtocolFee(protocol, 0, feeAmount);
+        feeToken -= (2 * feeAmount);
+        return feeToken;
     }
 
     /**
@@ -539,4 +568,28 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return balanceOf(account) - (maxSupply - (reserveVirtQuote.mulWadDown(maxSupply).divWadDown(account_Debt[account] + reserveVirtQuote)));
     }
 
+}
+
+contract WaveFrontTokenFactory is Ownable {
+
+    address public protocol;
+    address public lastToken;
+
+    event WaveFrontTokenFactory__Created(address indexed token);
+
+    function createWaveFrontToken(
+        string memory _name, 
+        string memory _symbol, 
+        string memory _uri, 
+        address _quote, 
+        uint256 _reserveVirtQuote
+    ) external returns (address) {
+        lastToken = address(new WaveFrontToken());
+        emit WaveFrontTokenFactory__Created(lastToken);
+        return lastToken;
+    }
+
+    function setProtocol(address _protocol) external {
+        protocol = _protocol;
+    }
 }
