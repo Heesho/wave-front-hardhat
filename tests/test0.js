@@ -12,18 +12,23 @@ const two = convert("2", 18);
 const three = convert("3", 18);
 const five = convert("5", 18);
 const ten = convert("10", 18);
+const ten6 = convert("10", 6);
 const twenty = convert("20", 18);
 const eighty = convert("80", 18);
 const ninety = convert("90", 18);
 const oneHundred = convert("100", 18);
+const oneHundred6 = convert("100", 6);
 const twoHundred = convert("200", 18);
 const fiveHundred = convert("500", 18);
 const sixHundred = convert("600", 18);
 const eightHundred = convert("800", 18);
 const oneThousand = convert("1000", 18);
+const oneThousand6 = convert("1000", 6);
 const fourThousand = convert("4000", 18);
 const tenThousand = convert("10000", 18);
 const oneHundredThousand = convert("100000", 18);
+const oneHundredThousand6 = convert("100000", 6);
+const oneMillion6 = convert("1000000", 6);
 
 let owner, multisig, user0, user1, user2, treasury;
 let wft0, wft1, wft2;
@@ -49,20 +54,16 @@ describe.only("local: test0", function () {
     factory = await factoryArtifact.deploy(treasury.address);
     console.log("- WaveFrontFactory Initialized");
 
-    // const multicallFrontendArtifact = await ethers.getContractFactory(
-    //   "WaveFrontMulticallFrontend"
-    // );
-    // multicallFrontend = await multicallFrontendArtifact.deploy(
-    //   factory.address,
-    //   base.address
-    // );
-    // console.log("- Frontend Multicall Initialized");
+    const multicallArtifact = await ethers.getContractFactory(
+      "WaveFrontMulticall"
+    );
+    multicall = await multicallArtifact.deploy(factory.address);
+    console.log("- Multicall Initialized");
 
-    // const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    // router = await routerArtifact.deploy(factory.address, base.address);
-    // console.log("- Router Initialized");
+    const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
+    router = await routerArtifact.deploy(factory.address);
+    console.log("- Router Initialized");
 
-    // await memeFactory.setWaveFrontFactory(factory.address);
     console.log("- System set up");
 
     console.log("Initialization Complete");
@@ -74,33 +75,54 @@ describe.only("local: test0", function () {
     console.log("First Test");
   });
 
-  /*
-  it("User0 creates meme1", async function () {
+  it("User0 creates wft0 with weth as quote token", async function () {
     console.log("******************************************************");
     await router
       .connect(user0)
-      .createMeme("Meme 1", "MEME1", "http/ipfs.com", { value: ten });
-    meme1 = await ethers.getContractAt("Meme", await factory.index_Meme(1));
-    console.log("Meme1 Created");
+      .createWaveFrontToken(
+        "WFT0",
+        "WFT0",
+        "http/ipfs.com/0",
+        weth.address,
+        oneHundred
+      );
+    wft0 = await ethers.getContractAt(
+      "WaveFrontToken",
+      await factory.lastToken()
+    );
+    console.log("WFT0 Created");
   });
 
-  it("User0 creates meme2", async function () {
+  it("User1 creates wft1 with usdc as quote token", async function () {
+    console.log("******************************************************");
+    await router
+      .connect(user1)
+      .createWaveFrontToken(
+        "WFT1",
+        "WFT1",
+        "http/ipfs.com/1",
+        usdc.address,
+        oneHundred6
+      );
+    wft1 = await ethers.getContractAt(
+      "WaveFrontToken",
+      await factory.lastToken()
+    );
+    console.log("WFT1 Created");
+  });
+
+  it("User0 contributes 10 weth to wft0", async function () {
     console.log("******************************************************");
     await router
       .connect(user0)
-      .createMeme("Meme 2", "MEME2", "http/ipfs.com", { value: ten });
-    meme2 = await ethers.getContractAt("Meme", await factory.index_Meme(2));
-    console.log("Meme0 Created");
+      .contributeWithNative(wft0.address, { value: ten });
   });
 
-  it("User0 contributes 10 ETH to meme1", async function () {
+  it("User1 contributes 10 weth to wft0", async function () {
     console.log("******************************************************");
-    await router.connect(user0).contribute(meme1.address, { value: ten });
-  });
-
-  it("User1 contributes 10 ETH to meme1", async function () {
-    console.log("******************************************************");
-    await router.connect(user1).contribute(meme1.address, { value: ten });
+    await router
+      .connect(user1)
+      .contributeWithNative(wft0.address, { value: ten });
   });
 
   it("Forward 2 hour", async function () {
@@ -109,61 +131,102 @@ describe.only("local: test0", function () {
     await network.provider.send("evm_mine");
   });
 
-  it("Page Data", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
+    let res = await multicall.getTokenData(wft0.address, user0.address);
     console.log(res);
   });
 
-  it("User1 redeems meme1 contribution", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    await router.connect(user1).redeem(meme1.address);
+    let res = await multicall.getTokenData(wft0.address, user1.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft0.address, user2.address);
+    console.log(res);
+  });
+
+  it("User1 redeems wft0 contribution", async function () {
+    console.log("******************************************************");
+    await router.connect(user1).redeem(wft0.address);
   });
 
   it("Page Data", async function () {
     console.log("******************************************************");
-    let res = await multicallFrontend.getPageData(meme1.address, user0.address);
+    let res = await multicall.getTokenData(wft0.address, user0.address);
     console.log(res);
   });
 
-  it("User1 redeems meme1 contribution", async function () {
+  it("User1 redeems wft0 contribution", async function () {
+    console.log("******************************************************");
+    await expect(router.connect(user1).redeem(wft0.address)).to.be.revertedWith(
+      "PreWaveFrontToken__NotEligible"
+    );
+  });
+
+  it("User0 redeems wft0 contribution", async function () {
+    console.log("******************************************************");
+    await router.connect(user0).redeem(wft0.address);
+  });
+
+  it("User0 redeems wft0 contribution", async function () {
+    console.log("******************************************************");
+    await expect(router.connect(user0).redeem(wft0.address)).to.be.revertedWith(
+      "PreWaveFrontToken__NotEligible"
+    );
+  });
+
+  it("User0 tries to contribute 10 weth to wft0", async function () {
     console.log("******************************************************");
     await expect(
-      router.connect(user1).redeem(meme1.address)
-    ).to.be.revertedWith("PreMeme__NotEligible");
+      router.connect(user0).contributeWithNative(wft0.address, { value: ten })
+    ).to.be.revertedWith("PreWaveFrontToken__Concluded");
   });
 
-  it("User0 redeems meme1 contribution", async function () {
+  it("User0 contributes 10 usdc to wft1", async function () {
     console.log("******************************************************");
-    await router.connect(user0).redeem(meme1.address);
+    await usdc.connect(user0).mint(user0.address, ten6);
+    await usdc.connect(user0).approve(router.address, ten6);
+    await router.connect(user0).contributeWithQuote(wft1.address, ten6);
   });
 
-  it("User0 redeems meme1 contribution", async function () {
+  it("Page Data", async function () {
     console.log("******************************************************");
-    await expect(
-      router.connect(user0).redeem(meme1.address)
-    ).to.be.revertedWith("PreMeme__NotEligible");
+    let res = await multicall.getTokenData(wft1.address, user0.address);
+    console.log(res);
   });
 
-  it("User0 tries to contribute 10 ETH to meme1", async function () {
+  it("User1 redeems wft1 contribution", async function () {
     console.log("******************************************************");
-    await expect(
-      router.connect(user0).contribute(meme1.address, { value: ten })
-    ).to.be.revertedWith("PreMeme__Concluded");
+    await expect(router.connect(user1).redeem(wft1.address)).to.be.revertedWith(
+      "PreWaveFrontToken__NotEligible"
+    );
   });
 
-  it("User0 contributes 10 ETH to meme2", async function () {
+  it("User0 redeems wft1 contribution", async function () {
     console.log("******************************************************");
-    await router.connect(user0).contribute(meme2.address, { value: ten });
+    await router.connect(user0).redeem(wft1.address);
   });
 
-  it("User1 redeems meme2 contribution", async function () {
+  it("Page Data", async function () {
     console.log("******************************************************");
-    await expect(
-      router.connect(user1).redeem(meme2.address)
-    ).to.be.revertedWith("PreMeme__NotEligible");
+    let res = await multicall.getTokenData(wft1.address, user0.address);
+    console.log(res);
   });
 
+  it("Market Prices", async function () {
+    console.log("******************************************************");
+    console.log("Market Price: ", await wft0.getMarketPrice());
+    console.log("Floor Price: ", await wft0.getFloorPrice());
+
+    console.log("Market Price: ", await wft1.getMarketPrice());
+    console.log("Floor Price: ", await wft1.getFloorPrice());
+  });
+
+  /*
   it("User0 buys meme1", async function () {
     console.log("******************************************************");
     await router.connect(user0).buy(meme1.address, AddressZero, 0, 1904422437, {
