@@ -130,7 +130,7 @@ contract PreWaveFrontToken is ReentrancyGuard {
     
 }
 
-contract WaveFrontToken is ERC20, ERC20Votes, ReentrancyGuard, Ownable {
+contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Ownable {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
