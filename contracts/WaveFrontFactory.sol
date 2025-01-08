@@ -130,7 +130,7 @@ contract PreWaveFrontToken is ReentrancyGuard {
     
 }
 
-contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Ownable {
+contract WaveFrontToken is ERC20, ERC20Votes, ReentrancyGuard, Ownable {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
@@ -386,10 +386,10 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
 
     function setTreasury(address _treasury)             
         external
+        onlyOwner
     {
-        if (msg.sender != treasury) revert WaveFrontToken__NotAuthorized();
-        emit WaveFrontToken__TreasurySet(treasury, _treasury);
         treasury = _treasury;
+        emit WaveFrontToken__TreasurySet(treasury, _treasury);
     }
 
     /**
@@ -410,7 +410,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         }
         IERC20(quote).safeTransfer(treasury, feeAmount);
         emit WaveFrontToken__TreasuryFee(treasury, feeAmount, 0);
-        address protocol = WaveFrontTokenFactory(factory).protocol();
+        address protocol = WaveFrontFactory(factory).protocol();
         IERC20(quote).safeTransfer(protocol, feeAmount);
         emit WaveFrontToken__ProtocolFee(protocol, feeAmount, 0);
         feeQuote -= (2 * feeAmount);
@@ -435,7 +435,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         }
         _mint(treasury, feeAmount);
         emit WaveFrontToken__TreasuryFee(treasury, 0, feeAmount);
-        address protocol = WaveFrontTokenFactory(factory).protocol();
+        address protocol = WaveFrontFactory(factory).protocol();
         _mint(protocol, feeAmount);
         emit WaveFrontToken__ProtocolFee(protocol, 0, feeAmount);
         feeToken -= (2 * feeAmount);
@@ -576,26 +576,32 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
 
 }
 
-contract WaveFrontTokenFactory is Ownable {
+contract WaveFrontFactory is Ownable {
 
     address public protocol;
     address public lastToken;
 
-    event WaveFrontTokenFactory__Created(address indexed token);
-    event WaveFrontTokenFactory__ProtocolSet(address indexed oldProtocol, address indexed newProtocol);
+    event WaveFrontFactory__Created(address indexed token);
+    event WaveFrontFactory__ProtocolSet(address indexed oldProtocol, address indexed newProtocol);
+
+    constructor(address _protocol) {
+        protocol = _protocol;
+    }
 
     function createWaveFrontToken(
         string memory _name, 
         string memory _symbol, 
         string memory _uri, 
+        address _owner,
         address _quote, 
         uint256 _reserveVirtQuote
     ) 
         external 
         returns (address) 
     {
-        lastToken = address(new WaveFrontToken(_name, _symbol, _uri, msg.sender, _quote, _reserveVirtQuote));
-        emit WaveFrontTokenFactory__Created(lastToken);
+        lastToken = address(new WaveFrontToken(_name, _symbol, _uri, _owner, _quote, _reserveVirtQuote));
+        WaveFrontToken(lastToken).transferOwnership(_owner);
+        emit WaveFrontFactory__Created(lastToken);
         return lastToken;
     }
 
@@ -603,7 +609,7 @@ contract WaveFrontTokenFactory is Ownable {
         external 
         onlyOwner 
     {
-        emit WaveFrontTokenFactory__ProtocolSet(protocol, _protocol);
+        emit WaveFrontFactory__ProtocolSet(protocol, _protocol);
         protocol = _protocol;
     }
 

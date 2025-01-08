@@ -45,26 +45,9 @@ describe.only("local: test0", function () {
     usdc = await usdcArtifact.deploy();
     console.log("- USDC Initialized");
 
-    // const memeFactoryArtifact = await ethers.getContractFactory("MemeFactory");
-    // memeFactory = await memeFactoryArtifact.deploy();
-    // console.log("- MemeFactory Initialized");
-
-    // const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
-    // factory = await factoryArtifact.deploy(
-    //   memeFactory.address,
-    //   base.address,
-    //   treasury.address
-    // );
-    // console.log("- WaveFront Factory Initialized");
-
-    // const multicallSubgraphArtifact = await ethers.getContractFactory(
-    //   "WaveFrontMulticallSubgraph"
-    // );
-    // multicallSubgraph = await multicallSubgraphArtifact.deploy(
-    //   factory.address,
-    //   base.address
-    // );
-    // console.log("- Subgraph Multicall Initialized");
+    const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
+    factory = await factoryArtifact.deploy(treasury.address);
+    console.log("- WaveFrontFactory Initialized");
 
     // const multicallFrontendArtifact = await ethers.getContractFactory(
     //   "WaveFrontMulticallFrontend"
