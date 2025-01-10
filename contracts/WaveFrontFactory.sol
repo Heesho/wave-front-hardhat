@@ -556,7 +556,9 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         returns (uint256)
     {
         if (balanceOf(account) == 0) return 0;
-        return ((reserveVirtQuote.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account))) - reserveVirtQuote) - account_Debt[account];
+        uint256 reserveQuote = reserveVirtQuote.mulWadDown(maxSupply).divWadDown(maxSupply - balanceOf(account));
+        if (reserveQuote < reserveVirtQuote) return 0;
+        return reserveQuote - reserveVirtQuote - account_Debt[account];
     }
 
     /**

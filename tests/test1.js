@@ -7,84 +7,52 @@ const { execPath } = require("process");
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 const pointEightZerosOne = convert("0.000000001", 18);
-const pointFiveZerosOne = convert("0.000001", 18);
-const pointZeroZeroZeroOne = convert("0.0001", 18);
 const pointZeroZeroOne = convert("0.001", 18);
+const pointZeroZeroOne6 = convert("0.001", 6);
 const pointZeroOne = convert("0.01", 18);
-const one = convert("1", 18);
-const two = convert("2", 18);
-const three = convert("3", 18);
-const five = convert("5", 18);
 const ten = convert("10", 18);
-const twenty = convert("20", 18);
-const eighty = convert("80", 18);
-const ninety = convert("90", 18);
+const ten6 = convert("10", 6);
 const oneHundred = convert("100", 18);
-const twoHundred = convert("200", 18);
-const fiveHundred = convert("500", 18);
-const sixHundred = convert("600", 18);
-const eightHundred = convert("800", 18);
-const oneThousand = convert("1000", 18);
-const fourThousand = convert("4000", 18);
+const oneHundred6 = convert("100", 6);
 const tenThousand = convert("10000", 18);
-const oneHundredThousand = convert("100000", 18);
+const tenThousand6 = convert("10000", 6);
 
-let owner, multisig, user0, user1, user2;
-let memeFactory, meme1, meme2, meme3;
-let factory, multicallSubgraph, multicallFrontend, router;
-let base, treasury;
+let owner, multisig, user0, user1, user2, treasury;
+let weth, usdc, wft0, wft1;
+let factory, multicall, router;
 
 describe("local: test1", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
-    [owner, multisig, user0, user1, user2] = await ethers.getSigners();
+    [owner, multisig, user0, user1, user2, treasury] =
+      await ethers.getSigners();
 
-    const baseArtifact = await ethers.getContractFactory("Base");
-    base = await baseArtifact.deploy();
-    console.log("- BASE Initialized");
+    const wethArtifact = await ethers.getContractFactory("WETH");
+    weth = await wethArtifact.deploy();
+    console.log("- WETH Initialized");
 
-    const treasuryArtifact = await ethers.getContractFactory(
-      "WaveFrontTreasury"
-    );
-    treasury = await treasuryArtifact.deploy(base.address, owner.address);
-    console.log("- Treasury Initialized");
-
-    const memeFactoryArtifact = await ethers.getContractFactory("MemeFactory");
-    memeFactory = await memeFactoryArtifact.deploy();
-    console.log("- MemeFactory Initialized");
+    const usdcArtifact = await ethers.getContractFactory("USDC");
+    usdc = await usdcArtifact.deploy();
+    console.log("- USDC Initialized");
 
     const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
-    factory = await factoryArtifact.deploy(
-      memeFactory.address,
-      base.address,
-      treasury.address
-    );
-    console.log("- WaveFront Factory Initialized");
+    factory = await factoryArtifact.deploy(treasury.address);
+    console.log("- WaveFrontFactory Initialized");
 
-    const multicallSubgraphArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticallSubgraph"
+    const multicallArtifact = await ethers.getContractFactory(
+      "WaveFrontMulticall"
     );
-    multicallSubgraph = await multicallSubgraphArtifact.deploy(
-      factory.address,
-      base.address
-    );
-    console.log("- Subgraph Multicall Initialized");
-
-    const multicallFrontendArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticallFrontend"
-    );
-    multicallFrontend = await multicallFrontendArtifact.deploy(
-      factory.address,
-      base.address
-    );
-    console.log("- Frontend Multicall Initialized");
+    multicall = await multicallArtifact.deploy(factory.address);
+    console.log("- Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(factory.address, base.address);
+    router = await routerArtifact.deploy(factory.address);
     console.log("- Router Initialized");
 
-    await memeFactory.setWaveFrontFactory(factory.address);
+    await usdc.connect(user0).mint(user0.address, tenThousand6);
+    await usdc.connect(user1).mint(user1.address, tenThousand6);
+    await usdc.connect(user2).mint(user2.address, tenThousand6);
     console.log("- System set up");
 
     console.log("Initialization Complete");
@@ -96,13 +64,29 @@ describe("local: test1", function () {
     console.log("First Test");
   });
 
-  it("User0 creates meme1", async function () {
+  it("User0 creates wft0 with weth as quote token", async function () {
     console.log("******************************************************");
     await router
       .connect(user0)
-      .createMeme("Meme 1", "MEME1", "http/ipfs.com", { value: ten });
-    meme1 = await ethers.getContractAt("Meme", await factory.index_Meme(1));
-    console.log("Meme1 Created");
+      .createWaveFrontToken(
+        "WFT0",
+        "WFT0",
+        "http/ipfs.com/0",
+        weth.address,
+        oneHundred
+      );
+    wft0 = await ethers.getContractAt(
+      "WaveFrontToken",
+      await factory.lastToken()
+    );
+    console.log("WFT0 Created");
+  });
+
+  it("User0 contributes 10 weth to wft0", async function () {
+    console.log("******************************************************");
+    await router
+      .connect(user0)
+      .contributeWithNative(wft0.address, { value: ten });
   });
 
   it("Forward 2 hour", async function () {
@@ -111,63 +95,84 @@ describe("local: test1", function () {
     await network.provider.send("evm_mine");
   });
 
-  it("User0 redeems meme1 contribution", async function () {
+  it("User0 redeems wft0 contribution", async function () {
     console.log("******************************************************");
-    await router.connect(user0).redeem(meme1.address);
+    await router.connect(user0).redeem(wft0.address);
   });
 
-  it("User0 buys meme1", async function () {
+  it("User0 buys wft0", async function () {
     console.log("******************************************************");
-    await router.connect(user0).buy(meme1.address, AddressZero, 0, 1904422437, {
-      value: pointZeroZeroOne,
-    });
-  });
-
-  it("User0 sells meme1", async function () {
-    console.log("******************************************************");
-    await meme1.connect(user0).approve(router.address, pointZeroZeroOne);
     await router
       .connect(user0)
-      .sell(meme1.address, pointZeroZeroOne, 0, 1904422437);
+      .buyWithNative(wft0.address, AddressZero, 0, 1904422437, {
+        value: pointZeroZeroOne,
+      });
   });
 
-  it("User0 buys meme1", async function () {
+  it("User0 sells wft0", async function () {
     console.log("******************************************************");
-    await router.connect(user0).buy(meme1.address, AddressZero, 0, 1904422437, {
-      value: pointZeroOne,
-    });
-  });
-
-  it("User0 sells meme1", async function () {
-    console.log("******************************************************");
-    await meme1.connect(user0).approve(router.address, pointZeroOne);
+    await wft0.connect(user0).approve(router.address, pointZeroZeroOne);
     await router
       .connect(user0)
-      .sell(meme1.address, pointZeroOne, 0, 1904422437);
+      .sellToNative(wft0.address, pointZeroZeroOne, 0, 1904422437);
   });
 
-  it("User0 buys meme1", async function () {
+  it("User0 buys wft0", async function () {
     console.log("******************************************************");
-    await router.connect(user0).buy(meme1.address, AddressZero, 0, 1904422437, {
-      value: pointEightZerosOne,
-    });
-  });
-
-  it("User0 sells meme1", async function () {
-    console.log("******************************************************");
-    await meme1.connect(user0).approve(router.address, pointEightZerosOne);
     await router
       .connect(user0)
-      .sell(meme1.address, pointEightZerosOne, 0, 1904422437);
+      .buyWithNative(wft0.address, AddressZero, 0, 1904422437, {
+        value: pointZeroOne,
+      });
   });
 
-  it("User0 creates meme2", async function () {
+  it("User0 sells wft0", async function () {
     console.log("******************************************************");
-    await router.connect(user0).createMeme("Meme 2", "MEME2", "http/ipfs.com", {
-      value: pointZeroZeroOne,
-    });
-    meme2 = await ethers.getContractAt("Meme", await factory.index_Meme(2));
-    console.log("Meme2 Created");
+    await wft0.connect(user0).approve(router.address, pointZeroOne);
+    await router
+      .connect(user0)
+      .sellToNative(wft0.address, pointZeroOne, 0, 1904422437);
+  });
+
+  it("User0 buys wft0", async function () {
+    console.log("******************************************************");
+    await router
+      .connect(user0)
+      .buyWithNative(wft0.address, AddressZero, 0, 1904422437, {
+        value: pointEightZerosOne,
+      });
+  });
+
+  it("User0 sells wft0", async function () {
+    console.log("******************************************************");
+    await wft0.connect(user0).approve(router.address, pointEightZerosOne);
+    await router
+      .connect(user0)
+      .sellToNative(wft0.address, pointEightZerosOne, 0, 1904422437);
+  });
+
+  it("User0 creates wft1 with usdc as quote token", async function () {
+    console.log("******************************************************");
+    await router
+      .connect(user0)
+      .createWaveFrontToken(
+        "WFT1",
+        "WFT1",
+        "http/ipfs.com/1",
+        usdc.address,
+        oneHundred6
+      );
+    wft1 = await ethers.getContractAt(
+      "WaveFrontToken",
+      await factory.lastToken()
+    );
+    console.log("WFT1 Created");
+  });
+
+  it("User0 contributes 10 usdc to wft1", async function () {
+    console.log("******************************************************");
+    await usdc.connect(user0).approve(router.address, ten6);
+    await router.connect(user0).contributeWithQuote(wft1.address, ten6);
   });
 
   it("Forward 2 hour", async function () {
@@ -176,186 +181,294 @@ describe("local: test1", function () {
     await network.provider.send("evm_mine");
   });
 
-  it("User0 redeems meme2 contribution", async function () {
+  it("User0 redeems wft1 contribution", async function () {
     console.log("******************************************************");
-    await router.connect(user0).redeem(meme2.address);
+    await router.connect(user0).redeem(wft1.address);
   });
 
-  it("User0 buys meme2", async function () {
+  it("User0 buys wft1", async function () {
     console.log("******************************************************");
-    await router.connect(user0).buy(meme2.address, AddressZero, 0, 1904422437, {
-      value: pointEightZerosOne,
-    });
+    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    await router
+      .connect(user0)
+      .buyWithQuote(
+        wft1.address,
+        AddressZero,
+        pointZeroZeroOne6,
+        0,
+        1904422437
+      );
   });
 
-  it("Meme Data", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicallSubgraph.getMemeData(meme2.address);
+    let res = await multicall.getTokenData(wft0.address, user0.address);
     console.log(res);
   });
 
-  it("User0 sells meme2", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    await meme2
-      .connect(user0)
-      .approve(router.address, await meme2.balanceOf(user0.address));
-    await router
-      .connect(user0)
-      .sell(meme2.address, await meme2.balanceOf(user0.address), 0, 1904422437);
-  });
-
-  it("Meme Data", async function () {
-    console.log("******************************************************");
-    let res = await multicallSubgraph.getMemeData(meme2.address);
+    let res = await multicall.getTokenData(wft1.address, user0.address);
     console.log(res);
   });
 
-  it("User0 buys meme2", async function () {
+  it("User0 sells wft1", async function () {
     console.log("******************************************************");
-    await router.connect(user0).buy(meme2.address, AddressZero, 0, 1904422437, {
-      value: pointEightZerosOne,
-    });
-  });
-
-  it("User0 buys meme2", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).buy(meme2.address, AddressZero, 0, 1904422437, {
-      value: ten,
-    });
-  });
-
-  it("User0 sells meme2", async function () {
-    console.log("******************************************************");
-    await meme2
+    await wft1
       .connect(user0)
-      .approve(router.address, await meme2.balanceOf(user0.address));
+      .approve(router.address, await wft1.balanceOf(user0.address));
     await router
       .connect(user0)
-      .sell(meme2.address, await meme2.balanceOf(user0.address), 0, 1904422437);
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
   });
 
-  it("User0 buys meme2", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    await router.connect(user0).buy(meme2.address, AddressZero, 0, 1904422437, {
-      value: oneHundred,
-    });
-  });
-
-  it("User0 sells meme2", async function () {
-    console.log("******************************************************");
-    await meme2
-      .connect(user0)
-      .approve(router.address, await meme2.balanceOf(user0.address));
-    await router
-      .connect(user0)
-      .sell(meme2.address, await meme2.balanceOf(user0.address), 0, 1904422437);
-  });
-
-  it("User0 buys meme2", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).buy(meme2.address, AddressZero, 0, 1904422437, {
-      value: pointZeroZeroOne,
-    });
-  });
-
-  it("User0 sells meme2", async function () {
-    console.log("******************************************************");
-    await meme2
-      .connect(user0)
-      .approve(router.address, await meme2.balanceOf(user0.address));
-    await router
-      .connect(user0)
-      .sell(meme2.address, await meme2.balanceOf(user0.address), 0, 1904422437);
-  });
-
-  it("User0 donates 100 ETH", async function () {
-    console.log("******************************************************");
-    await base.connect(user0).deposit({ value: oneHundred });
-    await base.connect(user0).approve(meme2.address, oneHundred);
-    await meme2.connect(user0).setCanDonateBurn(user0.address, true);
-    await meme2.connect(user0).donate(oneHundred);
-  });
-
-  it("User0 sells meme2", async function () {
-    console.log("******************************************************");
-    await meme2
-      .connect(user0)
-      .approve(router.address, await meme2.balanceOf(user0.address));
-    await router
-      .connect(user0)
-      .sell(meme2.address, await meme2.balanceOf(user0.address), 0, 1904422437);
-  });
-
-  it("Treasury Operations", async function () {
-    console.log("******************************************************");
-    await treasury.borrow([meme1.address, meme2.address]);
-    await treasury.withdraw();
-  });
-
-  it("Meme Data", async function () {
-    console.log("******************************************************");
-    let res = await multicallSubgraph.getMemeData(meme2.address);
+    let res = await multicall.getTokenData(wft0.address, user0.address);
     console.log(res);
   });
 
-  it("Page Data", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicallFrontend.getPageData(
-      meme2.address,
-      treasury.address
-    );
+    let res = await multicall.getTokenData(wft1.address, user0.address);
     console.log(res);
   });
 
-  it("User0 sets creator of meme2 to User1", async function () {
+  it("User0 buys wft1", async function () {
     console.log("******************************************************");
-    await meme2.connect(user0).setCreator(user1.address);
-    await expect(
-      meme2.connect(user0).setCreator(user1.address)
-    ).to.be.revertedWith("Meme__NotAuthorized");
-  });
-
-  it("User0 buys meme2", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).buy(meme2.address, AddressZero, 0, 1904422437, {
-      value: ten,
-    });
-  });
-
-  it("User0 sells meme2", async function () {
-    console.log("******************************************************");
-    await meme2
-      .connect(user0)
-      .approve(router.address, await meme2.balanceOf(user0.address));
+    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
     await router
       .connect(user0)
-      .sell(meme2.address, await meme2.balanceOf(user0.address), 0, 1904422437);
+      .buyWithQuote(
+        wft1.address,
+        AddressZero,
+        pointZeroZeroOne6,
+        0,
+        1904422437
+      );
   });
 
-  it("Page Data", async function () {
+  it("User0 buys wft1", async function () {
     console.log("******************************************************");
-    let res = await multicallFrontend.getPageData(meme2.address, user1.address);
+    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    await router
+      .connect(user0)
+      .buyWithQuote(
+        wft1.address,
+        AddressZero,
+        pointZeroZeroOne6,
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 buys wft1", async function () {
+    console.log("******************************************************");
+    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    await router
+      .connect(user0)
+      .buyWithQuote(
+        wft1.address,
+        AddressZero,
+        pointZeroZeroOne6,
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 buys wft1", async function () {
+    console.log("******************************************************");
+    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    await router
+      .connect(user0)
+      .buyWithQuote(
+        wft1.address,
+        AddressZero,
+        pointZeroZeroOne6,
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 heals 100 ETH on wft0", async function () {
+    console.log("******************************************************");
+    await weth.connect(user0).deposit({ value: oneHundred });
+    await weth.connect(user0).approve(wft0.address, oneHundred);
+    await wft0.connect(user0).heal(oneHundred);
+  });
+
+  it("User0 heals 100 usdc on wft1", async function () {
+    console.log("******************************************************");
+    await usdc.connect(user0).approve(wft1.address, oneHundred6);
+    await wft1.connect(user0).heal(oneHundred6);
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft0.address, user0.address);
     console.log(res);
   });
 
-  it("Owner sets treasury address to user1", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    await treasury.connect(owner).setTreasury(user1.address);
-    await expect(treasury.connect(user1).setTreasury(user0.address)).to.be
-      .reverted;
-    await treasury.withdraw();
-    await treasury.connect(owner).setTreasury(owner.address);
+    let res = await multicall.getTokenData(wft1.address, user0.address);
+    console.log(res);
   });
 
-  it("User1 burns 10 meme", async function () {
+  it("User0 buys wft1", async function () {
     console.log("******************************************************");
-    await expect(meme2.connect(user1).burn(ten)).to.be.revertedWith(
-      "Meme__NotAuthorized"
-    );
-    await expect(
-      meme2.connect(user0).setCanDonateBurn(user1.address, true)
-    ).to.be.revertedWith("Meme__NotAuthorized");
-    await meme2.connect(user1).setCanDonateBurn(user1.address, true);
-    await meme2.connect(user1).burn(ten);
+    await usdc.connect(user0).approve(router.address, ten6);
+    await router
+      .connect(user0)
+      .buyWithQuote(wft1.address, AddressZero, ten6, 0, 1904422437);
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft0.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft1.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft0.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft1.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 buys wft1", async function () {
+    console.log("******************************************************");
+    await usdc.connect(user0).approve(router.address, ten6);
+    await router
+      .connect(user0)
+      .buyWithQuote(wft1.address, AddressZero, ten6, 0, 1904422437);
+  });
+
+  it("User0 burns 10 wft0", async function () {
+    console.log("******************************************************");
+    await wft0.connect(user0).burn(ten);
+  });
+
+  it("User0 burns 10 wft1", async function () {
+    console.log("******************************************************");
+    await wft1.connect(user0).burn(ten);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft0.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getTokenData(wft1.address, user0.address);
+    console.log(res);
   });
 });

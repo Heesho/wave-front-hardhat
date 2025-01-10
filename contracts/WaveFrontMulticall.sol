@@ -123,7 +123,11 @@ contract WaveFrontMulticall {
             tokenData.accountCredit = IWaveFrontToken(token).getAccountCredit(account);
             tokenData.accountTransferable = IWaveFrontToken(token).getAccountTransferrable(account);
             tokenData.accountContributed = IPreWaveFrontToken(preToken).account_QuoteContributed(account);
-            tokenData.accountRedeemable = (marketOpen ? IPreWaveFrontToken(preToken).totalTokenBalance() * tokenData.accountContributed / totalContributed : expectedTokenAmount * tokenData.accountContributed / totalContributed);
+            if (totalContributed > 0) {
+                tokenData.accountRedeemable = (marketOpen ? IPreWaveFrontToken(preToken).totalTokenBalance() * tokenData.accountContributed / totalContributed : expectedTokenAmount * tokenData.accountContributed / totalContributed);
+            } else {
+                tokenData.accountRedeemable = 0;
+            }
         }
 
         if (!marketOpen && block.timestamp < tokenData.marketOpenTimestamp) {
@@ -170,8 +174,8 @@ contract WaveFrontMulticall {
 
         output = (IWaveFrontToken(token).reserveVirtQuote() + IWaveFrontToken(token).reserveRealQuote()) - newReserveQuote;
         slippage = 100 * (1e18 - (output * 1e18 / (input * IWaveFrontToken(token).getMarketPrice() / 1e18)));
-        minOutput = input * IWaveFrontToken(token).getMarketPrice() /1e18 * slippageTolerance / DIVISOR;
-        autoMinOutput = input * IWaveFrontToken(token).getMarketPrice() /1e18 * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
+        minOutput = input * IWaveFrontToken(token).getMarketPrice() / 1e18 * slippageTolerance / DIVISOR;
+        autoMinOutput = input * IWaveFrontToken(token).getMarketPrice() / 1e18 * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
     }
 
     function quoteSellOut(address token, uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
