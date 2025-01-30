@@ -14,7 +14,6 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
 
     uint256 constant FEE = 200;
     uint256 constant DIVISOR = 10000;
-    uint256 constant PRECISION = 1e18;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
@@ -33,11 +32,15 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
     /*----------  ERRORS ------------------------------------------------*/
 
     error GumballToken__SupplyMaxed();
+    error GumballToken__InvalidGumball();
 
     /*----------  EVENTS ------------------------------------------------*/
 
     event GumballToken__Minted(address indexed from, address indexed to, uint256 indexed tokenId);
     event GumballToken__Redeemed(address indexed from, address indexed to, uint256 indexed tokenId);
+    event GumballToken__Swapped(address indexed from, address indexed to, uint256 indexed tokenId);
+    event GumballToken__BaseTokenURIUpdated(string indexed baseTokenURI);
+    event GumballToken__TreasurySet(address indexed treasury);
 
 
     /*----------  FUNCTIONS  --------------------------------------------*/
@@ -90,7 +93,7 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
      */
     function swap(address _to, uint256[] memory _gumballs) external nonReentrant {
         for (uint256 i = 0; i < _gumballs.length; i++) {
-            _pop(gumballs_Index[_gumballs[i]]);
+            _pop(_gumballs[i]);
             safeTransferFrom(msg.sender, _to, _gumballs[i]);
             emit GumballToken__Swapped(msg.sender, _to, _gumballs[i]);
         }
@@ -114,11 +117,34 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
-    function _pop(uint256 _index) internal {
+    function setBaseTokenURI(string memory _baseTokenURI) external onlyOwner {
+        baseTokenURI = _baseTokenURI;
+        emit GumballToken__BaseTokenURIUpdated(_baseTokenURI);
+    }
 
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+        emit GumballToken__TreasurySet(_treasury);
+    }
+
+    function _pop(uint256 _gumballId) internal {
+        uint256 index = gumballs_Index[_gumballId];
+
+        if (index == 0) revert GumballToken__InvalidGumball();
+        if (gumballs.length > 1 && index != gumballs.length - 1) {
+            uint256 lastId = gumballs[gumballs.length - 1];
+            gumballs[index] = lastId;
+            gumballs_Index[lastId] = index;
+        }
+        gumballs_Index[_gumballId] = 0;
+        gumballs.pop();
     }
 
     /*----------  OVERRIDE FUNCTIONS  ------------------------------------*/
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseTokenURI;
+    }
 
     function _beforeTokenTransfer(
         address from,
@@ -135,6 +161,10 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+    
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
