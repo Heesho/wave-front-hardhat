@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -148,9 +149,9 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
     address public immutable factory; // Address of the factory contract
     address public immutable quote; // Address of the quote token (e.g., wETH, USDC, etc.)
     address public immutable preToken; // Address of the PreWaveFrontToken contract
+    uint256 public immutable wavefrontId; // Token ID of the WaveFrontToken
     uint256 public maxSupply = INITIAL_SUPPLY; // Maximum supply of the WFT, can only decrease
     bool public open = false; // Flag indicating if the market is open, only the preToken can open it
-    string public uri; // URI for the metadata
 
     // bonding curve state
     uint256 public reserveRealQuote; // real quote reserve of the token
@@ -160,9 +161,6 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
     // credit state
     uint256 public totalDebt; // Total debt of the WaveFrontToken
     mapping(address => uint256) public account_Debt; // Debt of each account
-
-    // treasury state
-    address public treasury; // treasury address
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -180,7 +178,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
     event WaveFrontToken__Swap(address indexed from, uint256 amountQuoteIn, uint256 amountTokenIn, uint256 amountQuoteOut, uint256 amountTokenOut, address indexed to);
     event WaveFrontToken__ProviderFee(address indexed account, uint256 amountQuote, uint256 amountToken);
     event WaveFrontToken__TreasuryFee(address indexed account, uint256 amountQuote, uint256 amountToken);
-    event WaveFrontToken__ProtocolFee(address indexed account, uint256 amountQuote, uint256 amountToken);
+    event WaveFrontToken__OwnerFee(address indexed account, uint256 amountQuote, uint256 amountToken);
     event WaveFrontToken__Burn(address indexed account, uint256 amountToken);
     event WaveFrontToken__Heal(address indexed account, uint256 amountQuote);
     event WaveFrontToken__ReserveTokenBurn(uint256 amountToken);
@@ -209,26 +207,25 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
      * @dev Constructs the WaveFrontToken contract with initial settings.
      * @param _name Name of the WaveFrontToken.
      * @param _symbol Symbol of the WaveFrontToken.
-     * @param _uri URI for WaveFrontToken metadata.
      * @param _quote Address of the quote token (e.g., wETH, USDC, etc.)
      * @param _reserveVirtQuote Initial virtual reserve of the quote token
      */
+
     constructor(
         string memory _name, 
         string memory _symbol, 
-        string memory _uri, 
-        address _treasury,
+        uint256 _wavefrontId,
         address _quote,
         uint256 _reserveVirtQuote
+
     )
         ERC20(_name, _symbol)
         ERC20Permit(_name)
     {
-        uri = _uri;
+        factory = msg.sender;
+        wavefrontId = _wavefrontId;
         quote = _quote;
         reserveVirtQuote = _reserveVirtQuote;
-        factory = msg.sender;
-        treasury = _treasury;
         preToken = address(new PreWaveFrontToken(_quote));
     }
 
@@ -384,14 +381,6 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         emit WaveFrontToken__MarketOpened();
     }
 
-    function setTreasury(address _treasury)             
-        external
-        onlyOwner
-    {
-        treasury = _treasury;
-        emit WaveFrontToken__TreasurySet(treasury, _treasury);
-    }
-
     /**
      * @dev Processes the buy fees, distributing them to the provider, treasury, and protocol.
      * @param feeQuote The amount of quote tokens to be distributed as fees.
@@ -408,12 +397,18 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
             emit WaveFrontToken__ProviderFee(provider, feeAmount, 0);
             feeQuote -= feeAmount;
         }
-        IERC20(quote).safeTransfer(treasury, feeAmount);
-        emit WaveFrontToken__TreasuryFee(treasury, feeAmount, 0);
-        address protocol = WaveFrontFactory(factory).protocol();
-        IERC20(quote).safeTransfer(protocol, feeAmount);
-        emit WaveFrontToken__ProtocolFee(protocol, feeAmount, 0);
-        feeQuote -= (2 * feeAmount);
+        address owner = WaveFront(factory).ownerOf(wavefrontId);
+        if (owner != address(0)) {
+            IERC20(quote).safeTransfer(owner, feeAmount);
+            emit WaveFrontToken__OwnerFee(owner, feeAmount, 0);
+            feeQuote -= feeAmount;
+        }
+        address treasury = WaveFront(factory).treasury();
+        if (treasury != address(0)) {
+            IERC20(quote).safeTransfer(treasury, feeAmount);
+            emit WaveFrontToken__TreasuryFee(treasury, feeAmount, 0);
+            feeQuote -= feeAmount;
+        }
         return feeQuote;
     }
 
@@ -433,12 +428,18 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
             emit WaveFrontToken__ProviderFee(provider, 0, feeAmount);
             feeToken -= feeAmount;
         }
-        _mint(treasury, feeAmount);
-        emit WaveFrontToken__TreasuryFee(treasury, 0, feeAmount);
-        address protocol = WaveFrontFactory(factory).protocol();
-        _mint(protocol, feeAmount);
-        emit WaveFrontToken__ProtocolFee(protocol, 0, feeAmount);
-        feeToken -= (2 * feeAmount);
+        address owner = WaveFront(factory).ownerOf(wavefrontId);
+        if (owner != address(0)) {
+            _mint(owner, feeAmount);
+            emit WaveFrontToken__OwnerFee(owner, 0, feeAmount);
+            feeToken -= feeAmount;
+        }
+        address treasury = WaveFront(factory).treasury();
+        if (treasury != address(0)) {
+            _mint(treasury, feeAmount);
+            emit WaveFrontToken__TreasuryFee(treasury, 0, feeAmount);
+            feeToken -= feeAmount;
+        }
         return feeToken;
     }
 
@@ -578,19 +579,30 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
 
 }
 
-contract WaveFrontFactory is Ownable {
+contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
-    address public protocol;
-    address public lastToken;
+    /*----------  CONSTANTS  --------------------------------------------*/
 
-    event WaveFrontFactory__Created(address indexed token);
-    event WaveFrontFactory__ProtocolSet(address indexed oldProtocol, address indexed newProtocol);
+    /*----------  STATE VARIABLES  --------------------------------------*/
 
-    constructor(address _protocol) {
-        protocol = _protocol;
-    }
+    uint256 public currentTokenId;
+    mapping(uint256 => address) public tokenId_WaveFrontToken;
+    address public treasury;
 
-    function createWaveFrontToken(
+    /*----------  ERRORS ------------------------------------------------*/
+
+    error WaveFront__NotAuthorized();
+
+    /*----------  EVENTS ------------------------------------------------*/
+
+    event WaveFront__Created(address indexed token);
+    event WaveFront__TreasurySet(address indexed treasury);
+
+    /*----------  FUNCTIONS  --------------------------------------------*/
+
+    constructor() ERC721("WaveFront", "WF") {}
+
+    function create(
         string memory _name, 
         string memory _symbol, 
         string memory _uri, 
@@ -601,18 +613,55 @@ contract WaveFrontFactory is Ownable {
         external 
         returns (address) 
     {
-        lastToken = address(new WaveFrontToken(_name, _symbol, _uri, _owner, _quote, _reserveVirtQuote));
-        WaveFrontToken(lastToken).transferOwnership(_owner);
-        emit WaveFrontFactory__Created(lastToken);
-        return lastToken;
+        uint256 tokenId = ++currentTokenId;
+        _safeMint(_owner, tokenId);
+        _setTokenURI(tokenId, _uri);
+
+        address token = address(new WaveFrontToken(_name, _symbol, tokenId, _quote, _reserveVirtQuote));
+        tokenId_WaveFrontToken[tokenId] = token;
+        emit WaveFront__Created(token);
+        return token;
     }
 
-    function setProtocol(address _protocol) 
-        external 
-        onlyOwner 
-    {
-        emit WaveFrontFactory__ProtocolSet(protocol, _protocol);
-        protocol = _protocol;
+    function setTokenURI(uint256 tokenId, string memory _uri) external {
+        if (ownerOf(tokenId) != msg.sender) revert WaveFront__NotAuthorized();
+        _setTokenURI(tokenId, _uri);
     }
+
+    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
+
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+        emit WaveFront__TreasurySet(_treasury);
+    }
+
+    /*----------  OVERRIDE FUNCTIONS  ------------------------------------*/
+
+    function _baseURI() internal view override returns (string memory) {
+        return ""; // Return base URI if needed
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal virtual override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+    }
+
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+    
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
 }

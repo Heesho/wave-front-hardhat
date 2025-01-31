@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard, Ownable {
+contract GumBallToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
@@ -17,7 +17,9 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
+    address public immutable factory;
     address public immutable token;
+    uint256 public immutable gumballId;
     uint256 public immutable rate;
     uint256 public immutable maxSupply;
 
@@ -26,8 +28,6 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
 
     uint256[] public gumballs;
     mapping(uint256 => uint256) public gumballs_Index;
-
-    address public treasury;
 
     /*----------  ERRORS ------------------------------------------------*/
 
@@ -40,8 +40,6 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
     event GumballToken__Redeemed(address indexed from, address indexed to, uint256 indexed tokenId);
     event GumballToken__Swapped(address indexed from, address indexed to, uint256 indexed tokenId);
     event GumballToken__BaseTokenURIUpdated(string indexed baseTokenURI);
-    event GumballToken__TreasurySet(address indexed treasury);
-
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
@@ -55,20 +53,20 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
      * @param _treasury The address of the treasury
      */
     constructor(
-        string memory name, 
-        string memory symbol,
+        string memory _name, 
+        string memory _symbol,
         address _token,
+        uint256 _gumballId,
         uint256 _rate,
         uint256 _maxSupply,
-        string memory _baseTokenURI,
-        address _treasury
-
-    ) ERC721(name, symbol) {
+        string memory _baseTokenURI
+    ) ERC721(_name, _symbol) {
+        factory = msg.sender;
+        gumballId = _gumballId;
         token = _token;
         rate = _rate;
         maxSupply = _maxSupply;
         baseTokenURI = _baseTokenURI;
-        treasury = _treasury;
     }
 
     /**
@@ -112,24 +110,25 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
             safeTransferFrom(msg.sender, address(this), _gumballs[i]);
             emit GumballToken__Redeemed(msg.sender, _to, _gumballs[i]);
         }
-        IERC20(token).safeTransfer(_to, _gumballs.length * rate);
+        if (GumBall(factory).ownerOf(gumballId) != address(0)) {
+            uint256 fee = _gumballs.length * rate * FEE / DIVISOR;
+            IERC20(token).safeTransfer(GumBall(factory).ownerOf(gumballId), fee);
+            IERC20(token).safeTransfer(_to, _gumballs.length * rate - fee);
+        } else {
+            IERC20(token).safeTransfer(_to, _gumballs.length * rate);
+        }
     }
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
-    function setBaseTokenURI(string memory _baseTokenURI) external onlyOwner {
+    function setBaseTokenURI(string memory _baseTokenURI) external {
+        if (GumBall(factory).ownerOf(gumballId) != msg.sender) revert GumballToken__NotAuthorized();
         baseTokenURI = _baseTokenURI;
         emit GumballToken__BaseTokenURIUpdated(_baseTokenURI);
     }
 
-    function setTreasury(address _treasury) external onlyOwner {
-        treasury = _treasury;
-        emit GumballToken__TreasurySet(_treasury);
-    }
-
     function _pop(uint256 _gumballId) internal {
         uint256 index = gumballs_Index[_gumballId];
-
         if (index == 0) revert GumballToken__InvalidGumball();
         if (gumballs.length > 1 && index != gumballs.length - 1) {
             uint256 lastId = gumballs[gumballs.length - 1];
@@ -171,6 +170,91 @@ contract GumballToken is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyG
 
 }
 
-contract GumballFactory is Ownable {
+contract GumBall is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable  {
+
+    /*----------  CONSTANTS  --------------------------------------------*/
+
+    /*----------  STATE VARIABLES  --------------------------------------*/
+
+    uint256 public currentTokenId;
+    mapping(uint256 => address) public tokenId_GumBallToken;
+    address public treasury;
+
+    /*----------  ERRORS ------------------------------------------------*/
+
+    error GumBall__NotAuthorized();
+
+    /*----------  EVENTS ------------------------------------------------*/
+
+    event GumBall__Created(address indexed token);
+    event GumBall__TreasurySet(address indexed treasury);
+
+    /*----------  FUNCTIONS  --------------------------------------------*/
+
+    constructor() ERC721("GumBall", "GB") {}
+
+    function create(
+        string memory _name,
+        string memory _symbol,
+        string memory _uri,
+        address _owner,
+        address _token,
+        uint256 _rate,
+        uint256 _maxSupply,
+        string memory _baseTokenURI
+    ) 
+        external 
+        returns (address)
+    {
+        uint256 tokenId = ++currentTokenId;
+        _safeMint(_owner, tokenId);
+        _setTokenURI(tokenId, _uri);
+
+        address token = address(new GumBallToken(_name, _symbol, _token, tokenId, _rate, _maxSupply, _baseTokenURI));
+        tokenId_GumBallToken[tokenId] = token;
+        emit GumBall__Created(token);
+        return token;
+    }
+
+    function setTokenURI(uint256 tokenId, string memory _uri) external {
+        if (ownerOf(tokenId) != msg.sender) revert GumBall__NotAuthorized();
+        _setTokenURI(tokenId, _uri);
+    }
+
+    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
+
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+        emit GumBall__TreasurySet(_treasury);
+    }
+
+    /*----------  OVERRIDE FUNCTIONS  ------------------------------------*/
+
+    function _baseURI() internal view override returns (string memory) {
+        return ""; // Return base URI if needed
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal virtual override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+    }
+
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+    
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
 }
