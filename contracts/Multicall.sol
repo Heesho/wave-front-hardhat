@@ -31,7 +31,7 @@ interface IWaveFrontToken {
     function totalDebt() external view returns (uint256);
 }
 
-contract WaveFrontMulticall {
+contract Multicall {
 
     /*----------  CONSTANTS  --------------------------------------------*/
 

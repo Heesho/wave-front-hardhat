@@ -33,7 +33,7 @@ interface IWETH {
     function withdraw(uint256 amount) external;
 }
 
-contract WaveFrontRouter {
+contract Router {
     using SafeERC20 for IERC20;
 
     address public immutable factory;
