@@ -182,12 +182,10 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
     event WaveFrontToken__Burn(address indexed account, uint256 amountToken);
     event WaveFrontToken__Heal(address indexed account, uint256 amountQuote);
     event WaveFrontToken__ReserveTokenBurn(uint256 amountToken);
-    event WaveFrontToken__ReserveVirtQuoteHeal(uint256 amountQuote);
-    event WaveFrontToken__ReserveRealQuoteHeal(uint256 amountQuote);
+    event WaveFrontToken__ReserveQuoteHeal(uint256 amountQuote);
     event WaveFrontToken__Borrow(address indexed account, uint256 amountQuote);
     event WaveFrontToken__Repay(address indexed account, uint256 amountQuote);
     event WaveFrontToken__MarketOpened();
-    event WaveFrontToken__TreasurySet(address indexed oldTreasury, address indexed newTreasury);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -265,9 +263,9 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         emit WaveFrontToken__Swap(msg.sender, amountQuoteIn, 0, 0, amountTokenOut, to);
 
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
-        feeQuote = _processBuyFees(feeQuote, provider);
+        uint256 healedQuote = _processBuyFees(feeQuote, provider);
+        _healQuoteReserves(healedQuote);
         _mint(to, amountTokenOut);
-        _healQuoteReserves(feeQuote);
     }
 
     /**
@@ -304,8 +302,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         emit WaveFrontToken__Swap(msg.sender, 0, amountTokenIn, amountQuoteOut, 0, to);
 
         _burn(msg.sender, amountTokenIn);
-        feeToken = _processSellFees(feeToken, provider);
-        _burnTokenReserves(feeToken);
+        uint256 burnedToken = _processSellFees(feeToken, provider);
+        _burnTokenReserves(burnedToken);
         IERC20(quote).safeTransfer(to, amountQuoteOut);
     }
 
@@ -352,7 +350,6 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
     {
         _burn(msg.sender, amountToken);
         _burnTokenReserves(amountToken);
-        emit WaveFrontToken__Burn(msg.sender, amountToken);
     }
 
     /**
@@ -362,10 +359,10 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
     function heal(uint256 amountQuote) 
         external
         nonReentrant
+        notZeroInput(amountQuote)
     {
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuote);
         _healQuoteReserves(amountQuote);
-        emit WaveFrontToken__Heal(msg.sender, amountQuote);
     }
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
@@ -457,8 +454,8 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         uint256 reserveHeal = savedReserveToken.mulWadDown(amountQuote).divWadDown(savedMaxSupply - savedReserveToken);
         reserveRealQuote += amountQuote;
         reserveVirtQuote += reserveHeal;
-        emit WaveFrontToken__ReserveVirtQuoteHeal(reserveHeal);
-        emit WaveFrontToken__ReserveRealQuoteHeal(amountQuote);
+        emit WaveFrontToken__ReserveQuoteHeal(reserveHeal);
+        emit WaveFrontToken__Heal(amountQuote);
     }
 
     /**
@@ -476,7 +473,7 @@ contract WaveFrontToken is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard, Owna
         reserveToken -= reserveBurn;
         maxSupply -= (amountToken + reserveBurn);
         emit WaveFrontToken__ReserveTokenBurn(reserveBurn);
-        emit WaveFrontToken__Burn(msg.sender, amountToken);
+        emit WaveFrontToken__Burn(amountToken);
     }
 
     /*----------  FUNCTION OVERRIDES  -----------------------------------*/
@@ -624,7 +621,7 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     }
 
     function setTokenURI(uint256 tokenId, string memory _uri) external {
-        if (ownerOf(tokenId) != msg.sender) revert WaveFront__NotAuthorized();
+        if (msg.sender != ownerOf(tokenId)) revert WaveFront__NotAuthorized();
         _setTokenURI(tokenId, _uri);
     }
 

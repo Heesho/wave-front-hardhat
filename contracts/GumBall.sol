@@ -217,7 +217,7 @@ contract GumBall is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable  {
     }
 
     function setTokenURI(uint256 tokenId, string memory _uri) external {
-        if (ownerOf(tokenId) != msg.sender) revert GumBall__NotAuthorized();
+        if (msg.sender != ownerOf(tokenId)) revert GumBall__NotAuthorized();
         _setTokenURI(tokenId, _uri);
     }
 
