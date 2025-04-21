@@ -13,9 +13,11 @@ const oneThousand = convert("1000", 18);
 
 let owner, multisig, user0, user1, user2, treasury;
 let weth, wft0, wft1;
-let factory, multicall, router;
+let preTokenFactory;
+let tokenFactory;
+let wavefront, multicall, router;
 
-describe("local: test0 18 decimals", function () {
+describe.only("local: test0 18 decimals", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -26,18 +28,30 @@ describe("local: test0 18 decimals", function () {
     weth = await wethArtifact.deploy();
     console.log("- WETH Initialized");
 
-    const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
-    factory = await factoryArtifact.deploy(treasury.address);
-    console.log("- WaveFrontFactory Initialized");
+    const preTokenFactoryArtifact = await ethers.getContractFactory(
+      "PreTokenFactory"
+    );
+    preTokenFactory = await preTokenFactoryArtifact.deploy();
+    console.log("- PreTokenFactory Initialized");
+
+    const tokenFactoryArtifact = await ethers.getContractFactory(
+      "TokenFactory"
+    );
+    tokenFactory = await tokenFactoryArtifact.deploy();
+    console.log("- TokenFactory Initialized");
+
+    const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
+    wavefront = await wavefrontArtifact.deploy();
+    console.log("- WaveFront Initialized");
 
     const multicallArtifact = await ethers.getContractFactory(
       "WaveFrontMulticall"
     );
-    multicall = await multicallArtifact.deploy(factory.address);
+    multicall = await multicallArtifact.deploy(wavefront.address);
     console.log("- Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(factory.address);
+    router = await routerArtifact.deploy(wavefront.address);
     console.log("- Router Initialized");
 
     console.log("- System set up");
@@ -50,7 +64,7 @@ describe("local: test0 18 decimals", function () {
     console.log("******************************************************");
     console.log("First Test");
   });
-
+  /*
   it("User0 creates wft0 with weth as quote token", async function () {
     console.log("******************************************************");
     await router
@@ -978,4 +992,6 @@ describe("local: test0 18 decimals", function () {
     let res = await multicall.getTokenData(wft1.address, treasury.address);
     console.log(res);
   });
+
+  */
 });

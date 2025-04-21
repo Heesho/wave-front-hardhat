@@ -2,36 +2,14 @@ const { config } = require("dotenv");
 
 require("@nomiclabs/hardhat-waffle");
 require("@nomicfoundation/hardhat-verify");
-require("solidity-coverage");
 
-/*===================================================================*/
-/*===========================  SETTINGS  ============================*/
-
-const CHAIN_ID = 84532; // Base Sepolia
-// const CHAIN_ID = 421614; // Arbitrum Sepolia
-// const CHAIN_ID = 80084; // Berachain bArtio
-
-/*===========================  END SETTINGS  ========================*/
-/*===================================================================*/
+const CHAIN_ID = 80069; // Berachain Bepolia chain id
+// const CHAIN_ID = 80094; // Berachain Mainnet chain id
 
 config();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const SCAN_API_KEY = process.env.SCAN_API_KEY || "";
 const RPC_URL = process.env.RPC_URL || "";
-
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
 
 module.exports = {
   solidity: {
@@ -41,6 +19,7 @@ module.exports = {
         enabled: true,
         runs: 200,
       },
+      viaIR: true,
     },
   },
   networks: {
@@ -55,26 +34,20 @@ module.exports = {
     apiKey: SCAN_API_KEY,
     customChains: [
       {
-        network: "base-sepolia",
-        chainId: 84532,
+        network: "berachain",
+        chainId: 80094,
         urls: {
-          apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org/",
+          apiURL: "https://api.berascan.com/api",
+          browserURL: "https://berascan.com/",
         },
       },
       {
-        network: "arbitrum-sepolia",
-        chainId: 421614,
+        network: "berachain_bepolia",
+        chainId: 80069,
         urls: {
-          apiURL: "https://api-sepolia.arbiscan.io/api",
-          browserURL: "https://sepolia.arbiscan.io/",
-        },
-      },
-      {
-        network: "Berachain bArtio",
-        chainId: 80084,
-        urls: {
-          browserURL: "https://bartio.beratrail.io/",
+          apiURL:
+            "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan",
+          browserURL: "https://bepolia.beratrail.io",
         },
       },
     ],
