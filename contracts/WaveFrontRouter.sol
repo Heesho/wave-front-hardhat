@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // --- Interfaces matching updated contracts ---
 
@@ -17,7 +18,7 @@ interface IWaveFront {
         address _quote,
         address _preTokenFactory,
         uint256 _reserveVirtQuote
-    ) external returns (address token);
+    ) external returns (address token, address preToken, uint256 tokenId);
 
     function tokenURI(uint256 tokenId) external view returns (string memory);
     // We might need a way to get the tokenId from the token address if we want the URI in events.
@@ -57,6 +58,7 @@ interface IPreToken {
     function ended() external view returns (bool); // Market open status
     function totalQuoteContributed() external view returns (uint256);
     function totalTokenBalance() external view returns (uint256); // Tokens held post-initial buy
+    function token() external view returns (address);
 
     function contribute(address account, uint256 amount) external;
     function redeem(address account) external;
@@ -70,7 +72,7 @@ interface IWETH {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract WaveFrontRouter is ReentrancyGuard {
+contract WaveFrontRouter is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     address public immutable wavefront; // Address of the main WaveFront contract
@@ -82,18 +84,48 @@ contract WaveFrontRouter is ReentrancyGuard {
     // --- Events ---
     // Removed URI and price fetching from events to simplify and save gas.
     // Frontends can query WaveFrontMulticall or contracts directly for this info.
-    event RouterBuy(address indexed token, address indexed account, address quote, uint256 amountQuoteIn, uint256 amountTokenOut);
-    event RouterSell(address indexed token, address indexed account, address quote, uint256 amountTokenIn, uint256 amountQuoteOut);
-    event RouterAffiliateSet(address indexed account, address indexed affiliate);
-    event RouterTokenCreated(address indexed wavefrontNftOwner, address indexed token, address preToken, string name, string symbol, address quote, uint256 initialVirtualQuote);
-    event RouterContribute(address indexed token, address indexed account, address quote, uint256 amountQuote);
-    event RouterRedeem(address indexed token, address indexed account);
-    event RouterMarketOpened(address indexed token, address preToken);
+    event WaveFrontRouter__Created(
+        string name,
+        string symbol,
+        string uri,
+        address indexed creator,
+        address token,
+        address preToken,
+        uint256 tokenId,
+        uint256 initialVirtualQuote);
+    event WaveFrontRouter__Buy(address indexed token, address indexed account, address indexed affiliate, uint256 amountQuoteIn, uint256 amountTokenOut);
+    event WaveFrontRouter__Sell(address indexed token, address indexed account, address indexed affiliate, uint256 amountTokenIn, uint256 amountQuoteOut);
+    event WaveFrontRouter__AffiliateSet(address indexed account, address indexed affiliate);
+    event WaveFrontRouter__Contribute(address indexed token, address indexed account, uint256 amountQuote);
+    event WaveFrontRouter__Redeem(address indexed token, address indexed account);
+    event WaveFrontRouter__MarketOpened(address indexed token, address preToken);
 
     constructor(address _wavefront, address _preTokenFactory, address _weth) {
         wavefront = _wavefront;
         preTokenFactory = _preTokenFactory;
         weth = _weth;
+    }
+
+    // --- Token Creation ---
+
+    function createWaveFrontToken(
+        string memory name,
+        string memory symbol,
+        string memory uri, // NFT metadata URI
+        uint256 reserveVirtQuote // Initial virtual reserve
+    ) external nonReentrant returns (address token, address preToken, uint256 tokenId) {
+        // Call WaveFront contract and capture both return values
+        (token, preToken, tokenId) = IWaveFront(wavefront).create(
+            name,
+            symbol,
+            uri,
+            msg.sender, // The creator is the owner of the NFT
+            weth,
+            preTokenFactory, // Use the factory stored in the router
+            reserveVirtQuote
+        );
+
+        emit WaveFrontRouter__Created(name, symbol, uri, msg.sender, token, preToken, tokenId, reserveVirtQuote);
     }
 
     // --- Buy Functions ---
@@ -106,8 +138,6 @@ contract WaveFrontRouter is ReentrancyGuard {
     ) external payable nonReentrant {
         require(msg.value > 0, "Router: Native value required");
         _setAffiliate(affiliate);
-        address quote = IToken(token).quote();
-        require(quote == weth, "Router: Native payment only for WETH quote tokens");
 
         // Wrap ETH to WETH
         IWETH(weth).deposit{value: msg.value}();
@@ -117,7 +147,7 @@ contract WaveFrontRouter is ReentrancyGuard {
         // Execute buy on Token contract, sending received tokens back to msg.sender
         uint256 amountTokenOut = IToken(token).buy(msg.value, minAmountTokenOut, expireTimestamp, msg.sender, referrals[msg.sender]);
 
-        emit RouterBuy(token, msg.sender, weth, msg.value, amountTokenOut);
+        emit WaveFrontRouter__Buy(token, msg.sender, affiliate, msg.value, amountTokenOut);
     }
 
     function buyWithQuote(
@@ -129,41 +159,38 @@ contract WaveFrontRouter is ReentrancyGuard {
     ) external nonReentrant {
          require(amountQuoteIn > 0, "Router: Quote amount required");
         _setAffiliate(affiliate);
-        address quote = IToken(token).quote();
 
         // Transfer quote token from user to this Router contract
-        IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
+        IERC20(weth).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
         // Approve Token contract to spend quote token from Router
-        _safeApprove(quote, token, amountQuoteIn);
+        _safeApprove(weth, token, amountQuoteIn);
 
         // Execute buy on Token contract, sending received tokens back to msg.sender
         uint256 amountTokenOut = IToken(token).buy(amountQuoteIn, minAmountTokenOut, expireTimestamp, msg.sender, referrals[msg.sender]);
 
         // If any quote dust remains (shouldn't happen with SafeERC20), return it
-        uint256 remainingQuote = IERC20(quote).balanceOf(address(this));
+        uint256 remainingQuote = IERC20(weth).balanceOf(address(this));
         if (remainingQuote > 0) {
-            IERC20(quote).safeTransfer(msg.sender, remainingQuote);
+            IERC20(weth).safeTransfer(msg.sender, remainingQuote);
         }
 
-        emit RouterBuy(token, msg.sender, quote, amountQuoteIn, amountTokenOut);
+        emit WaveFrontRouter__Buy(token, msg.sender, affiliate, amountQuoteIn, amountTokenOut);
     }
 
     // --- Sell Functions ---
 
     function sellToNative(
         address token, // The Token contract address
+        address affiliate,
         uint256 amountTokenIn,
         uint256 minAmountQuoteOut,
         uint256 expireTimestamp
     ) external nonReentrant {
         require(amountTokenIn > 0, "Router: Token amount required");
-        address quote = IToken(token).quote();
-        require(quote == weth, "Router: Native receive only for WETH quote tokens");
+        _setAffiliate(affiliate);
 
         // Transfer Token from user to Router
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountTokenIn);
-        // Approve Token contract to spend Token from Router
-        _safeApprove(token, token, amountTokenIn); // Approve the token itself
 
         // Execute sell on Token contract, sending received WETH to Router
         uint256 amountQuoteOut = IToken(token).sell(amountTokenIn, minAmountQuoteOut, expireTimestamp, address(this), referrals[msg.sender]);
@@ -173,61 +200,34 @@ contract WaveFrontRouter is ReentrancyGuard {
         (bool success, ) = msg.sender.call{value: amountQuoteOut}("");
         require(success, "Router: Failed to send ETH");
 
-        emit RouterSell(token, msg.sender, weth, amountTokenIn, amountQuoteOut);
+        emit WaveFrontRouter__Sell(token, msg.sender, affiliate, amountTokenIn, amountQuoteOut);
     }
 
     function sellToQuote(
         address token, // The Token contract address
+        address affiliate,
         uint256 amountTokenIn,
         uint256 minAmountQuoteOut,
         uint256 expireTimestamp
     ) external nonReentrant {
         require(amountTokenIn > 0, "Router: Token amount required");
-        address quote = IToken(token).quote();
+        _setAffiliate(affiliate);
 
         // Transfer Token from user to Router
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountTokenIn);
-        // Approve Token contract to spend Token from Router
-        _safeApprove(token, token, amountTokenIn); // Approve the token itself
 
         // Execute sell on Token contract, sending received quote tokens to msg.sender directly
         uint256 amountQuoteOut = IToken(token).sell(amountTokenIn, minAmountQuoteOut, expireTimestamp, msg.sender, referrals[msg.sender]);
 
-        emit RouterSell(token, msg.sender, quote, amountTokenIn, amountQuoteOut);
+        emit WaveFrontRouter__Sell(token, msg.sender, affiliate, amountTokenIn, amountQuoteOut);
     }
 
-    // --- Token Creation ---
-
-    function createTokenAndNft(
-        string memory name,
-        string memory symbol,
-        string memory uri, // NFT metadata URI
-        address quote, // Quote token for the new Token
-        uint256 reserveVirtQuote // Initial virtual reserve
-    ) external nonReentrant returns (address token) {
-        // Call WaveFront contract to create the NFT and deploy the Token (via TokenFactory) and PreToken (via PreTokenFactory)
-        token = IWaveFront(wavefront).create(
-            name,
-            symbol,
-            uri,
-            msg.sender, // The creator is the owner of the NFT
-            quote,
-            preTokenFactory, // Use the factory stored in the router
-            reserveVirtQuote
-        );
-
-        // We don't easily get the PreToken address back here unless WaveFront emits it or returns it.
-        // If needed, the frontend might have to derive it or query the Token contract's `preToken()` view function.
-        emit RouterTokenCreated(msg.sender, token, address(0), name, symbol, quote, reserveVirtQuote); // Emit 0 for preToken address
-    }
 
     // --- PreToken Interaction Functions ---
 
     function contributeWithNative(address token /* Token address */) external payable nonReentrant {
         require(msg.value > 0, "Router: Native value required");
         address preTokenAddr = IToken(token).preToken();
-        address quote = IToken(token).quote();
-        require(quote == weth, "Router: Native payment only for WETH quote tokens");
 
         // Wrap ETH to WETH
         IWETH(weth).deposit{value: msg.value}();
@@ -237,30 +237,29 @@ contract WaveFrontRouter is ReentrancyGuard {
         // Contribute WETH
         IPreToken(preTokenAddr).contribute(msg.sender, msg.value);
 
-        emit RouterContribute(token, msg.sender, weth, msg.value);
+        emit WaveFrontRouter__Contribute(token, msg.sender, msg.value);
         _checkAndOpenMarket(preTokenAddr); // Check if market can be opened
     }
 
     function contributeWithQuote(address token /* Token address */, uint256 amountQuoteIn) external nonReentrant {
         require(amountQuoteIn > 0, "Router: Quote amount required");
         address preTokenAddr = IToken(token).preToken();
-        address quote = IToken(token).quote();
 
         // Transfer quote token from user to Router
-        IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
+        IERC20(weth).safeTransferFrom(msg.sender, address(this), amountQuoteIn);   
         // Approve PreToken contract to spend quote token from Router
-        _safeApprove(quote, preTokenAddr, amountQuoteIn);
+        _safeApprove(weth, preTokenAddr, amountQuoteIn);
 
         // Contribute quote token
         IPreToken(preTokenAddr).contribute(msg.sender, amountQuoteIn);
 
          // If any quote dust remains, return it
-        uint256 remainingQuote = IERC20(quote).balanceOf(address(this));
+        uint256 remainingQuote = IERC20(weth).balanceOf(address(this));
         if (remainingQuote > 0) {
-            IERC20(quote).safeTransfer(msg.sender, remainingQuote);
+            IERC20(weth).safeTransfer(msg.sender, remainingQuote);
         }
 
-        emit RouterContribute(token, msg.sender, quote, amountQuoteIn);
+        emit WaveFrontRouter__Contribute(token, msg.sender, amountQuoteIn);
         _checkAndOpenMarket(preTokenAddr); // Check if market can be opened
     }
 
@@ -271,7 +270,7 @@ contract WaveFrontRouter is ReentrancyGuard {
         require(IPreToken(preTokenAddr).ended(), "Router: Market not open yet");
         IPreToken(preTokenAddr).redeem(msg.sender); // Send redeemed tokens directly to msg.sender
 
-        emit RouterRedeem(token, msg.sender);
+        emit WaveFrontRouter__Redeem(token, msg.sender);
     }
 
     // --- Internal Functions ---
@@ -279,7 +278,7 @@ contract WaveFrontRouter is ReentrancyGuard {
     function _setAffiliate(address affiliate) internal {
         if (referrals[msg.sender] == address(0) && affiliate != address(0)) {
             referrals[msg.sender] = affiliate;
-            emit RouterAffiliateSet(msg.sender, affiliate);
+            emit WaveFrontRouter__AffiliateSet(msg.sender, affiliate);
         }
     }
 
@@ -297,7 +296,7 @@ contract WaveFrontRouter is ReentrancyGuard {
             // Use associated Token address in event if possible, otherwise just preToken addr
             // We need the reverse mapping or another way to find the Token address from PreToken
             // For now, emit with preToken address.
-            emit RouterMarketOpened(address(0), preTokenAddr);
+            emit WaveFrontRouter__MarketOpened(IPreToken(preTokenAddr).token(), preTokenAddr);
         }
     }
 
@@ -305,16 +304,14 @@ contract WaveFrontRouter is ReentrancyGuard {
     receive() external payable {}
 
     // Allow withdrawing accidental token transfers to the router
-    function withdrawStuckTokens(address _token, address _to) external nonReentrant {
-        // TODO: Add Owner check or similar authorization mechanism
+    function withdrawStuckTokens(address _token, address _to) external onlyOwner {
         require(_to != address(0), "Router: Invalid recipient");
         uint256 balance = IERC20(_token).balanceOf(address(this));
         require(balance > 0, "Router: No balance");
         IERC20(_token).safeTransfer(_to, balance);
     }
 
-     function withdrawStuckNative(address payable _to) external nonReentrant {
-         // TODO: Add Owner check or similar authorization mechanism
+     function withdrawStuckNative(address payable _to) external onlyOwner {
          require(_to != address(0), "Router: Invalid recipient");
          uint256 balance = address(this).balance;
          require(balance > 0, "Router: No balance");

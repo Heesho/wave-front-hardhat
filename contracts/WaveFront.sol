@@ -15,7 +15,7 @@ interface ITokenFactory {
         address quote,
         uint256 wavefrontId,
         uint256 reserveVirtQuote
-    ) external returns (address token);
+    ) external returns (address token, address preToken);
 }
 
 /**
@@ -47,16 +47,34 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     /*----------  EVENTS ------------------------------------------------*/
 
     /// @notice Emitted when a new Token is created and its corresponding NFT is minted.
-    event WaveFront__Created(uint256 indexed tokenId, address indexed token, address indexed owner);
+    event WaveFront__Created(
+        string name,
+        string symbol,
+        string uri,
+        address tokenFactory,
+        address preTokenFactory,
+        address token, 
+        address preToken,
+        address indexed owner,
+        address quote,
+        uint256 wavefrontId,
+        uint256 reserveVirtQuote
+    );
+    /// @notice Emitted when the token URI is updated for a WaveFront NFT.
+    event WaveFront__TokenURISet(uint256 indexed tokenId, string uri);
     /// @notice Emitted when the treasury address is updated by the contract owner.
     event WaveFront__TreasurySet(address indexed oldTreasury, address indexed newTreasury);
+    /// @notice Emitted when the token factory address is updated by the contract owner.
+    event WaveFront__TokenFactorySet(address indexed oldTokenFactory, address indexed newTokenFactory);
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
     /**
      * @notice Initializes the WaveFront NFT contract.
      */
-    constructor() ERC721("WaveFront", "WF") Ownable() {}
+    constructor(address _tokenFactory) ERC721("WaveFront", "WF") Ownable() {
+        tokenFactory = _tokenFactory;
+    }
 
     /**
      * @notice Creates a new Token instance via the TokenFactory and mints a corresponding WaveFront NFT.
@@ -70,6 +88,8 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
      * @param _preTokenFactory Address of the factory contract responsible for deploying pre-token contracts.
      * @param _reserveVirtQuote Initial virtual quote reserve for the new Token.
      * @return token Address of the newly deployed Token contract.
+     * @return preToken Address of the newly deployed PreToken contract.
+     * @return tokenId The ID of the newly minted WaveFront NFT.
      */
     function create(
         string memory _name, 
@@ -81,16 +101,16 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         uint256 _reserveVirtQuote
     ) 
         external // Consider making this onlyOwner or adding other access controls if needed
-        returns (address token) 
+        returns (address token, address preToken, uint256 tokenId) 
     {
-        uint256 tokenId = ++currentTokenId;
+        tokenId = ++currentTokenId;
         // Mint the NFT to the designated owner.
         _safeMint(_owner, tokenId); 
         // Set the metadata URI for the NFT.
         _setTokenURI(tokenId, _uri); 
 
         // Deploy the Token via the factory, passing necessary parameters including the NFT tokenId.
-        token = ITokenFactory(tokenFactory).createToken(
+        (token, preToken) = ITokenFactory(tokenFactory).createToken(
             _name,
             _symbol,
             address(this),
@@ -102,7 +122,19 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         
         // Link the NFT tokenId to the deployed token address.
         tokenId_WaveFrontToken[tokenId] = token; 
-        emit WaveFront__Created(tokenId, token, _owner);
+        emit WaveFront__Created(
+            _name, 
+            _symbol, 
+            _uri, 
+            tokenFactory, 
+            _preTokenFactory, 
+            token, 
+            preToken,
+            _owner, 
+            _quote, 
+            tokenId, 
+            _reserveVirtQuote
+        );
     }
 
     /**
@@ -114,7 +146,7 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         // Only the current owner of the specific NFT can change its URI.
         if (msg.sender != ownerOf(tokenId)) revert WaveFront__NotAuthorized(); 
         _setTokenURI(tokenId, _uri);
-        // Note: No specific event for URI update in this override, relies on ERC721URIStorage event.
+        emit WaveFront__TokenURISet(tokenId, _uri);
     }
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
@@ -128,6 +160,12 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         address oldTreasury = treasury;
         treasury = _treasury;
         emit WaveFront__TreasurySet(oldTreasury, _treasury);
+    }
+
+    function setTokenFactory(address _tokenFactory) external onlyOwner {
+        address oldTokenFactory = tokenFactory;
+        tokenFactory = _tokenFactory;
+        emit WaveFront__TokenFactorySet(oldTokenFactory, _tokenFactory);
     }
 
     /*----------  OVERRIDE FUNCTIONS  ------------------------------------*/

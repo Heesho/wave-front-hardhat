@@ -8,6 +8,9 @@ import "./PreToken.sol"; // The PreToken contract to be deployed
  * @notice A factory contract responsible for deploying instances of the PreToken contract.
  */
 contract PreTokenFactory {
+    address public lastPreToken;
+
+    event PreTokenFactory__PreTokenCreated(address indexed preToken);
 
     /**
      * @notice Deploys a new instance of the PreToken contract.
@@ -20,5 +23,7 @@ contract PreTokenFactory {
         address quoteToken
     ) external returns (address preToken) {
         preToken = address(new PreToken(tokenToLaunch, quoteToken));
+        lastPreToken = preToken;
+        emit PreTokenFactory__PreTokenCreated(preToken);
     }
 }

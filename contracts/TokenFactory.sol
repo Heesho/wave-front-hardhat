@@ -8,6 +8,9 @@ import "./Token.sol"; // The Token contract to be deployed
  * @notice A factory contract responsible for deploying instances of the Token contract.
  */
 contract TokenFactory {
+    address public lastToken;
+
+    event TokenFactory__TokenCreated(address indexed token, address indexed preToken);
 
     /**
      * @notice Deploys a new instance of the Token contract.
@@ -28,7 +31,18 @@ contract TokenFactory {
         address quote,
         uint256 wavefrontId,
         uint256 reserveVirtQuote
-    ) external returns (address token) {
-        token = address(new Token(name, symbol, wavefront, preTokenFactory, quote, wavefrontId, reserveVirtQuote));
+    ) external returns (address token, address preToken) {
+        token = address(new Token(
+            name,
+            symbol,
+            wavefront,
+            preTokenFactory,
+            quote, 
+            wavefrontId,
+            reserveVirtQuote
+        ));
+        lastToken = token;
+        preToken = Token(token).preToken();
+        emit TokenFactory__TokenCreated(token, preToken);
     }
 }
