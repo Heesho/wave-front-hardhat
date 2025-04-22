@@ -47,11 +47,15 @@ describe.only("local: test0 18 decimals", function () {
     const multicallArtifact = await ethers.getContractFactory(
       "WaveFrontMulticall"
     );
-    multicall = await multicallArtifact.deploy(wavefront.address);
+    multicall = await multicallArtifact.deploy();
     console.log("- Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(wavefront.address);
+    router = await routerArtifact.deploy(
+      wavefront.address,
+      preTokenFactory.address,
+      weth.address
+    );
     console.log("- Router Initialized");
 
     console.log("- System set up");

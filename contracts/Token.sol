@@ -116,9 +116,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     /// @notice Emitted specifically when virtual quote reserves are increased ("healed") as part of a curve shift.
     event Token__ReserveQuoteHeal(uint256 amountQuote);
     /// @notice Emitted when a user successfully borrows quote tokens.
-    event Token__Borrow(address indexed account, uint256 amountQuote);
+    event Token__Borrow(address indexed account, address indexed to, uint256 amountQuote);
     /// @notice Emitted when a user successfully repays borrowed quote tokens.
-    event Token__Repay(address indexed account, uint256 amountQuote);
+    event Token__Repay(address indexed account, address indexed to, uint256 amountQuote);
     /// @notice Emitted once when the market is enabled for trading by the PreToken contract.
     event Token__MarketOpened();
 
@@ -291,9 +291,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
      * @notice Borrows quote tokens against the caller's Token balance as collateral.
      * Borrowable amount depends on the account's credit limit, derived from their
      * Token holdings and the token's floor price.
+     * @param to Address to receive the borrowed quote tokens.
      * @param amountQuote The amount of quote tokens to borrow. Must be <= available credit.
      */
-    function borrow(uint256 amountQuote) 
+    function borrow(address to, uint256 amountQuote) 
         external 
         nonReentrant
         notZeroInput(amountQuote)
@@ -304,24 +305,25 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         totalDebt += amountQuote;
         account_Debt[msg.sender] += amountQuote;
         
-        emit Token__Borrow(msg.sender, amountQuote);
+        emit Token__Borrow(msg.sender, to, amountQuote);
         
-        IERC20(quote).safeTransfer(msg.sender, amountQuote);
+        IERC20(quote).safeTransfer(to, amountQuote);
     }
 
     /**
      * @notice Repays previously borrowed quote tokens, reducing the caller's debt.
+     * @param to Address to repay the debt to.
      * @param amountQuote The amount of quote tokens to repay. Can repay up to the current debt amount.
      */
-    function repay(uint256 amountQuote) 
+    function repay(address to, uint256 amountQuote) 
         external 
         nonReentrant
         notZeroInput(amountQuote)
     {
         totalDebt -= amountQuote; // Underflow checked by Solidity 0.8+
-        account_Debt[msg.sender] -= amountQuote; // Underflow checked by Solidity 0.8+
+        account_Debt[to] -= amountQuote; // Underflow checked by Solidity 0.8+
         
-        emit Token__Repay(msg.sender, amountQuote);
+        emit Token__Repay(msg.sender, to, amountQuote);
         
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuote);
     }
