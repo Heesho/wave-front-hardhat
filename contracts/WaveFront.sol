@@ -195,8 +195,6 @@ contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
      */
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
-        // Unlink the NFT from its associated Token address upon burning.
-        delete tokenId_WaveFrontToken[tokenId]; 
     }
 
     /**

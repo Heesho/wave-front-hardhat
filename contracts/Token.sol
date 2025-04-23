@@ -59,6 +59,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     uint256 public maxSupply = INITIAL_SUPPLY; 
     /// @notice Flag indicating if trading is enabled (set true by the associated PreToken).
     bool public open = false; 
+    /// @notice Flag indicating if fees should be distributed to the WaveFront NFT owner. Settable by the NFT owner. Defaults to true.
+    bool public ownerFeesActive = true;
 
     // --- Bonding Curve State ---
     /// @notice Actual balance of quote tokens held by the contract from trades and heals.
@@ -96,6 +98,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error Token__CannotDivideByZero();
     /// @notice Raised in sell if calculated new total quote reserve is less than virtual quote reserve, indicating an internal inconsistency.
     error Token__RealReserveUnderflow();
+    /// @notice Raised when attempting to call setOwnerFeeStatus by a non-NFT owner.
+    error Token__NotOwner();
 
     /*----------  EVENTS ------------------------------------------------*/
 
@@ -121,6 +125,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Token__Repay(address indexed account, address indexed to, uint256 amountQuote);
     /// @notice Emitted once when the market is enabled for trading by the PreToken contract.
     event Token__MarketOpened();
+    /// @notice Emitted when the WaveFront NFT owner changes the owner fee status for this token.
+    event Token__OwnerFeeStatusSet(uint256 indexed wavefrontId, bool active);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -373,6 +379,21 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     }
 
     /**
+     * @notice Allows the current owner of the associated WaveFront NFT to
+     * activate or deactivate the owner fee share for this specific Token contract.
+     * @param _active The desired status (true = active, false = inactive).
+     */
+    function setOwnerFeeStatus(bool _active) external {
+        // Verify caller is the current NFT owner
+        address currentNFTOwner = IWaveFront(wavefront).ownerOf(wavefrontId);
+        if (msg.sender != currentNFTOwner) revert Token__NotOwner();
+
+        // Set the new status and emit event
+        ownerFeesActive = _active;
+        emit Token__OwnerFeeStatusSet(wavefrontId, _active);
+    }
+
+    /**
      * @dev Internal function to distribute buy-side fees (paid in quote tokens).
      * Transfers fees to provider (if specified), the WaveFront NFT owner (via IWaveFront), 
      * and the treasury (via IWaveFront).
@@ -397,14 +418,16 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             }
         }
 
-        // Distribute owner fee via WaveFront contract.
-        address owner = IWaveFront(wavefront).ownerOf(wavefrontId); 
-        if (owner != address(0) && remainingFee > 0) {
-            uint256 ownerFee = feeShare <= remainingFee ? feeShare : remainingFee;
-             if (ownerFee > 0) { // Avoid zero transfers
-                IERC20(quote).safeTransfer(owner, ownerFee);
-                emit Token__OwnerFee(owner, ownerFee, 0);
-                remainingFee -= ownerFee;
+        // Check if owner fees are active before distributing
+        if (ownerFeesActive) {
+            address owner = IWaveFront(wavefront).ownerOf(wavefrontId);
+            if (owner != address(0) && remainingFee > 0) {
+                uint256 ownerFee = feeShare <= remainingFee ? feeShare : remainingFee;
+                if (ownerFee > 0) {
+                    IERC20(quote).safeTransfer(owner, ownerFee);
+                    emit Token__OwnerFee(owner, ownerFee, 0);
+                    remainingFee -= ownerFee;
+                }
             }
         }
 
@@ -445,14 +468,16 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             }
         }
 
-        // Mint and distribute owner fee via WaveFront contract.
-        address owner = IWaveFront(wavefront).ownerOf(wavefrontId);
-        if (owner != address(0) && remainingFee > 0) {
-            uint256 ownerFee = feeShare <= remainingFee ? feeShare : remainingFee;
-            if (ownerFee > 0) { // Avoid zero mints
-                _mint(owner, ownerFee);
-                emit Token__OwnerFee(owner, 0, ownerFee);
-                remainingFee -= ownerFee;
+        // Check if owner fees are active before distributing
+        if (ownerFeesActive) {
+            address owner = IWaveFront(wavefront).ownerOf(wavefrontId);
+            if (owner != address(0) && remainingFee > 0) {
+                uint256 ownerFee = feeShare <= remainingFee ? feeShare : remainingFee;
+                if (ownerFee > 0) {
+                    _mint(owner, ownerFee);
+                    emit Token__OwnerFee(owner, 0, ownerFee);
+                    remainingFee -= ownerFee;
+                }
             }
         }
 
