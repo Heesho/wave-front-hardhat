@@ -44,7 +44,7 @@ contract WaveFrontMulticall {
     /*----------  CONSTANTS  --------------------------------------------*/
 
     uint256 public constant FEE = 100; // Corresponds to Token.sol FEE
-    uint256 public constant DIVISOR = 10000; // Corresponds to Token.sol DIVISOR
+    uint256 public constant DIVISOR = 10_000; // Corresponds to Token.sol DIVISOR
     uint256 public constant PRECISION = 1e18; // Corresponds to Token.sol PRECISION
 
     /*----------  STATE VARIABLES  --------------------------------------*/
@@ -135,9 +135,9 @@ contract WaveFrontMulticall {
         tokenData.totalQuoteContributed = preTokenContract.totalQuoteContributed();
 
         // --- Token/Curve Data ---
-        uint256 reserveReal = tokenContract.reserveRealQuote();
-        uint256 reserveVirt = tokenContract.reserveVirtQuote();
-        uint256 reserveTok = tokenContract.reserveToken();
+        uint256 reserveReal = tokenContract.reserveRealQuoteWad();
+        uint256 reserveVirt = tokenContract.reserveVirtQuoteWad();
+        uint256 reserveTok = tokenContract.reserveTokenAmt();
         uint256 currentMaxSupply = tokenContract.maxSupply();
         uint256 currentCirculatingSupply = tokenMetadata.totalSupply();
         uint256 currentMarketPrice = tokenContract.getMarketPrice(); // Returns 0 if reserveToken is 0
@@ -225,18 +225,20 @@ contract WaveFrontMulticall {
          }
     }
 
-    function buyQuoteIn(address token, uint256 quoteRawIn, uint256 slippageToleranceBps) external view returns(uint256 tokenAmtOut, uint256 minTokenAmtOut) {
-        IToken tokenContract = IToken(token);
-        uint256 reserveReal = tokenContract.reserveRealQuote();
-        uint256 reserveVirt = tokenContract.reserveVirtQuote();
-        uint256 reserveTok = tokenContract.reserveToken();
-        uint256 currentTotalQuote = reserveReal + reserveVirt;
-
-        if (quoteRawIn == 0) return (0, 0);
+    function buyQuoteIn(
+        address token, 
+        uint256 quoteRawIn, 
+        uint256 slippageTolerance
+    ) external view returns(
+        uint256 tokenAmtOut, 
+        uint256 slippage, 
+        uint256 minTokenAmtOut,
+        uint256 autoMinTokenAmtOut
+    ) {
+        if (quoteRawIn == 0) return (0, 0, 0, 0);
             
         uint256 xr = IToken(token).reserveRealQuoteWad();
         uint256 xv = IToken(token).reserveVirtQuoteWad();
-        uint256 y = IToken(token).reserveTokenAmt();
 
         uint256 quoteWadIn = IToken(token).rawToWad(quoteRawIn);
         uint256 feeWad = quoteWadIn * FEE / DIVISOR;
@@ -244,96 +246,59 @@ contract WaveFrontMulticall {
 
         uint256 x0 = xv + xr;
         uint256 x1 = x0 + netWad;
+        uint256 y0 = IToken(token).reserveTokenAmt();
+        uint256 y1 = x0.mulWadUp(y0).divWadUp(x1);
+        
+        if (y1 >= y0) return (0, 0, 0, 0);
 
-        uint256 y1 = x0.mulWadUp(y).divWadUp(x1);
-        tokenAmtOut = y - y1;
-
-        if (y1 >= y) return (0, 0);
-
-        tokenAmtOut = y - y1;
-        minTokenAmtOut = tokenAmtOut.mulDivDown(DIVISOR - slippageToleranceBps, DIVISOR);
+        tokenAmtOut = y0 - y1;
+        slippage = 100 * (PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn)));
+        minTokenAmtOut = quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown(slippageTolerance, DIVISOR);
+        autoMinTokenAmtOut = quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
     }
 
-    // Function to estimate quote needed for a desired token amount (inverse of buy)
-    function quoteForTokenOut(address token, uint256 amountTokenOut) external view returns (uint256 amountQuoteIn) {
-         IToken tokenContract = IToken(token);
-        uint256 reserveReal = tokenContract.reserveRealQuote();
-        uint256 reserveVirt = tokenContract.reserveVirtQuote();
-        uint256 reserveTok = tokenContract.reserveToken();
-        uint256 currentTotalQuote = reserveReal + reserveVirt;
+    function buyTokenOut(
+        address token, 
+        uint256 tokenAmtOut, 
+        uint256 slippageTolerance
+    ) external view returns (
+        uint256 qouteRawIn,
+        uint256 slippage,
+        uint256 minTokenAmtOut,
+        uint256 autoMinTokenAmtOut
+    ) {
+        uint256 xv = IToken(token).reserveVirtQuoteWad();
+        uint256 xr = IToken(token).reserveRealQuoteWad();
+        uint256 x0 = xv + xr;
+        uint256 y0 = IToken(token).reserveTokenAmt();
 
-        if (amountTokenOut == 0 || amountTokenOut >= reserveTok) return type(uint256).max; // Invalid input or insufficient reserve
-
-        uint256 newReserveToken = reserveTok - amountTokenOut;
-        // Inverse calculation mirroring buy logic (using Up rounding)
-        uint256 intermediate = FixedPointMathLib.mulWadUp(currentTotalQuote, reserveTok);
-        uint256 newTotalQuoteReserve = FixedPointMathLib.divWadUp(intermediate, newReserveToken);
-
-        if (newTotalQuoteReserve <= currentTotalQuote) return type(uint256).max; // Should not happen
-
-        uint256 amountQuoteInAfterFee = newTotalQuoteReserve - currentTotalQuote;
-
-        // Reverse fee calculation, round UP required input
-        amountQuoteIn = FixedPointMathLib.mulDivUp(amountQuoteInAfterFee, DIVISOR, DIVISOR - FEE);
+        uint256 quoteWadIn = DIVISOR.mulDivDown(x0.mulDivDown(y0, y0 - tokenAmtOut) - x0, DIVISOR - FEE);
+        qouteRawIn = IToken(token).rawToWad(quoteWadIn);
+        slippage = 100 * (PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn)));
+        minTokenAmtOut = tokenAmtOut.mulDivDown(slippageTolerance, DIVISOR);
+        autoMinTokenAmtOut = tokenAmtOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
     }
 
+    function sellTokenAmt(
+        address token, 
+        uint256 tokenAmtIn, 
+        uint256 slippageTolerance
+    ) external view returns (
+        uint256 quoteRawOut, 
+        uint256 slippage, 
+        uint256 minQuoteOut, 
+        uint256 autoMinQuoteOut
+    ) {}
 
-    function quoteSellIn(address token, uint256 amountTokenIn, uint256 slippageToleranceBps) external view returns (uint256 amountQuoteOut, uint256 minQuoteOut) {
-        IToken tokenContract = IToken(token);
-        uint256 reserveReal = tokenContract.reserveRealQuote();
-        uint256 reserveVirt = tokenContract.reserveVirtQuote();
-        uint256 reserveTok = tokenContract.reserveToken();
-        uint256 currentTotalQuote = reserveReal + reserveVirt;
-        uint256 currentCirculating = IERC20(token).totalSupply(); // Needed? Not directly used in sell calc
-
-        if (amountTokenIn == 0) return (0, 0);
-        // Cannot sell more than circulating supply (though balance check happens on-chain)
-        // if (amountTokenIn > currentCirculating) return (0, 0);
-
-        uint256 feeToken = amountTokenIn * FEE / DIVISOR;
-        uint256 amountTokenInAfterFee = amountTokenIn - feeToken;
-        uint256 newReserveToken = reserveTok + amountTokenInAfterFee;
-
-        if (newReserveToken == 0) return (0, 0); // Avoid division by zero
-
-        // Match Token.sol sell calculation
-        uint256 intermediate = FixedPointMathLib.mulWadUp(currentTotalQuote, reserveTok);
-        uint256 newTotalQuoteReserve = FixedPointMathLib.divWadUp(intermediate, newReserveToken);
-
-        if (newTotalQuoteReserve >= currentTotalQuote) return (0, 0); // No output or error state
-
-        amountQuoteOut = currentTotalQuote - newTotalQuoteReserve;
-
-        // Check if sufficient real reserve exists (as done in Token.sol)
-        // This is tricky in a view function as it depends on the *actual* reserveRealQuote post-trade
-        // We can estimate: if amountQuoteOut > reserveReal, the trade would likely fail or revert.
-        // For simplicity here, we just return the calculated amount. On-chain checks handle the rest.
-        // if (newTotalQuoteReserve < reserveVirt) { /* Theoretical real reserve underflow */ }
-
-        minQuoteOut = FixedPointMathLib.mulDivDown(amountQuoteOut, (DIVISOR - slippageToleranceBps), DIVISOR); // Round down min output
-    }
-
-     // Function to estimate tokens needed for a desired quote amount (inverse of sell)
-    function tokenForQuoteOut(address token, uint256 amountQuoteOut) external view returns (uint256 amountTokenIn) {
-         IToken tokenContract = IToken(token);
-        uint256 reserveReal = tokenContract.reserveRealQuote();
-        uint256 reserveVirt = tokenContract.reserveVirtQuote();
-        uint256 reserveTok = tokenContract.reserveToken();
-        uint256 currentTotalQuote = reserveReal + reserveVirt;
-
-        if (amountQuoteOut == 0 || amountQuoteOut >= reserveReal) return type(uint256).max; // Cannot get more quote than real reserve
-
-        uint256 newTotalQuoteReserve = currentTotalQuote - amountQuoteOut;
-        // Inverse calculation mirroring sell (using Up rounding)
-        uint256 intermediate = FixedPointMathLib.mulWadUp(currentTotalQuote, reserveTok);
-        uint256 newReserveToken = FixedPointMathLib.divWadUp(intermediate, newTotalQuoteReserve);
-
-        if (newReserveToken <= reserveTok) return type(uint256).max; // Should not happen
-
-        uint256 amountTokenInAfterFee = newReserveToken - reserveTok;
-
-        // Reverse fee calculation, round UP required input
-        amountTokenIn = FixedPointMathLib.mulDivUp(amountTokenInAfterFee, DIVISOR, DIVISOR - FEE);
-    }
+    function sellQuoteOut(
+        address token, 
+        uint256 quoteRawOut, 
+        uint256 slippageTolerance
+    ) external view returns (
+        uint256 tokenAmtIn,
+        uint256 slippage,
+        uint256 minTokenAmtIn,
+        uint256 autoMinTokenAmtIn
+    ) {}
     
 }
