@@ -14,15 +14,15 @@ contract PreTokenFactory {
 
     /**
      * @notice Deploys a new instance of the PreToken contract.
-     * @param tokenToLaunch The address of the Token contract being launched.
-     * @param quoteToken The address of the quote token used for contributions in the PreToken phase.
+     * @param token The address of the Token contract being launched.
+     * @param quote The address of the quote token used for contributions in the PreToken phase.
      * @return preToken Address of the newly deployed PreToken contract.
      */
     function createPreToken(
-        address tokenToLaunch, 
-        address quoteToken
+        address token, 
+        address quote
     ) external returns (address preToken) {
-        preToken = address(new PreToken(tokenToLaunch, quoteToken));
+        preToken = address(new PreToken(token, quote));
         lastPreToken = preToken;
         emit PreTokenFactory__PreTokenCreated(preToken);
     }

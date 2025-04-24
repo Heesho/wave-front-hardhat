@@ -20,8 +20,9 @@ contract TokenFactory {
      * @param preTokenFactory Address of the factory for deploying associated PreToken contracts.
      * @param quote Address of the quote token for the new Token.
      * @param wavefrontId The ID of the WaveFront NFT associated with this Token.
-     * @param reserveVirtQuote Initial virtual quote reserve for the new Token's bonding curve.
+     * @param reserveVirtQuoteRaw Initial virtual quote reserve for the new Token's bonding curve.
      * @return token Address of the newly deployed Token contract.
+     * @return preToken Address of the newly deployed PreToken contract.
      */
     function createToken(
         string memory name,
@@ -30,16 +31,16 @@ contract TokenFactory {
         address preTokenFactory,
         address quote,
         uint256 wavefrontId,
-        uint256 reserveVirtQuote
+        uint256 reserveVirtQuoteRaw
     ) external returns (address token, address preToken) {
         token = address(new Token(
             name,
             symbol,
             wavefront,
             preTokenFactory,
-            quote, 
+            quote,
             wavefrontId,
-            reserveVirtQuote
+            reserveVirtQuoteRaw
         ));
         lastToken = token;
         preToken = Token(token).preToken();

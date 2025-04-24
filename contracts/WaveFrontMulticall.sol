@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol"; // Import IERC20Metadata
-import {FixedPointMathLib} from "./library/FixedPointMathLib.sol"; // Direct import
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./library/FixedPointMathLib.sol";
 
 // Interface for the PreToken contract
 interface IPreToken {
@@ -20,16 +20,16 @@ interface IToken {
     function preToken() external view returns (address);
     function wavefront() external view returns (address); // Added
     function wavefrontId() external view returns (uint256); // Added
-    function reserveRealQuote() external view returns (uint256);
-    function reserveVirtQuote() external view returns (uint256);
-    function reserveToken() external view returns (uint256);
+    function reserveRealQuoteWad() external view returns (uint256);
+    function reserveVirtQuoteWad() external view returns (uint256);
+    function reserveTokenAmt() external view returns (uint256);
     function maxSupply() external view returns (uint256);
     function getMarketPrice() external view returns (uint256);
     function getFloorPrice() external view returns (uint256);
     function getAccountCredit(address account) external view returns (uint256);
     function getAccountTransferrable(address account) external view returns (uint256);
-    function account_Debt(address account) external view returns (uint256);
-    function totalDebt() external view returns (uint256);
+    function account_DebtRaw(address account) external view returns (uint256);
+    function totalDebtRaw() external view returns (uint256);
     function open() external view returns (bool); // Added to check market status directly
 }
 
@@ -225,35 +225,33 @@ contract WaveFrontMulticall {
          }
     }
 
-    // --- Quote Calculation Functions ---
-    // TODO: Update these to use FixedPointMathLib and match Token.sol precisely
-
-    // NOTE: Replicating buy/sell logic exactly requires FixedPointMathLib and careful checking against Token.sol
-    // These functions provide estimates but might differ slightly from on-chain results due to rounding.
-
-    function quoteBuyIn(address token, uint256 amountQuoteIn, uint256 slippageToleranceBps) external view returns(uint256 amountTokenOut, uint256 minTokenOut) {
+    function buyQuoteIn(address token, uint256 quoteRawIn, uint256 slippageToleranceBps) external view returns(uint256 tokenAmtOut, uint256 minTokenAmtOut) {
         IToken tokenContract = IToken(token);
         uint256 reserveReal = tokenContract.reserveRealQuote();
         uint256 reserveVirt = tokenContract.reserveVirtQuote();
         uint256 reserveTok = tokenContract.reserveToken();
         uint256 currentTotalQuote = reserveReal + reserveVirt;
 
-        if (amountQuoteIn == 0) return (0, 0);
+        if (quoteRawIn == 0) return (0, 0);
+            
+        uint256 xr = IToken(token).reserveRealQuoteWad();
+        uint256 xv = IToken(token).reserveVirtQuoteWad();
+        uint256 y = IToken(token).reserveTokenAmt();
 
-        uint256 feeQuote = amountQuoteIn * FEE / DIVISOR;
-        uint256 amountQuoteInAfterFee = amountQuoteIn - feeQuote;
-        uint256 newTotalQuoteReserve = currentTotalQuote + amountQuoteInAfterFee;
+        uint256 quoteWadIn = IToken(token).rawToWad(quoteRawIn);
+        uint256 feeWad = quoteWadIn * FEE / DIVISOR;
+        uint256 netWad = quoteWadIn - feeWad;
 
-        if (newTotalQuoteReserve == 0) return (0, 0); // Avoid division by zero
+        uint256 x0 = xv + xr;
+        uint256 x1 = x0 + netWad;
 
-        // Match Token.sol buy calculation
-        uint256 intermediate = FixedPointMathLib.mulWadUp(currentTotalQuote, reserveTok);
-        uint256 newReserveToken = FixedPointMathLib.divWadUp(intermediate, newTotalQuoteReserve);
+        uint256 y1 = x0.mulWadUp(y).divWadUp(x1);
+        tokenAmtOut = y - y1;
 
-        if (newReserveToken >= reserveTok) return (0, 0); // No output or error state
+        if (y1 >= y) return (0, 0);
 
-        amountTokenOut = reserveTok - newReserveToken;
-        minTokenOut = FixedPointMathLib.mulDivDown(amountTokenOut, (DIVISOR - slippageToleranceBps), DIVISOR); // Round down min output
+        tokenAmtOut = y - y1;
+        minTokenAmtOut = tokenAmtOut.mulDivDown(DIVISOR - slippageToleranceBps, DIVISOR);
     }
 
     // Function to estimate quote needed for a desired token amount (inverse of buy)
