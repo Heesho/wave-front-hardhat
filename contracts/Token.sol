@@ -37,8 +37,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     address public immutable preTokenFactory;
     uint256 public immutable wavefrontId;
 
-    uint8 public  immutable quoteDecimals;  // e.g. 6 for USDC
-    uint256 internal immutable quoteScale;  // 10^(18-quoteDecimals)
+    uint8 public  immutable quoteDecimals;
+    uint256 internal immutable quoteScale;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 

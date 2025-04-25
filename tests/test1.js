@@ -19,7 +19,8 @@ const tenThousand6 = convert("10000", 6);
 
 let owner, multisig, user0, user1, user2, treasury;
 let weth, usdc, wft0, wft1;
-let factory, multicall, router;
+let preTokenFactory, tokenFactory, wavefront;
+let multicall, router;
 
 describe("local: test1", function () {
   before("Initial set up", async function () {
@@ -36,18 +37,34 @@ describe("local: test1", function () {
     usdc = await usdcArtifact.deploy();
     console.log("- USDC Initialized");
 
-    const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
-    factory = await factoryArtifact.deploy(treasury.address);
-    console.log("- WaveFrontFactory Initialized");
+    const preTokenFactoryArtifact = await ethers.getContractFactory(
+      "PreTokenFactory"
+    );
+    preTokenFactory = await preTokenFactoryArtifact.deploy();
+    console.log("- PreTokenFactory Initialized");
+
+    const tokenFactoryArtifact = await ethers.getContractFactory(
+      "TokenFactory"
+    );
+    tokenFactory = await tokenFactoryArtifact.deploy();
+    console.log("- TokenFactory Initialized");
+
+    const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
+    wavefront = await wavefrontArtifact.deploy(tokenFactory.address);
+    console.log("- WaveFront Initialized");
 
     const multicallArtifact = await ethers.getContractFactory(
       "WaveFrontMulticall"
     );
-    multicall = await multicallArtifact.deploy(factory.address);
+    multicall = await multicallArtifact.deploy();
     console.log("- Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(factory.address);
+    router = await routerArtifact.deploy(
+      wavefront.address,
+      preTokenFactory.address
+    );
+    await router.deployed();
     console.log("- Router Initialized");
 
     await usdc.connect(user0).mint(user0.address, tenThousand6);
@@ -75,10 +92,7 @@ describe("local: test1", function () {
         weth.address,
         oneHundred
       );
-    wft0 = await ethers.getContractAt(
-      "WaveFrontToken",
-      await factory.lastToken()
-    );
+    wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("WFT0 Created");
   });
 
@@ -114,7 +128,7 @@ describe("local: test1", function () {
     await wft0.connect(user0).approve(router.address, pointZeroZeroOne);
     await router
       .connect(user0)
-      .sellToNative(wft0.address, pointZeroZeroOne, 0, 1904422437);
+      .sellToNative(wft0.address, AddressZero, pointZeroZeroOne, 0, 1904422437);
   });
 
   it("User0 buys wft0", async function () {
@@ -131,7 +145,7 @@ describe("local: test1", function () {
     await wft0.connect(user0).approve(router.address, pointZeroOne);
     await router
       .connect(user0)
-      .sellToNative(wft0.address, pointZeroOne, 0, 1904422437);
+      .sellToNative(wft0.address, AddressZero, pointZeroOne, 0, 1904422437);
   });
 
   it("User0 buys wft0", async function () {
@@ -148,7 +162,13 @@ describe("local: test1", function () {
     await wft0.connect(user0).approve(router.address, pointEightZerosOne);
     await router
       .connect(user0)
-      .sellToNative(wft0.address, pointEightZerosOne, 0, 1904422437);
+      .sellToNative(
+        wft0.address,
+        AddressZero,
+        pointEightZerosOne,
+        0,
+        1904422437
+      );
   });
 
   it("User0 creates wft1 with usdc as quote token", async function () {
@@ -162,10 +182,7 @@ describe("local: test1", function () {
         usdc.address,
         oneHundred6
       );
-    wft1 = await ethers.getContractAt(
-      "WaveFrontToken",
-      await factory.lastToken()
-    );
+    wft1 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("WFT1 Created");
   });
 
@@ -221,6 +238,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -276,6 +294,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -305,6 +324,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -334,6 +354,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -362,6 +383,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -397,6 +419,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -424,6 +447,7 @@ describe("local: test1", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -457,7 +481,8 @@ describe("local: test1", function () {
 
   it("User0 burns 10 wft1", async function () {
     console.log("******************************************************");
-    await wft1.connect(user0).burn(ten);
+    await usdc.connect(user0).approve(wft1.address, ten6);
+    await wft1.connect(user0).burn(ten6);
   });
 
   it("Token Data", async function () {

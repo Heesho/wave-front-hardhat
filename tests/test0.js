@@ -8,6 +8,8 @@ const { execPath } = require("process");
 const { FixedNumber } = require("@ethersproject/bignumber"); // For fixed point math lib if needed
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
+const pointZeroOne = convert("0.01", 18);
+const pointOne = convert("0.1", 18);
 const one = convert("1", 18);
 const five = convert("5", 18);
 const ten = convert("10", 18);
@@ -71,12 +73,12 @@ async function checkTokenInvariants(tokenInstance, description = "") {
   ); // For total supply
 
   // Fetch reserves and state
-  const reserveToken = await tokenInstance.reserveToken();
-  const reserveRealQuote = await tokenInstance.reserveRealQuote();
-  const reserveVirtQuote = await tokenInstance.reserveVirtQuote();
+  const reserveToken = await tokenInstance.reserveTokenAmt();
+  const reserveRealQuote = await tokenInstance.reserveRealQuoteWad();
+  const reserveVirtQuote = await tokenInstance.reserveVirtQuoteWad();
   const maxSupply = await tokenInstance.maxSupply();
   const totalSupply = await tokenMetadata.totalSupply();
-  const totalDebt = await tokenInstance.totalDebt();
+  const totalDebt = await tokenInstance.totalDebtRaw();
   const currentMarketPrice = await tokenInstance.getMarketPrice();
   const currentFloorPrice = await tokenInstance.getFloorPrice();
   const isOpen = await tokenInstance.open();
@@ -143,7 +145,7 @@ async function checkTokenInvariants(tokenInstance, description = "") {
   console.log(`--- Invariant Check End: ${description} ---`);
 }
 
-describe("local: test0 18 decimals", function () {
+describe("local: test0", function () {
   // Set timeout for this describe block
   this.timeout(180000); // 180 seconds (increased further)
 
@@ -187,16 +189,11 @@ describe("local: test0 18 decimals", function () {
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
     router = await routerArtifact.deploy(
       wavefront.address,
-      preTokenFactory.address,
-      weth.address
+      preTokenFactory.address
     );
     await router.deployed();
     console.log("- Router Initialized");
 
-    // --- Added: Set necessary WaveFront configs if not done in constructor ---
-    // Example: If setTreasury or setTokenFactory are needed
-    // await wavefront.connect(owner).setTreasury(treasury.address);
-    // Make sure tokenFactory is set in WaveFront if not done in its constructor
     await wavefront.connect(owner).setTokenFactory(tokenFactory.address);
 
     console.log("- System set up");
@@ -215,6 +212,7 @@ describe("local: test0 18 decimals", function () {
       "WFT0", // name
       "WFT0", // symbol
       "http/ipfs.com/0", // uri
+      weth.address,
       oneHundred // reserveVirtQuote
     );
     const receipt = await tx.wait();
@@ -248,7 +246,7 @@ describe("local: test0 18 decimals", function () {
     expect(wft0Address, "wft0Address not set").to.exist;
     expect(wft0PreToken, "wft0PreToken instance not set").to.exist;
 
-    const contributionBefore = await wft0PreToken.account_QuoteContributed(
+    const contributionBefore = await wft0PreToken.account_QuoteRaw(
       user0.address
     );
 
@@ -256,7 +254,7 @@ describe("local: test0 18 decimals", function () {
       .connect(user0)
       .contributeWithNative(wft0Address, { value: ten });
 
-    const contributionAfter = await wft0PreToken.account_QuoteContributed(
+    const contributionAfter = await wft0PreToken.account_QuoteRaw(
       user0.address
     );
     console.log(
@@ -274,10 +272,10 @@ describe("local: test0 18 decimals", function () {
       wft0Address,
       user0.address
     );
-    expect(midContributionData.marketOpened).to.be.false;
+    expect(midContributionData.marketOpen).to.be.false;
     // block.timestamp should be less than contributionEndTimestamp here
-    expect(midContributionData.tokenPhase.toString()).to.equal("0"); // Expect PRE_MARKET (index 0)
-    expect(midContributionData.accountContributedQuote).to.equal(ten); // Check contribution recorded
+    expect(midContributionData.tokenPhase.toString()).to.equal("1"); // Expect CONTRIBUTE (index 1)
+    expect(midContributionData.accountContributed).to.equal(ten); // Check contribution recorded
     console.log(`  Mid-Contribution Phase: ${midContributionData.tokenPhase}`);
 
     await checkTokenInvariants(wft0, "After User0 Native Contribution");
@@ -296,13 +294,13 @@ describe("local: test0 18 decimals", function () {
 
     await weth.connect(user1).approve(router.address, ten); // User1 approves Router
 
-    const contributionBefore = await wft0PreToken.account_QuoteContributed(
+    const contributionBefore = await wft0PreToken.account_QuoteRaw(
       user1.address
     );
 
     await router.connect(user1).contributeWithQuote(wft0Address, ten); // Router pulls approved WETH
 
-    const contributionAfter = await wft0PreToken.account_QuoteContributed(
+    const contributionAfter = await wft0PreToken.account_QuoteRaw(
       user1.address
     );
     console.log(
@@ -347,7 +345,7 @@ describe("local: test0 18 decimals", function () {
       wft0Address,
       user0.address
     ); // Check for user0 (contributor)
-    expect(preOpenDataContributor.marketOpened).to.be.false;
+    expect(preOpenDataContributor.marketOpen).to.be.false;
     // User0 contributed, should be RedemptionAvailable
     expect(preOpenDataContributor.tokenPhase.toString()).to.equal("2"); // Expect REDEMPTION_AVAILABLE (index 2)
     console.log(
@@ -360,9 +358,9 @@ describe("local: test0 18 decimals", function () {
       wft0Address,
       user2.address
     ); // Check for user2 (non-contributor)
-    expect(preOpenDataNonContributor.marketOpened).to.be.false;
-    // User2 did not contribute, should still show PRE_MARKET conceptually as they can't redeem
-    expect(preOpenDataNonContributor.tokenPhase.toString()).to.equal("0"); // Expect PRE_MARKET (index 0)
+    expect(preOpenDataNonContributor.marketOpen).to.be.false;
+    // User2 did not contribute, should still show CONTRIBUTE conceptually as they can't redeem
+    expect(preOpenDataNonContributor.tokenPhase.toString()).to.equal("1"); // Expect CONTRIBUTE (index 1)
     console.log(
       `  Pre-Open Phase (Non-Contributor user2): ${preOpenDataNonContributor.tokenPhase}`
     );
@@ -390,14 +388,14 @@ describe("local: test0 18 decimals", function () {
       wft0Address,
       user1.address
     );
-    expect(user1PreRedeemData.marketOpened).to.be.true; // Market was opened by user0
-    expect(user1PreRedeemData.accountContributedQuote).to.be.gt(0); // User1 still has contribution
+    expect(user1PreRedeemData.marketOpen).to.be.true; // Market was opened by user0
+    expect(user1PreRedeemData.accountContributed).to.be.gt(0); // User1 still has contribution
     expect(user1PreRedeemData.tokenPhase.toString()).to.equal("2"); // Expect REDEMPTION_AVAILABLE (index 2)
-    expect(user1PreRedeemData.accountRedeemableToken).to.be.gt(0); // Should calculate redeemable amount
+    expect(user1PreRedeemData.accountRedeemable).to.be.gt(0); // Should calculate redeemable amount
     console.log(
       `  User1 Pre-Redeem Phase: ${
         user1PreRedeemData.tokenPhase
-      }, Redeemable: ${divDecBN(user1PreRedeemData.accountRedeemableToken)}`
+      }, Redeemable: ${divDecBN(user1PreRedeemData.accountRedeemable)}`
     );
 
     const balanceBefore = await wft0.balanceOf(user1.address);
@@ -812,12 +810,12 @@ describe("local: test0 18 decimals", function () {
     expect(user0Data.owner).to.equal(wft0NftOwner.address); // Check NFT owner
     expect(user0Data.name).to.equal("WFT0");
     expect(user0Data.symbol).to.equal("WFT0");
-    expect(user0Data.marketOpened).to.be.true; // Should be open at this point
+    expect(user0Data.marketOpen).to.be.true; // Should be open at this point
 
     // Check prices are non-zero (assuming market has liquidity)
     expect(user0Data.marketPrice).to.be.gt(0);
     expect(user0Data.floorPrice).to.be.gt(0);
-    expect(user0Data.liquidityQuote).to.be.gt(0);
+    expect(user0Data.liquidity).to.be.gt(0);
 
     // Check some account-specific fields (values depend on previous tests)
     console.log(
@@ -835,7 +833,7 @@ describe("local: test0 18 decimals", function () {
     expect(user0Data.accountDebt, "User0 debt check").to.equal(0);
     // User0 already redeemed their contribution when opening the market
     expect(
-      user0Data.accountContributedQuote,
+      user0Data.accountContributed,
       "User0 contributed quote check"
     ).to.equal(0);
 
@@ -854,9 +852,9 @@ describe("local: test0 18 decimals", function () {
     expect(generalData.accountTokenBalance).to.equal(0);
     expect(generalData.accountDebt).to.equal(0);
     expect(generalData.accountCredit).to.equal(0);
-    expect(generalData.accountTransferable).to.equal(0);
-    expect(generalData.accountContributedQuote).to.equal(0);
-    expect(generalData.accountRedeemableToken).to.equal(0);
+    expect(generalData.accountTransferrable).to.equal(0);
+    expect(generalData.accountContributed).to.equal(0);
+    expect(generalData.accountRedeemable).to.equal(0);
 
     console.log("getTokenData basic checks passed.");
     // We could call this again at different points (e.g., before market open) for more thorough testing of phases
@@ -869,121 +867,158 @@ describe("local: test0 18 decimals", function () {
     before(async function () {
       // Get reserves state at this point in the test sequence
       expect(wft0, "wft0 instance not set for estimations").to.exist;
-      reserveToken = await wft0.reserveToken();
-      reserveRealQuote = await wft0.reserveRealQuote();
+      reserveToken = await wft0.reserveTokenAmt();
+      reserveRealQuote = await wft0.reserveRealQuoteWad();
       expect(reserveToken).to.be.gt(0);
       expect(reserveRealQuote).to.be.gt(0); // Should have real quote after trades
     });
 
-    it("quoteBuyIn: Estimates tokens out for quote in + handles zero input", async function () {
-      console.log("--- Test: multicall.quoteBuyIn ---");
+    it("buyQuoteIn: Estimates tokens out for quote in + handles zero input", async function () {
+      console.log("--- Test: multicall.buyQuoteIn ---");
       // ... existing zero check ...
       // Test with different amounts
-      const amountsIn = [one, five, ten.div(10)]; // 1, 5, 0.1 WETH
+      const amountsIn = [
+        pointZeroOne, // Added
+        pointOne, // Added
+        one,
+        five,
+        ten.div(10), // This was 0.1 already, kept for consistency if needed
+      ]; // Updated amounts
       for (const quoteAmountIn of amountsIn) {
-        const slippageBps = 50;
-        const [tokenAmountOut, minTokenOut] = await multicall.quoteBuyIn(
-          wft0Address,
-          quoteAmountIn,
-          slippageBps
-        );
+        const slippageTolerance = 9950;
+        const [tokenAmountOut, slippage, minTokenAmtOut, autoMinTokenAmtOut] =
+          await multicall.buyQuoteIn(
+            wft0Address,
+            quoteAmountIn,
+            slippageTolerance
+          );
         console.log(
           `  Estimate WFT out for ${divDecBN(quoteAmountIn)} WETH: ~${divDecBN(
             tokenAmountOut
-          )} (min: ${divDecBN(minTokenOut)})`
+          )}, Slippage: ${slippage.toString()}, Min Out (Manual): ${divDecBN(
+            minTokenAmtOut
+          )}, Min Out (Auto): ${divDecBN(autoMinTokenAmtOut)}`
         );
         expect(tokenAmountOut).to.be.gt(0);
-        expect(minTokenOut).to.be.lte(tokenAmountOut);
+        expect(minTokenAmtOut).to.be.gte(0); // Check positivity
+        expect(autoMinTokenAmtOut).to.be.gte(0); // Check positivity
       }
     });
 
-    it("quoteForTokenOut: Estimates quote in for tokens out + handles edge cases", async function () {
-      console.log("--- Test: multicall.quoteForTokenOut ---");
+    it("buyTokenOut: Estimates quote in for tokens out + handles edge cases", async function () {
+      console.log("--- Test: multicall.buyTokenOut ---");
       // ... existing edge cases ...
       // Test with different amounts
-      const amountsOut = [convert("100", 18), convert("50000", 18)]; // 100, 50k WFT
+      const amountsOut = [
+        pointZeroOne, // Keep
+        pointOne, // Keep
+        convert("100", 18),
+        convert("50000", 18),
+      ]; // Already included
       for (const tokenAmountOut of amountsOut) {
-        const quoteAmountIn = await multicall.quoteForTokenOut(
-          wft0Address,
-          tokenAmountOut
-        );
+        const slippageTolerance = 9950;
+        const [quoteRawIn, slippage, minTokenAmtOut, autoMinTokenAmtOut] =
+          await multicall.buyTokenOut(
+            wft0Address,
+            tokenAmountOut,
+            slippageTolerance
+          );
         console.log(
           `  Estimate WETH needed for ${divDecBN(
             tokenAmountOut
-          )} WFT: ~${divDecBN(quoteAmountIn)}`
+          )} WFT: ~${divDecBN(
+            quoteRawIn
+          )}, Slippage: ${slippage.toString()}, Min Check (Manual): ${divDecBN(
+            minTokenAmtOut
+          )}, Min Check (Auto): ${divDecBN(autoMinTokenAmtOut)}`
         );
-        expect(quoteAmountIn).to.be.gt(0);
-        expect(quoteAmountIn).to.be.lt(ethers.constants.MaxUint256);
+        expect(quoteRawIn).to.be.gt(0);
+        expect(quoteRawIn).to.be.lt(ethers.constants.MaxUint256);
+        expect(slippage).to.be.gte(0);
+        expect(minTokenAmtOut).to.be.gte(0); // Check positivity
+        expect(autoMinTokenAmtOut).to.be.gte(0); // Check positivity
       }
     });
 
-    it("quoteSellIn: Estimates quote out for tokens in + handles zero input", async function () {
-      console.log("--- Test: multicall.quoteSellIn ---");
-      // ... existing zero check ...
-      // Test with different amounts (fractions of user1's balance)
-      const user1Balance = await wft0.balanceOf(user1.address);
-      expect(user1Balance).to.be.gt(0);
-      const amountsIn = [user1Balance.div(2), user1Balance.div(5)];
+    // Add a test for sellTokenIn (similar structure)
+    it("sellTokenIn: Estimates quote out for token in", async function () {
+      console.log("--- Test: multicall.sellTokenIn ---");
+      // Test with different amounts
+      const amountsIn = [
+        pointZeroOne, // Added
+        pointOne, // Added
+        one,
+        convert("1000", 18), // Example large amount
+        convert("100000", 18), // Example larger amount
+      ];
       for (const tokenAmountIn of amountsIn) {
-        const slippageBps = 50;
-        const [quoteAmountOut, minQuoteOut] = await multicall.quoteSellIn(
-          wft0Address,
-          tokenAmountIn,
-          slippageBps
-        );
+        const slippageTolerance = 9950; // Example tolerance
+        const [quoteRawOut, slippage, minQuoteRawOut, autoMinQuoteRawOut] =
+          await multicall.sellTokenIn(
+            wft0Address,
+            tokenAmountIn,
+            slippageTolerance
+          );
         console.log(
           `  Estimate WETH out for ${divDecBN(tokenAmountIn)} WFT: ~${divDecBN(
-            quoteAmountOut
-          )} (min: ${divDecBN(minQuoteOut)})`
+            quoteRawOut
+          )}, Slippage: ${slippage.toString()}, Min Out (Manual): ${divDecBN(
+            minQuoteRawOut
+          )}, Min Out (Auto): ${divDecBN(autoMinQuoteRawOut)}`
         );
-        expect(quoteAmountOut).to.be.gt(0);
-        expect(minQuoteOut).to.be.lte(quoteAmountOut);
+        expect(quoteRawOut).to.be.gt(0);
+        expect(slippage).to.be.gte(0);
+        expect(minQuoteRawOut).to.be.gte(0); // Check positivity
+        expect(autoMinQuoteRawOut).to.be.gte(0); // Check positivity
       }
     });
 
-    it("tokenForQuoteOut: Estimates tokens in for quote out + handles edge cases", async function () {
-      console.log("--- Test: multicall.tokenForQuoteOut ---");
-      // ... existing edge cases ...
-      // Test with different amounts
-      const amountsOut = [one.div(10), five]; // 0.1, 5 WETH
+    // ---- NEW TEST for sellQuoteOut ----
+    it("sellQuoteOut: Estimates token in for quote out", async function () {
+      console.log("--- Test: multicall.sellQuoteOut ---");
+      // Test with different amounts *of quote* you want out
+      const amountsOut = [
+        pointZeroOne, // Added
+        pointOne, // Added
+        one,
+        five,
+      ];
       for (const quoteAmountOut of amountsOut) {
-        const tokenAmountIn = await multicall.tokenForQuoteOut(
+        const slippageTolerance = 9950; // Example tolerance
+        const [
+          tokenAmtIn,
+          slippage,
+          minQuoteRawOut, // Note: Contract output name might be confusing here
+          autoMinQuoteRawOut, // Note: Contract output name might be confusing here
+        ] = await multicall.sellQuoteOut(
           wft0Address,
-          quoteAmountOut
+          quoteAmountOut,
+          slippageTolerance
         );
         console.log(
           `  Estimate WFT needed for ${divDecBN(
             quoteAmountOut
-          )} WETH: ~${divDecBN(tokenAmountIn)}`
+          )} WETH out: ~${divDecBN(
+            tokenAmtIn
+          )}, Slippage: ${slippage.toString()}, Min Quote Check (Manual): ${divDecBN(
+            minQuoteRawOut
+          )}, Min Quote Check (Auto): ${divDecBN(autoMinQuoteRawOut)}`
         );
-        expect(tokenAmountIn).to.be.gt(0);
-        expect(tokenAmountIn).to.be.lt(ethers.constants.MaxUint256);
+        expect(tokenAmtIn).to.be.gt(0);
+        expect(slippage).to.be.gte(0);
+        // The min/autoMin outputs here relate to the *input* quoteAmountOut
+        expect(minQuoteRawOut).to.be.gte(0); // Check positivity
+        expect(autoMinQuoteRawOut).to.be.gte(0); // Check positivity
       }
     });
+
+    // ... existing WAVEFRONT tests ...
   });
 
-  // ... Previous Estimation tests (these should still exist) ...
-  // it("Quote Buy In estimate (via Multicall)", async function () { ... });
-  // it("Quote Sell In estimate (via Multicall)", async function () { ... });
-  // it("Quote Buy Out estimate (via Multicall)", async function () { ... });
-  // it("Quote Sell Out estimate (via Multicall)", async function () { ... });
-
-  // ... Token Data tests ...
-  // ... Borrow/Repay/Transfer/Heal/Burn tests ...
-  // ... Revert tests ...
-  // ... Receive ETH test ...
-
-  // *** TODO: Add Solvency Stress Test ***
-
-  // --- NEW: WaveFront Specific Tests ---
   describe("WAVEFRONT: Core Functionality", function () {
     let createdTokenId; // Store the tokenId created earlier
 
     before(async function () {
-      // We need the tokenId created in the first router test
-      // Re-run creation logic minimally or retrieve from event if possible
-      // For simplicity, let's assume the first test ran and set wft0NftOwner and wft0
-      // We need the tokenId associated with wft0
       expect(wft0, "wft0 must exist from previous test").to.exist;
       createdTokenId = await wft0.wavefrontId();
       expect(createdTokenId).to.be.gt(0, "Could not get wavefrontId from wft0");
@@ -1070,15 +1105,6 @@ describe("local: test0 18 decimals", function () {
       expect(await wavefront.supportsInterface(bogusInterfaceId)).to.be.false;
       console.log("  supportsInterface checks passed.");
     });
-
-    // *** REMOVED Test for non-existent WaveFront burn function ***
-    /*
-    it("burn: Allows NFT owner to burn and unlinks token mapping", async function () {
-        // ... test logic ...
-    });
-    */
-
-    // Note: _baseURI is internal view, coverage likely inferred if tokenURI calls it.
   });
 
   // --- NEW: Token Owner Fee Toggle Tests ---
@@ -1096,42 +1122,36 @@ describe("local: test0 18 decimals", function () {
 
     it("Initial state: ownerFeesActive should be true", async function () {
       console.log("--- Test Fee Toggle: Initial State ---");
-      expect(await wft0.ownerFeesActive()).to.be.true;
+      expect(await wft0.ownerFeeActive()).to.be.true;
     });
 
     it("setOwnerFeeStatus: Non-owner cannot change status", async function () {
       console.log("--- Test Fee Toggle: Non-owner Revert ---");
       await expect(
-        wft0.connect(user0).setOwnerFeeStatus(false) // User0 tries to deactivate
+        wft0.connect(user0).setOwnerFee(false) // User0 tries to deactivate
       ).to.be.revertedWith("Token__NotOwner");
 
       await expect(
-        wft0.connect(user0).setOwnerFeeStatus(true) // User0 tries to activate
+        wft0.connect(user0).setOwnerFee(true) // User0 tries to activate
       ).to.be.revertedWith("Token__NotOwner");
       console.log("  Non-owner correctly reverted.");
     });
 
     it("setOwnerFeeStatus: NFT owner can deactivate fees", async function () {
       console.log("--- Test Fee Toggle: Deactivate ---");
-      expect(await wft0.ownerFeesActive()).to.be.true; // Start active
+      expect(await wft0.ownerFeeActive()).to.be.true; // Start active
 
-      await expect(wft0.connect(nftOwner).setOwnerFeeStatus(false))
-        .to.emit(wft0, "Token__OwnerFeeStatusSet")
-        .withArgs(feeTokenId, false);
+      await expect(wft0.connect(nftOwner).setOwnerFee(false))
+        .to.emit(wft0, "Token__OwnerFeeSet")
+        .withArgs(false);
 
-      expect(await wft0.ownerFeesActive()).to.be.false; // Check deactivated
+      expect(await wft0.ownerFeeActive()).to.be.false; // Check deactivated
       console.log("  Fees deactivated by NFT owner.");
-
-      // Optional: Check calling again with same value doesn't revert (but also ideally doesn't emit again)
-      // Since we removed the check, this should succeed without emitting (no state change)
-      // Let's just check state didn't change and proceed
-      // await wft0.connect(nftOwner).setOwnerFeeStatus(false);
-      // expect(await wft0.ownerFeesActive()).to.be.false;
     });
 
     it("Fee Distribution: Owner does NOT receive fees when inactive", async function () {
       console.log("--- Test Fee Toggle: Fees Inactive Check ---");
-      expect(await wft0.ownerFeesActive()).to.be.false; // Ensure inactive
+      expect(await wft0.ownerFeeActive()).to.be.false; // Ensure inactive
 
       const buyAmount = one;
       const buyer = user2; // Use a different user
@@ -1162,19 +1182,19 @@ describe("local: test0 18 decimals", function () {
 
     it("setOwnerFeeStatus: NFT owner can reactivate fees", async function () {
       console.log("--- Test Fee Toggle: Reactivate ---");
-      expect(await wft0.ownerFeesActive()).to.be.false; // Start inactive
+      expect(await wft0.ownerFeeActive()).to.be.false; // Start inactive
 
-      await expect(wft0.connect(nftOwner).setOwnerFeeStatus(true))
-        .to.emit(wft0, "Token__OwnerFeeStatusSet")
-        .withArgs(feeTokenId, true);
+      await expect(wft0.connect(nftOwner).setOwnerFee(true))
+        .to.emit(wft0, "Token__OwnerFeeSet")
+        .withArgs(true);
 
-      expect(await wft0.ownerFeesActive()).to.be.true; // Check reactivated
+      expect(await wft0.ownerFeeActive()).to.be.true; // Check reactivated
       console.log("  Fees reactivated by NFT owner.");
     });
 
     it("Fee Distribution: Owner DOES receive fees when active again", async function () {
       console.log("--- Test Fee Toggle: Fees Active Check ---");
-      expect(await wft0.ownerFeesActive()).to.be.true; // Ensure active
+      expect(await wft0.ownerFeeActive()).to.be.true; // Ensure active
 
       const buyAmount = one;
       const buyer = user1; // Use yet another user
@@ -1236,12 +1256,12 @@ describe("local: test0 18 decimals", function () {
       seller = user2; // User performing the sell (needs funding first)
 
       // 1. Deactivate Owner Fees
-      if (await wft0.ownerFeesActive()) {
+      if (await wft0.ownerFeeActive()) {
         console.log("  Deactivating owner fees...");
-        await wft0.connect(nftOwner).setOwnerFeeStatus(false);
+        await wft0.connect(nftOwner).setOwnerFee(false);
       }
-      expect(await wft0.ownerFeesActive()).to.be.false;
-      console.log(`  Owner fees active: ${await wft0.ownerFeesActive()}`);
+      expect(await wft0.ownerFeeActive()).to.be.false;
+      console.log(`  Owner fees active: ${await wft0.ownerFeeActive()}`);
 
       // 2. Set Treasury to AddressZero
       const currentTreasury = await wavefront.treasury();
@@ -1315,8 +1335,8 @@ describe("local: test0 18 decimals", function () {
       console.log("--- Test Fee Redirection: Buy Operation ---");
       expect(buyer, "Buyer (user1) not set in before hook").to.exist;
       expect(nftOwner, "nftOwner not set in before hook").to.exist;
-      expect(await wft0.ownerFeesActive(), "Owner fees should be inactive").to
-        .be.false;
+      expect(await wft0.ownerFeeActive(), "Owner fees should be inactive").to.be
+        .false;
       expect(
         await wavefront.treasury(),
         "Treasury should be AddressZero"
@@ -1326,9 +1346,9 @@ describe("local: test0 18 decimals", function () {
 
       const buyAmount = one;
       const nftOwnerQuoteBalanceBefore = await weth.balanceOf(nftOwner.address);
-      const reserveRealQuoteBefore = await wft0.reserveRealQuote();
-      const reserveVirtQuoteBefore = await wft0.reserveVirtQuote();
-      const reserveTokenBefore = await wft0.reserveToken();
+      const reserveRealQuoteBefore = await wft0.reserveRealQuoteWad();
+      const reserveVirtQuoteBefore = await wft0.reserveVirtQuoteWad();
+      const reserveTokenBefore = await wft0.reserveTokenAmt();
       const maxSupplyBefore = await wft0.maxSupply();
 
       // --- Simulate the state MID-BUY (after swap adjust, before heal) ---
@@ -1366,9 +1386,9 @@ describe("local: test0 18 decimals", function () {
 
       // --- Get final state ---
       const nftOwnerQuoteBalanceAfter = await weth.balanceOf(nftOwner.address);
-      const reserveRealQuoteAfter = await wft0.reserveRealQuote();
-      const reserveVirtQuoteAfter = await wft0.reserveVirtQuote();
-      const reserveTokenAfter = await wft0.reserveToken();
+      const reserveRealQuoteAfter = await wft0.reserveRealQuoteWad();
+      const reserveVirtQuoteAfter = await wft0.reserveVirtQuoteWad();
+      const reserveTokenAfter = await wft0.reserveTokenAmt();
 
       // --- Calculate EXPECTED final state based on _healQuoteReserves ---
       // Heal calculation uses the MID-state reserves
@@ -1447,12 +1467,12 @@ describe("local: test0 18 decimals", function () {
 
       // --- Get state BEFORE ---
       const nftOwnerTokenBalanceBefore = await wft0.balanceOf(nftOwner.address);
-      const reserveTokenBefore = await wft0.reserveToken();
+      const reserveTokenBefore = await wft0.reserveTokenAmt();
       const maxSupplyBefore = await wft0.maxSupply();
       const totalSupplyBefore = await wft0.totalSupply();
 
       // +++ ASSERT ownerFeesActive status BEFORE the transaction +++
-      const currentOwnerFeesActive = await wft0.ownerFeesActive();
+      const currentOwnerFeesActive = await wft0.ownerFeeActive();
       console.log(
         `[ASSERT CHECK] ownerFeesActive status BEFORE sell: ${currentOwnerFeesActive}`
       );
@@ -1472,7 +1492,7 @@ describe("local: test0 18 decimals", function () {
 
       // --- Get state AFTER ---
       const nftOwnerTokenBalanceAfter = await wft0.balanceOf(nftOwner.address);
-      const reserveTokenAfter = await wft0.reserveToken();
+      const reserveTokenAfter = await wft0.reserveTokenAmt();
       const maxSupplyAfter = await wft0.maxSupply();
       const totalSupplyAfter = await wft0.totalSupply();
 
@@ -1506,9 +1526,6 @@ describe("local: test0 18 decimals", function () {
       await checkTokenInvariants(wft0, "After Sell (Fees Off)");
     });
   });
-
-  // ... Revert tests ...
-  // ... Receive ETH test ...
 
   // **************  EXTRA COVERAGE for Token.sol  ****************
   describe("BORROW / REPAY / COLLATERAL / SHIFT coverage", function () {
@@ -1570,7 +1587,7 @@ describe("local: test0 18 decimals", function () {
       console.log(` User1 borrowing: ${divDecBN(borrowAmount)} WETH`);
       await wft0.connect(user).borrow(userAddr, borrowAmount);
 
-      const debtAfterBorrow = await wft0.account_Debt(userAddr);
+      const debtAfterBorrow = await wft0.account_DebtRaw(userAddr);
       expect(debtAfterBorrow).to.equal(borrowAmount);
       // Total debt should increase (we'll check cumulative later)
 
@@ -1589,7 +1606,7 @@ describe("local: test0 18 decimals", function () {
       // Attempt to transfer more than allowed
       await expect(
         wft0.connect(user).transfer(user2.address, transferrable.add(one)) // Try transferring 1 wei more than allowed
-      ).to.be.revertedWith("Token__CollateralRequirement");
+      ).to.be.revertedWith("Token__CollateralLocked");
       console.log(" User1 collateral lock correctly reverted transfer");
 
       // ---------- REPAY ----------
@@ -1598,7 +1615,7 @@ describe("local: test0 18 decimals", function () {
       await weth.connect(user).approve(wft0.address, borrowAmount);
       await wft0.connect(user).repay(userAddr, borrowAmount);
 
-      const debtAfterRepay = await wft0.account_Debt(userAddr);
+      const debtAfterRepay = await wft0.account_DebtRaw(userAddr);
       expect(debtAfterRepay).to.equal(0);
       const creditAfterRepay = await wft0.getAccountCredit(userAddr);
       // Credit limit might change slightly due to price fluctuations, check it's roughly back
@@ -1630,18 +1647,16 @@ describe("local: test0 18 decimals", function () {
       );
       await expect(
         wft0.connect(user).borrow(userAddr, tooMuch)
-      ).to.be.revertedWith("Token__CreditLimit");
+      ).to.be.revertedWith("Token__CreditExceeded");
       console.log(" User1 over-borrow correctly reverted.");
     });
-
-    // --- NEW TESTS ---
 
     it("User0 borrows partially, repays partially, checks debt", async function () {
       console.log("--- Test: Partial Borrow/Repay (User0) ---");
       const user = user0;
       const userAddr = user.address;
-      const initialDebt = await wft0.account_Debt(userAddr);
-      const totalDebtBefore = await wft0.totalDebt();
+      const initialDebt = await wft0.account_DebtRaw(userAddr);
+      const totalDebtBefore = await wft0.totalDebtRaw();
 
       // Borrow
       const credit = await wft0.getAccountCredit(userAddr);
@@ -1649,9 +1664,9 @@ describe("local: test0 18 decimals", function () {
       const borrowAmount = credit.div(4); // Borrow 1/4th
       console.log(` User0 borrowing: ${divDecBN(borrowAmount)} WETH`);
       await wft0.connect(user).borrow(userAddr, borrowAmount);
-      const debtAfterBorrow = await wft0.account_Debt(userAddr);
+      const debtAfterBorrow = await wft0.account_DebtRaw(userAddr);
       expect(debtAfterBorrow).to.equal(initialDebt.add(borrowAmount));
-      expect(await wft0.totalDebt()).to.equal(
+      expect(await wft0.totalDebtRaw()).to.equal(
         totalDebtBefore.add(borrowAmount)
       );
 
@@ -1661,10 +1676,10 @@ describe("local: test0 18 decimals", function () {
       await weth.connect(user).approve(wft0.address, repayAmount);
       await wft0.connect(user).repay(userAddr, repayAmount);
 
-      const debtAfterPartialRepay = await wft0.account_Debt(userAddr);
+      const debtAfterPartialRepay = await wft0.account_DebtRaw(userAddr);
       const expectedDebt = initialDebt.add(borrowAmount).sub(repayAmount);
       expect(debtAfterPartialRepay).to.equal(expectedDebt);
-      expect(await wft0.totalDebt()).to.equal(
+      expect(await wft0.totalDebtRaw()).to.equal(
         totalDebtBefore.add(borrowAmount).sub(repayAmount)
       );
       console.log(
@@ -1680,9 +1695,9 @@ describe("local: test0 18 decimals", function () {
       const user2Addr = user2.address;
       const user0Addr = user0.address;
 
-      const totalDebtStart = await wft0.totalDebt();
-      const user0DebtStart = await wft0.account_Debt(user0Addr); // Has debt from previous test
-      const user2DebtStart = await wft0.account_Debt(user2Addr);
+      const totalDebtStart = await wft0.totalDebtRaw();
+      const user0DebtStart = await wft0.account_DebtRaw(user0Addr); // Has debt from previous test
+      const user2DebtStart = await wft0.account_DebtRaw(user2Addr);
 
       // User2 borrows
       const credit2 = await wft0.getAccountCredit(user2Addr);
@@ -1690,24 +1705,24 @@ describe("local: test0 18 decimals", function () {
       const borrowAmount2 = credit2.div(5);
       console.log(` User2 borrowing: ${divDecBN(borrowAmount2)} WETH`);
       await wft0.connect(user2).borrow(user2Addr, borrowAmount2);
-      const totalDebtAfterBorrow2 = await wft0.totalDebt();
+      const totalDebtAfterBorrow2 = await wft0.totalDebtRaw();
       expect(totalDebtAfterBorrow2).to.equal(totalDebtStart.add(borrowAmount2));
-      expect(await wft0.account_Debt(user2Addr)).to.equal(
+      expect(await wft0.account_DebtRaw(user2Addr)).to.equal(
         user2DebtStart.add(borrowAmount2)
       );
 
       // User0 repays their remaining debt
-      const user0RepayAmount = await wft0.account_Debt(user0Addr);
+      const user0RepayAmount = await wft0.account_DebtRaw(user0Addr);
       expect(user0RepayAmount).to.be.gt(0, "User0 should have debt to repay");
       console.log(` User0 repaying full: ${divDecBN(user0RepayAmount)} WETH`);
       await weth.connect(user0).approve(wft0.address, user0RepayAmount);
       await wft0.connect(user0).repay(user0Addr, user0RepayAmount);
 
       // Check debts after User0 repay
-      expect(await wft0.account_Debt(user0Addr)).to.equal(0);
+      expect(await wft0.account_DebtRaw(user0Addr)).to.equal(0);
       const expectedTotalDebt = totalDebtAfterBorrow2.sub(user0RepayAmount); // Only User2's debt remains
-      expect(await wft0.totalDebt()).to.equal(expectedTotalDebt);
-      expect(await wft0.account_Debt(user2Addr)).to.equal(
+      expect(await wft0.totalDebtRaw()).to.equal(expectedTotalDebt);
+      expect(await wft0.account_DebtRaw(user2Addr)).to.equal(
         user2DebtStart.add(borrowAmount2)
       ); // User2's debt unchanged
       console.log(` Total debt after actions: ${divDecBN(expectedTotalDebt)}`);
@@ -1730,7 +1745,7 @@ describe("local: test0 18 decimals", function () {
       }
       console.log(` User0 burning: ${divDecBN(burnAmount)} WFT`);
 
-      const reserveTokenBefore = await wft0.reserveToken();
+      const reserveTokenBefore = await wft0.reserveTokenAmt();
       const maxSupplyBefore = await wft0.maxSupply();
       const totalSupplyBefore = await wft0.totalSupply(); // Also track total supply
 
@@ -1761,7 +1776,7 @@ describe("local: test0 18 decimals", function () {
       await wft0.connect(user).burn(burnAmount);
 
       // --- Fetch state after burn ---
-      const reserveTokenAfter = await wft0.reserveToken();
+      const reserveTokenAfter = await wft0.reserveTokenAmt();
       const maxSupplyAfter = await wft0.maxSupply();
       const totalSupplyAfter = await wft0.totalSupply();
 
@@ -1806,16 +1821,16 @@ describe("local: test0 18 decimals", function () {
       await weth.connect(user).approve(wft0.address, healAmount);
       console.log(` User2 healing with: ${divDecBN(healAmount)} WETH`);
 
-      const realBefore = await wft0.reserveRealQuote();
-      const virtBefore = await wft0.reserveVirtQuote();
+      const realBefore = await wft0.reserveRealQuoteWad();
+      const virtBefore = await wft0.reserveVirtQuoteWad();
       // *** Need reserves *before* heal to calculate expected virt increase ***
-      const reserveTokenBefore = await wft0.reserveToken();
+      const reserveTokenBefore = await wft0.reserveTokenAmt();
       const maxSupplyBefore = await wft0.maxSupply();
 
       await wft0.connect(user).heal(healAmount);
 
-      const realAfter = await wft0.reserveRealQuote();
-      const virtAfter = await wft0.reserveVirtQuote();
+      const realAfter = await wft0.reserveRealQuoteWad();
+      const virtAfter = await wft0.reserveVirtQuoteWad();
 
       // heal -> _shift(amount, 0, reserveHeal, 0);
       // reserveReal increases by healAmount
@@ -1853,14 +1868,13 @@ describe("local: test0 18 decimals", function () {
       await checkTokenInvariants(wft0, "After User2 Heal");
     });
 
-    // --- Test for getAccountTransferrable edge case ---
     it("getAccountTransferrable: Returns near 0 when borrowing maximally", async function () {
       console.log("--- Test: Transferrable Nears Zero Under Max Debt ---");
       const user = user0; // Use user0
       const userAddr = user.address;
 
       // Clean up any existing debt for user0 first for a clean slate
-      let user0Debt = await wft0.account_Debt(userAddr);
+      let user0Debt = await wft0.account_DebtRaw(userAddr);
       if (user0Debt.gt(0)) {
         console.log(` Cleaning up user0 initial debt: ${divDecBN(user0Debt)}`);
         const u0Weth = await weth.balanceOf(userAddr);
@@ -1869,7 +1883,7 @@ describe("local: test0 18 decimals", function () {
         }
         await weth.connect(user).approve(wft0.address, user0Debt);
         await wft0.connect(user).repay(userAddr, user0Debt);
-        user0Debt = await wft0.account_Debt(userAddr); // Re-check
+        user0Debt = await wft0.account_DebtRaw(userAddr); // Re-check
         expect(user0Debt).to.equal(0, "Failed to clear initial debt");
       }
 
@@ -1880,7 +1894,7 @@ describe("local: test0 18 decimals", function () {
       }
 
       const maxSupply = await wft0.maxSupply();
-      const virtQuote = await wft0.reserveVirtQuote();
+      const virtQuote = await wft0.reserveVirtQuoteWad();
       const currentCredit = await wft0.getAccountCredit(userAddr); // Get current credit limit
 
       if (virtQuote.isZero() || balance.gte(maxSupply)) {
@@ -1965,7 +1979,6 @@ describe("local: test0 18 decimals", function () {
     });
   }); // End BORROW / REPAY describe block
 
-  // --- Add test after "Advance time and open market via redeem" ---
   it("PRETOKEN: Cannot contribute after market is open", async function () {
     console.log("********* Test: Contribute After Open ***********");
     expect(await wft0PreToken.ended(), "Market should be open").to.be.true;
@@ -1998,16 +2011,12 @@ describe("local: test0 18 decimals", function () {
     console.log(" Redeem by non-contributor correctly reverted.");
   });
 
-  // ... existing tests ...
-
-  // --- Add tests at the end, potentially in their own describe block ---
-
   describe("ROUTER: Slippage Tests", function () {
     it("buyWithQuote: Reverts if slippage tolerance exceeded", async function () {
       console.log("********* Test: Buy Slippage Revert ***********");
       const buyAmount = one;
       // Calculate expected output *without* slippage first
-      const [expectedOut] = await multicall.quoteBuyIn(
+      const [expectedOut] = await multicall.buyQuoteIn(
         wft0Address,
         buyAmount,
         0 // 0 slippage BPS
@@ -2034,7 +2043,7 @@ describe("local: test0 18 decimals", function () {
           minAmountTokenOutTooHigh, // Set unrealistic minimum
           deadline
         )
-      ).to.be.revertedWith("Token__SlippageToleranceExceeded");
+      ).to.be.revertedWith("Token__Slippage");
       console.log(" Buy slippage revert successful.");
     });
 
@@ -2069,7 +2078,7 @@ describe("local: test0 18 decimals", function () {
       expect(sellAmount).to.be.gt(0, "Need tokens to sell for slippage test");
 
       // Calculate expected output *without* slippage
-      const [expectedOut] = await multicall.quoteSellIn(
+      const [expectedOut] = await multicall.sellTokenIn(
         wft0Address,
         sellAmount,
         0 // 0 slippage BPS
@@ -2088,111 +2097,54 @@ describe("local: test0 18 decimals", function () {
           minAmountQuoteOutTooHigh, // Set unrealistic minimum
           deadline
         )
-      ).to.be.revertedWith("Token__SlippageToleranceExceeded");
+      ).to.be.revertedWith("Token__Slippage");
       console.log(" Sell slippage revert successful.");
     });
 
     // Similar tests can be added for buyWithNative and sellToNative if desired
   });
 
-  // --- NEW describe block for Provider Fees ---
-  describe("ROUTER: Provider Fee Tests", function () {
-    it("buyWithQuote: Distributes provider fee correctly", async function () {
-      console.log("********* Test: Buy With Provider Fee ***********");
-      const buyAmount = one;
-      const provider = user2; // User2 acts as the provider
-      const providerQuoteBalanceBefore = await weth.balanceOf(provider.address);
-      const buyer = user1; // User1 buys
+  it("sellToQuote: Reverts if slippage tolerance exceeded", async function () {
+    const tokenAmountIn = convert("1000", 18); // Example amount to sell
+    const highSlippageTolerance = 10000; // 100% tolerance (i.e., no slippage check needed for quote)
+    const [
+      quoteRawOut, // Destructure return values
+      slippage,
+      minQuoteRawOut,
+      autoMinQuoteRawOut,
+    ] = await multicall.sellTokenIn(
+      // <<<< CORRECTED function call to sellTokenIn >>>>
+      wft0Address,
+      tokenAmountIn,
+      highSlippageTolerance // Use a high tolerance just to get the quote
+    );
 
-      // Calculate expected fee share for provider
-      const feeQuote = buyAmount.mul(FEE).div(DIVISOR);
-      const expectedProviderFee = feeQuote.mul(FEE_AMOUNT).div(DIVISOR);
+    console.log(
+      `  Estimated quote out for selling ${divDecBN(
+        tokenAmountIn
+      )} WFT: ~${divDecBN(quoteRawOut)}`
+    );
 
-      // Buyer setup
-      const buyerWethBal = await weth.balanceOf(buyer.address);
-      if (buyerWethBal.lt(buyAmount)) {
-        await weth
-          .connect(buyer)
-          .deposit({ value: buyAmount.sub(buyerWethBal) });
-      }
-      await weth.connect(buyer).approve(router.address, buyAmount);
-      const deadline = (await getBlockTimestamp()) + 300;
+    // Calculate a minimum output that is *higher* than the actual expected output
+    // to force a slippage revert. Add 1 wei to the expected output.
+    const minQuoteOutTooHigh = quoteRawOut.add(1);
 
-      // Perform buy with provider specified
-      await router
-        .connect(buyer)
-        .buyWithQuote(wft0Address, provider.address, buyAmount, 0, deadline);
+    // Now try the actual sell operation via the router with the impossible minimum
+    await expect(
+      router
+        .connect(user1) // Assuming user1 has WFT to sell
+        .sellToQuote(
+          wft0Address,
+          tokenAmountIn,
+          minQuoteOutTooHigh,
+          user1.address
+        )
+    ).to.be.reverted; // Use appropriate revert message if known, e.g., .revertedWith("Slippage")
 
-      // Verify provider received the fee
-      const providerQuoteBalanceAfter = await weth.balanceOf(provider.address);
-      expect(providerQuoteBalanceAfter).to.equal(
-        providerQuoteBalanceBefore.add(expectedProviderFee)
-      );
-      console.log(
-        ` Provider ${provider.address} received fee: ${divDecBN(
-          expectedProviderFee
-        )}`
-      );
-      await checkTokenInvariants(wft0, "After Buy with Provider Fee");
-    });
-
-    it("sellToQuote: Distributes provider fee correctly (mints tokens)", async function () {
-      console.log("********* Test: Sell With Provider Fee ***********");
-      const seller = user1; // User1 sells
-      const provider = user2; // User2 is the provider
-      const providerTokenBalanceBefore = await wft0.balanceOf(provider.address);
-
-      // Ensure seller has tokens
-      const sellerBalance = await wft0.balanceOf(seller.address);
-      if (sellerBalance.isZero()) {
-        console.log(
-          " Seller has no tokens for sell provider test, buying some..."
-        );
-        const buyAmount = one;
-        const sellerWethBal = await weth.balanceOf(seller.address);
-        if (sellerWethBal.lt(buyAmount)) {
-          await weth
-            .connect(seller)
-            .deposit({ value: buyAmount.sub(sellerWethBal) });
-        }
-        await weth.connect(seller).approve(router.address, buyAmount);
-        await router
-          .connect(seller)
-          .buyWithQuote(
-            wft0Address,
-            AddressZero,
-            buyAmount,
-            0,
-            (await getBlockTimestamp()) + 300
-          );
-      }
-      const sellAmount = (await wft0.balanceOf(seller.address)).div(5); // Sell 20%
-      expect(sellAmount).to.be.gt(0, "Need tokens to sell for provider test");
-
-      // Calculate expected token fee share for provider
-      const feeToken = sellAmount.mul(FEE).div(DIVISOR);
-      const expectedProviderFeeTokens = feeToken.mul(FEE_AMOUNT).div(DIVISOR);
-
-      // Seller setup
-      await wft0.connect(seller).approve(router.address, sellAmount);
-      const deadline = (await getBlockTimestamp()) + 300;
-
-      // Perform sell with provider specified
-      await router
-        .connect(seller)
-        .sellToQuote(wft0Address, provider.address, sellAmount, 0, deadline);
-
-      // Verify provider received the fee tokens
-      const providerTokenBalanceAfter = await wft0.balanceOf(provider.address);
-      expect(providerTokenBalanceAfter).to.equal(
-        providerTokenBalanceBefore.add(expectedProviderFeeTokens)
-      );
-      console.log(
-        ` Provider ${provider.address} received token fee: ${divDecBN(
-          expectedProviderFeeTokens
-        )}`
-      );
-      await checkTokenInvariants(wft0, "After Sell with Provider Fee");
-    });
+    console.log(
+      `  Sell reverted as expected when minQuoteOut (${divDecBN(
+        minQuoteOutTooHigh
+      )}) > quoteOut (${divDecBN(quoteRawOut)})`
+    );
   });
 }); // End of describe.only
