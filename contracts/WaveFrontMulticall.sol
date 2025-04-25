@@ -5,6 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./library/FixedPointMathLib.sol";
 
+// --- Interface: IPreToken ---
+/**
+ * @notice Interface for interacting with the PreToken contract.
+ * @dev Defines view functions needed by the multicall contract to fetch PreToken state.
+ */
+
 interface IPreToken {
     function totalQuoteRaw() external view returns (uint256);
     function totalTokenAmt() external view returns (uint256);
@@ -12,6 +18,12 @@ interface IPreToken {
     function endTime() external view returns (uint256);
     function account_QuoteRaw(address account) external view returns (uint256);
 }
+
+// --- Interface: IToken ---
+/**
+ * @notice Interface for interacting with the WaveFrontToken (Token.sol) contract.
+ * @dev Defines view functions needed by the multicall contract to fetch Token state and perform calculations.
+ */
 
 interface IToken {
     function quote() external view returns (address);
@@ -33,28 +45,85 @@ interface IToken {
     function wadToRaw(uint256 wad) external view returns (uint256);
 }
 
+// --- Interface: IWaveFront ---
+/**
+ * @notice Interface for interacting with the WaveFront NFT contract.
+ * @dev Defines view functions needed by the multicall contract to fetch NFT details.
+ */
+
 interface IWaveFront {
      function ownerOf(uint256 tokenId) external view returns (address owner);
      function tokenURI(uint256 tokenId) external view returns (string memory);
 }
 
+// --- Contract: WaveFrontMulticall ---
+/**
+ * @title WaveFrontMulticall
+ * @notice Aggregates data from WaveFront, Token, and PreToken contracts for a specific token launch.
+ *         Provides view functions to calculate swap outputs and slippage off-chain.
+ * @dev Designed for front-end integration to reduce the number of individual contract calls needed
+ *      to display token information and simulate swaps. Does not execute state changes. Uses FixedPointMathLib.
+ * @author heesho <https://github.com/heesho>
+ */
+
 contract WaveFrontMulticall {
     using FixedPointMathLib for uint256;
 
-    /*----------  CONSTANTS  --------------------------------------------*/
-
+    // --- Constants ---
+    /**
+     * @notice Base swap fee percentage (mirrors Token.sol). 100 = 1%.
+     */
     uint256 public constant FEE = 100;
+    /**
+     * @notice Divisor for fee calculations (mirrors Token.sol). 10,000 = 100%.
+     */
     uint256 public constant DIVISOR = 10_000;
+    /**
+     * @notice Fixed-point math precision (1e18).
+     */
     uint256 public constant PRECISION = 1e18;
 
-    /*----------  STATE VARIABLES  --------------------------------------*/
-
+    // --- Enum: TokenPhase ---
+    /**
+     * @notice Represents the current user-facing phase of the token launch.
+     */
     enum TokenPhase {
         MARKET,
         CONTRIBUTE,
         REDEEM
     }
 
+    // --- Struct: TokenData ---
+    /**
+     * @notice Structure containing aggregated data for a WaveFrontToken launch.
+     * @param token Address of the WaveFrontToken (Token.sol)
+     * @param quote Address of the quote token
+     * @param preToken Address of the associated PreToken
+     * @param wavefront Address of the parent WaveFront NFT contract
+     * @param wavefrontId ID of the specific WaveFront NFT
+     * @param owner Current owner of the WaveFront NFT
+     * @param name Token name
+     * @param symbol Token symbol
+     * @param uri WaveFront NFT URI
+     * @param preTokenEnd Timestamp when PreToken contribution phase ends
+     * @param marketOpen Whether the public market on Token.sol is open
+     * @param marketCap Calculated market cap (raw quote value if market open, else total contributed)
+     * @param liquidity Calculated total liquidity (raw quote value, 2 * total reserves)
+     * @param floorPrice Current floor price (wad)
+     * @param marketPrice Current market price (wad)
+     * @param circulatingSupply Current total supply of the token (18 dec)
+     * @param maxSupply Current max supply (used for floor price, 18 dec)
+     * @param totalQuoteContributed Total quote contributed during PreToken phase (raw)
+     * @param accountNativeBalance User's native asset (ETH/MATIC etc.) balance
+     * @param accountQuoteBalance User's balance of the quote token (raw)
+     * @param accountTokenBalance User's balance of this token (18 dec)
+     * @param accountDebt User's outstanding debt (raw quote)
+     * @param accountCredit User's available credit (raw quote)
+     * @param accountTransferrable User's transferable token balance (18 dec)
+     * @param accountContributed User's contribution to PreToken (raw quote)
+     * @param accountRedeemable User's redeemable token amount from PreToken (18 dec)
+     * @param tokenPhase Current phase relevant to the user
+     */
     struct TokenData {
         address token;
         address quote;
@@ -91,8 +160,13 @@ contract WaveFrontMulticall {
         TokenPhase tokenPhase;
     }
 
-    /*----------  VIEW FUNCTIONS  ---------------------------------------*/
-
+    // --- Function: getTokenData ---
+    /**
+     * @notice Fetches and aggregates data for a given WaveFrontToken and optionally an account.
+     * @param token The address of the WaveFrontToken (Token.sol) contract.
+     * @param account The address of the user account to fetch specific data for (or address(0) for general data).
+     * @return tokenData A struct containing aggregated information about the token and the user's interaction.
+     */
     function getTokenData(address token, address account) external view returns (TokenData memory tokenData) {
         address quote = IToken(token).quote();
         address preToken = IToken(token).preToken();
@@ -167,6 +241,18 @@ contract WaveFrontMulticall {
         return tokenData;
     }
 
+    // --- Function: buyQuoteIn ---
+    /**
+     * @notice Calculates the expected token output for a given quote input (buy simulation).
+     * @dev Performs off-chain calculation using the Token contract's AMM logic and reserves. Does not execute a swap.
+     * @param token The address of the WaveFrontToken (Token.sol).
+     * @param quoteRawIn The amount of quote token input (raw).
+     * @param slippageTolerance The maximum allowed slippage percentage (e.g., 9950 for 0.5% slippage). Used to calculate `minTokenAmtOut`.
+     * @return tokenAmtOut Expected token output (18 dec).
+     * @return slippage Calculated slippage percentage * 100 (scaled by 100). Based on original code's formula.
+     * @return minTokenAmtOut Minimum token output based on quote input, market price and `slippageTolerance` (18 dec). Based on original code's formula.
+     * @return autoMinTokenAmtOut Minimum token output based on quote input, market price and calculated `slippage` (18 dec). Based on original code's formula.
+     */
     function buyQuoteIn(
         address token, 
         uint256 quoteRawIn, 
@@ -199,6 +285,18 @@ contract WaveFrontMulticall {
         autoMinTokenAmtOut = quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
     }
 
+    // --- Function: buyTokenOut ---
+    /**
+     * @notice Calculates the required quote input for a desired token output (buy simulation).
+     * @dev Performs off-chain calculation. Does not execute a swap. Used for "buy exact token amount" UI.
+     * @param token The address of the WaveFrontToken (Token.sol).
+     * @param tokenAmtOut The desired amount of token output (18 dec).
+     * @param slippageTolerance The maximum allowed input slippage parameter (e.g., 10050 for 0.5% slippage). Used in calculation for `minTokenAmtOut`.
+     * @return qouteRawIn Required quote token input (raw). Note the typo in the variable name from the original code.
+     * @return slippage Calculated slippage percentage * 100 (scaled by 100). Based on original code's formula.
+     * @return minTokenAmtOut Result of `tokenAmtOut * slippageTolerance / DIVISOR`. Note: Confusing name in this context.
+     * @return autoMinTokenAmtOut Result of calculation involving `tokenAmtOut` and `slippage`. Note: Confusing name in this context, calculation seems related to adjusted token amount based on slippage.
+     */
     function buyTokenOut(
         address token, 
         uint256 tokenAmtOut, 
@@ -221,6 +319,18 @@ contract WaveFrontMulticall {
         autoMinTokenAmtOut = tokenAmtOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
     }
 
+    // --- Function: sellTokenIn ---
+    /**
+     * @notice Calculates the expected quote output for a given token input (sell simulation).
+     * @dev Performs off-chain calculation using the Token contract's AMM logic and reserves. Does not execute a swap.
+     * @param token The address of the WaveFrontToken (Token.sol).
+     * @param tokenAmtIn The amount of token input (18 dec).
+     * @param slippageTolerance The maximum allowed slippage percentage (e.g., 9950 for 0.5% slippage). Used for `minQuoteRawOut`.
+     * @return quoteRawOut Expected quote output (raw).
+     * @return slippage Calculated slippage percentage * 100 (scaled by 100). Based on original code's formula.
+     * @return minQuoteRawOut Minimum quote output based on expected quote and `slippageTolerance` (raw). Based on original code's formula.
+     * @return autoMinQuoteRawOut Minimum quote output based on expected quote and calculated `slippage` (raw). Based on original code's formula.
+     */
     function sellTokenIn(
         address token, 
         uint256 tokenAmtIn, 
@@ -255,6 +365,18 @@ contract WaveFrontMulticall {
         autoMinQuoteRawOut = IToken(token).wadToRaw(autoMinQuoteWadOut);
     }
 
+    // --- Function: sellQuoteOut ---
+    /**
+     * @notice Calculates the required token input for a desired quote output (sell simulation).
+     * @dev Performs off-chain calculation. Does not execute a swap. Used for "sell for exact quote amount" UI.
+     * @param token The address of the WaveFrontToken (Token.sol).
+     * @param quoteRawOut The desired amount of quote output (raw).
+     * @param slippageTolerance The maximum allowed input slippage parameter (e.g., 10050 for 0.5% slippage). Used for calculating the value assigned to `minQuoteRawOut`.
+     * @return tokenAmtIn Required token input (18 dec).
+     * @return slippage Calculated slippage percentage * 100 (scaled by 100). Based on original code's formula.
+     * @return minQuoteRawOut Result of calculation involving `quoteWadOut` and `slippageTolerance`. Note: Confusing name from original code; value calculated seems to represent max token input based on tolerance.
+     * @return autoMinQuoteRawOut Result of calculation involving `quoteWadOut` and `slippage`. Note: Confusing name from original code; value calculated seems to represent max token input based on slippage.
+     */
     function sellQuoteOut(
         address token, 
         uint256 quoteRawOut, 
