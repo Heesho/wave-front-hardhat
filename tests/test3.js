@@ -22,9 +22,10 @@ const oneBillion = convert("1000000000", 6);
 
 let owner, multisig, user0, user1, user2, treasury;
 let usdc, wft0, wft1;
-let factory, multicall, router;
+let tokenFactory, preTokenFactory, wavefront;
+let multicall, router;
 
-describe("local: test0 6 decimals", function () {
+describe("local: test3 6 decimals", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -35,18 +36,34 @@ describe("local: test0 6 decimals", function () {
     usdc = await usdcArtifact.deploy();
     console.log("- USDC Initialized");
 
-    const factoryArtifact = await ethers.getContractFactory("WaveFrontFactory");
-    factory = await factoryArtifact.deploy(treasury.address);
-    console.log("- WaveFrontFactory Initialized");
+    const preTokenFactoryArtifact = await ethers.getContractFactory(
+      "PreTokenFactory"
+    );
+    preTokenFactory = await preTokenFactoryArtifact.deploy();
+    console.log("- PreTokenFactory Initialized");
+
+    const tokenFactoryArtifact = await ethers.getContractFactory(
+      "TokenFactory"
+    );
+    tokenFactory = await tokenFactoryArtifact.deploy();
+    console.log("- TokenFactory Initialized");
+
+    const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
+    wavefront = await wavefrontArtifact.deploy(tokenFactory.address);
+    console.log("- WaveFront Initialized");
 
     const multicallArtifact = await ethers.getContractFactory(
       "WaveFrontMulticall"
     );
-    multicall = await multicallArtifact.deploy(factory.address);
+    multicall = await multicallArtifact.deploy();
     console.log("- Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(factory.address);
+    router = await routerArtifact.deploy(
+      wavefront.address,
+      preTokenFactory.address
+    );
+    await router.deployed();
     console.log("- Router Initialized");
 
     await usdc.connect(user0).mint(user0.address, tenThousand);
@@ -74,10 +91,7 @@ describe("local: test0 6 decimals", function () {
         usdc.address,
         oneHundred
       );
-    wft0 = await ethers.getContractAt(
-      "WaveFrontToken",
-      await factory.lastToken()
-    );
+    wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("WFT0 Created");
   });
 
@@ -131,7 +145,7 @@ describe("local: test0 6 decimals", function () {
   it("User1 redeems wft0 contribution", async function () {
     console.log("******************************************************");
     await expect(router.connect(user1).redeem(wft0.address)).to.be.revertedWith(
-      "PreWaveFrontToken__NotEligible"
+      "PreToken__NothingToRedeem"
     );
   });
 
@@ -143,7 +157,7 @@ describe("local: test0 6 decimals", function () {
   it("User0 redeems wft0 contribution", async function () {
     console.log("******************************************************");
     await expect(router.connect(user0).redeem(wft0.address)).to.be.revertedWith(
-      "PreWaveFrontToken__NotEligible"
+      "PreToken__NothingToRedeem"
     );
   });
 
@@ -152,7 +166,7 @@ describe("local: test0 6 decimals", function () {
     await usdc.connect(user0).approve(router.address, ten);
     await expect(
       router.connect(user0).contributeWithQuote(wft0.address, ten)
-    ).to.be.revertedWith("PreWaveFrontToken__Concluded");
+    ).to.be.revertedWith("PreToken__Closed");
   });
 
   it("Market Prices", async function () {
@@ -189,6 +203,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         (await wft0.balanceOf(user0.address)).sub(oneThousand18),
         0,
         1904422437
@@ -212,6 +227,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         await wft0.balanceOf(user0.address),
         0,
         1904422437
@@ -271,6 +287,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user1)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         await wft0.balanceOf(user1.address),
         0,
         1904422437
@@ -294,39 +311,42 @@ describe("local: test0 6 decimals", function () {
       .connect(user1)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         await wft0.balanceOf(user1.address),
         0,
         1904422437
       );
   });
 
-  //   it("Quote Buy In", async function () {
-  //     console.log("******************************************************");
-  //     let res = await multicall
-  //       .connect(owner)
-  //       .quoteBuyIn(wft0.address, ten, 9800);
-  //     console.log("USDC in", divDec6(ten));
-  //     console.log("Slippage Tolerance", "2%");
-  //     console.log();
-  //     console.log("WFT0 out", divDec(res.output));
-  //     console.log("slippage", divDec(res.slippage));
-  //     console.log("min WFT0 out", divDec(res.minOutput));
-  //   });
+  it("Quote Buy In", async function () {
+    console.log("******************************************************");
+    let res = await multicall
+      .connect(owner)
+      .buyQuoteIn(wft0.address, ten, 9800);
+    console.log("USDC in", divDec6(ten));
+    console.log("Slippage Tolerance", "2%");
+    console.log();
+    console.log("WFT0 out", divDec(res.tokenAmtOut));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min WFT0 out", divDec(res.minTokenAmtOut));
+    console.log("min USDC out", divDec6(res.autoMinTokenAmtOut));
+  });
 
-  //   it("Quote Sell In", async function () {
-  //     console.log("******************************************************");
-  //     let res = await multicall.quoteSellIn(
-  //       wft0.address,
-  //       await wft0.balanceOf(user0.address),
-  //       9700
-  //     );
-  //     console.log("WFT0 in", divDec(await wft0.balanceOf(user0.address)));
-  //     console.log("Slippage Tolerance", "3%");
-  //     console.log();
-  //     console.log("USDC out", divDec6(res.output));
-  //     console.log("slippage", divDec(res.slippage));
-  //     console.log("min USDC out", divDec6(res.minOutput));
-  //   });
+  it("Quote Sell In", async function () {
+    console.log("******************************************************");
+    let res = await multicall.sellTokenIn(
+      wft0.address,
+      await wft0.balanceOf(user0.address),
+      9700
+    );
+    console.log("WFT0 in", divDec(await wft0.balanceOf(user0.address)));
+    console.log("Slippage Tolerance", "3%");
+    console.log();
+    console.log("USDC out", divDec6(res.quoteRawOut));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min USDC out", divDec6(res.minQuoteRawOut));
+    console.log("min USDC out", divDec6(res.autoMinQuoteRawOut));
+  });
 
   it("Market Prices", async function () {
     console.log("******************************************************");
@@ -336,15 +356,19 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
@@ -356,36 +380,38 @@ describe("local: test0 6 decimals", function () {
     console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
-    console.log("Remaining USDC: ", divDec6(usdcRemaining));
-    console.log("Initial USDC: ", divDec6(reserveVirtQuote));
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
-  //   it("Quote buy out", async function () {
-  //     console.log("******************************************************");
-  //     let res = await multicall
-  //       .connect(owner)
-  //       .quoteBuyOut(wft0.address, ten18, 9700);
-  //     console.log("WFT0 out", divDec(ten18));
-  //     console.log("Slippage Tolerance", "3%");
-  //     console.log();
-  //     console.log("USDC in", divDec6(res.output));
-  //     console.log("slippage", divDec(res.slippage));
-  //     console.log("min WFT0 out", divDec(res.minOutput));
-  //   });
+  it("Quote buy out", async function () {
+    console.log("******************************************************");
+    let res = await multicall
+      .connect(owner)
+      .buyTokenOut(wft0.address, ten18, 9700);
+    console.log("WFT0 out", divDec(ten18));
+    console.log("Slippage Tolerance", "3%");
+    console.log();
+    console.log("USDC in", divDec6(res.qouteRawIn));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min Token out", divDec(res.minTokenAmtOut));
+    console.log("min Token out", divDec(res.autoMinTokenAmtOut));
+  });
 
-  //   it("Quote sell out", async function () {
-  //     console.log("******************************************************");
-  //     let res = await multicall
-  //       .connect(owner)
-  //       .quoteSellOut(wft0.address, ten, 9950);
-  //     console.log("USDC out", divDec6(ten));
-  //     console.log("Slippage Tolerance", "0.5%");
-  //     console.log();
-  //     console.log("WFT0 in", divDec(res.output));
-  //     console.log("slippage", divDec(res.slippage));
-  //     console.log("min USDC out", divDec6(res.minOutput));
-  //   });
+  it("Quote sell out", async function () {
+    console.log("******************************************************");
+    let res = await multicall
+      .connect(owner)
+      .sellQuoteOut(wft0.address, ten, 9950);
+    console.log("USDC out", divDec6(ten));
+    console.log("Slippage Tolerance", "0.5%");
+    console.log();
+    console.log("WFT0 in", divDec(res.tokenAmtIn));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min USDC out", divDec6(res.minQuoteRawOut));
+    console.log("min USDC out", divDec6(res.autoMinQuoteRawOut));
+  });
 
   it("Token Data", async function () {
     console.log("******************************************************");
@@ -399,7 +425,7 @@ describe("local: test0 6 decimals", function () {
     console.log("User0 Credit: ", await wft0.getAccountCredit(user0.address));
     await wft0
       .connect(user0)
-      .borrow(await wft0.getAccountCredit(user0.address));
+      .borrow(user0.address, await wft0.getAccountCredit(user0.address));
   });
 
   it("Token Data", async function () {
@@ -412,7 +438,7 @@ describe("local: test0 6 decimals", function () {
     console.log("******************************************************");
     await expect(
       wft0.connect(user0).transfer(user1.address, one18)
-    ).to.be.revertedWith("WaveFrontToken__CollateralRequirement");
+    ).to.be.revertedWith("Token__CollateralLocked");
   });
 
   it("User0 tries to sell wft0", async function () {
@@ -425,17 +451,18 @@ describe("local: test0 6 decimals", function () {
         .connect(user0)
         .sellToNative(
           wft0.address,
+          AddressZero,
           await wft0.balanceOf(user0.address),
           0,
           1904422437
         )
-    ).to.be.revertedWith("WaveFrontToken__CollateralRequirement");
+    ).to.be.revertedWith("Token__CollateralLocked");
   });
 
   it("User0 repays some USDC for wft0", async function () {
     console.log("******************************************************");
     await usdc.connect(user0).approve(wft0.address, one);
-    await wft0.connect(user0).repay(one);
+    await wft0.connect(user0).repay(user0.address, one);
   });
 
   it("User0 tries to transfer and tries to sell", async function () {
@@ -447,8 +474,10 @@ describe("local: test0 6 decimals", function () {
     console.log("******************************************************");
     await usdc
       .connect(user0)
-      .approve(wft0.address, await wft0.account_Debt(user0.address));
-    await wft0.connect(user0).repay(await wft0.account_Debt(user0.address));
+      .approve(wft0.address, await wft0.account_DebtRaw(user0.address));
+    await wft0
+      .connect(user0)
+      .repay(user0.address, await wft0.account_DebtRaw(user0.address));
   });
 
   it("User0 transfers wft0", async function () {
@@ -458,29 +487,33 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("Token Data", async function () {
@@ -507,6 +540,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         (await wft0.balanceOf(user0.address)).sub(oneThousand18),
         0,
         1904422437
@@ -515,29 +549,33 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("User0 sells wft0", async function () {
@@ -549,6 +587,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         await wft0.balanceOf(user0.address),
         0,
         1904422437
@@ -564,6 +603,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user1)
       .sellToQuote(
         wft0.address,
+        AddressZero,
         await wft0.balanceOf(user1.address),
         0,
         1904422437
@@ -572,29 +612,33 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("Token Data", async function () {
@@ -613,29 +657,33 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("User2 buys wft0", async function () {
@@ -654,29 +702,33 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("User0 heals with 1 USDC", async function () {
@@ -706,29 +758,33 @@ describe("local: test0 6 decimals", function () {
 
   it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft0.reserveRealQuote();
-    const reserveVirtQuote = await wft0.reserveVirtQuote();
-    const reserveToken = await wft0.reserveToken();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
     const totalSupply = await wft0.totalSupply();
     const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
     const usdcBalance = await usdc.balanceOf(wft0.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("User0 creates wft1", async function () {
@@ -742,10 +798,7 @@ describe("local: test0 6 decimals", function () {
         usdc.address,
         oneHundred
       );
-    wft1 = await ethers.getContractAt(
-      "WaveFrontToken",
-      await factory.lastToken()
-    );
+    wft1 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("WFT1 Created");
   });
 
@@ -767,31 +820,35 @@ describe("local: test0 6 decimals", function () {
     console.log(res);
   });
 
-  it("Invariants wft1", async function () {
+  it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft1.reserveRealQuote();
-    const reserveVirtQuote = await wft1.reserveVirtQuote();
-    const reserveToken = await wft1.reserveToken();
-    const totalSupply = await wft1.totalSupply();
-    const maxSupply = await wft1.maxSupply();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
+    const totalSupply = await wft0.totalSupply();
+    const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
-    const usdcBalance = await usdc.balanceOf(wft1.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcBalance = await usdc.balanceOf(wft0.address);
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("Forward 2 hour", async function () {
@@ -814,6 +871,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -829,6 +887,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -837,6 +896,7 @@ describe("local: test0 6 decimals", function () {
 
   it("User0 sells wft1", async function () {
     console.log("******************************************************");
+    await wavefront.setTreasury(treasury.address);
     await wft1
       .connect(user0)
       .approve(router.address, await wft1.balanceOf(user0.address));
@@ -844,36 +904,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
-  });
-
-  it("Treasury sells wft1", async function () {
-    console.log("******************************************************");
-    await wft1
-      .connect(treasury)
-      .approve(router.address, await wft1.balanceOf(treasury.address));
-    await router
-      .connect(treasury)
-      .sellToQuote(
-        wft1.address,
-        await wft1.balanceOf(treasury.address),
-        0,
-        1904422437
-      );
-  });
-
-  it("User0 sells wft1", async function () {
-    console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
-    await router
-      .connect(user0)
-      .sellToQuote(
-        wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -889,6 +920,7 @@ describe("local: test0 6 decimals", function () {
       .connect(treasury)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(treasury.address),
         0,
         1904422437
@@ -904,6 +936,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -919,6 +952,7 @@ describe("local: test0 6 decimals", function () {
       .connect(treasury)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(treasury.address),
         0,
         1904422437
@@ -934,6 +968,39 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
+        await wft1.balanceOf(user0.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("Treasury sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(treasury)
+      .approve(router.address, await wft1.balanceOf(treasury.address));
+    await router
+      .connect(treasury)
+      .sellToQuote(
+        wft1.address,
+        AddressZero,
+        await wft1.balanceOf(treasury.address),
+        0,
+        1904422437
+      );
+  });
+
+  it("User0 sells wft1", async function () {
+    console.log("******************************************************");
+    await wft1
+      .connect(user0)
+      .approve(router.address, await wft1.balanceOf(user0.address));
+    await router
+      .connect(user0)
+      .sellToQuote(
+        wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -955,6 +1022,7 @@ describe("local: test0 6 decimals", function () {
       .connect(treasury)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(treasury.address),
         0,
         1904422437
@@ -970,6 +1038,7 @@ describe("local: test0 6 decimals", function () {
       .connect(user0)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(user0.address),
         0,
         1904422437
@@ -985,37 +1054,42 @@ describe("local: test0 6 decimals", function () {
       .connect(treasury)
       .sellToQuote(
         wft1.address,
+        AddressZero,
         await wft1.balanceOf(treasury.address),
         0,
         1904422437
       );
   });
 
-  it("Invariants wft1", async function () {
+  it("Invariants wft0", async function () {
     console.log("******************************************************");
-    const reserveRealQuote = await wft1.reserveRealQuote();
-    const reserveVirtQuote = await wft1.reserveVirtQuote();
-    const reserveToken = await wft1.reserveToken();
-    const totalSupply = await wft1.totalSupply();
-    const maxSupply = await wft1.maxSupply();
+    const reserveRealQuote = await wft0.wadToRaw(
+      await wft0.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft0.wadToRaw(
+      await wft0.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft0.reserveTokenAmt();
+    const totalSupply = await wft0.totalSupply();
+    const maxSupply = await wft0.maxSupply();
     const maxReserve = reserveToken.add(totalSupply);
-    const usdcBalance = await usdc.balanceOf(wft1.address);
-    const usdcRemaining = reserveRealQuote
-      .add(reserveVirtQuote)
+    const usdcBalance = await usdc.balanceOf(wft0.address);
+    const usdcRemaining = (await wft0.reserveRealQuoteWad())
+      .add(await wft0.reserveVirtQuoteWad())
       .mul(reserveToken)
       .div(maxReserve);
 
-    console.log("USDC Balance: ", usdcBalance);
-    console.log("Reserve USDC: ", reserveRealQuote);
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
     expect(usdcBalance).to.be.at.least(reserveRealQuote);
 
-    console.log("Max WFT Reserve: ", maxReserve);
-    console.log("Max WFT Supply: ", maxSupply);
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
     expect(maxReserve).to.be.at.least(maxSupply);
 
     console.log("Remaining USDC: ", usdcRemaining);
-    console.log("Initial USDC: ", reserveVirtQuote);
-    expect(usdcRemaining).to.be.at.least(reserveVirtQuote);
+    console.log("Initial USDC: ", await wft0.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft0.reserveVirtQuoteWad());
   });
 
   it("Token Data", async function () {
