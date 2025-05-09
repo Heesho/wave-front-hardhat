@@ -435,8 +435,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         notExpired(deadline)
         returns (uint256 quoteRawOut)
     {
-        if (!open) revert Token__MarketClosed(); // Market must be open for sells
-
         // Calculate net input after 1% fee
         uint256 feeAmt = tokenAmtIn * FEE / DIVISOR;
         uint256 netAmt = tokenAmtIn - feeAmt;
