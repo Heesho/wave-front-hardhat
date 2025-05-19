@@ -341,7 +341,7 @@ describe("local: test2 18 decimals", function () {
     console.log("WFT0 out", divDec(ten));
     console.log("Slippage Tolerance", "3%");
     console.log();
-    console.log("WETH in", divDec(res.qouteRawIn));
+    console.log("WETH in", divDec(res.quoteRawIn));
     console.log("slippage", divDec(res.slippage));
     console.log("min WFT0 out", divDec(res.minTokenAmtOut));
     console.log("auto min WFT0 out", divDec(res.autoMinTokenAmtOut));

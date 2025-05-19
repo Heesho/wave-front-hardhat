@@ -292,7 +292,7 @@ contract WaveFrontMulticall {
      * @param token The address of the WaveFrontToken (Token.sol).
      * @param tokenAmtOut The desired amount of token output (18 dec).
      * @param slippageTolerance The maximum allowed input slippage parameter (e.g., 10050 for 0.5% slippage). Used in calculation for `minTokenAmtOut`.
-     * @return qouteRawIn Required quote token input (raw). Note the typo in the variable name from the original code.
+     * @return quoteRawIn Required quote token input (raw).
      * @return slippage Calculated slippage percentage * 100 (scaled by 100). Based on original code's formula.
      * @return minTokenAmtOut Result of `tokenAmtOut * slippageTolerance / DIVISOR`. Note: Confusing name in this context.
      * @return autoMinTokenAmtOut Result of calculation involving `tokenAmtOut` and `slippage`. Note: Confusing name in this context, calculation seems related to adjusted token amount based on slippage.
@@ -302,7 +302,7 @@ contract WaveFrontMulticall {
         uint256 tokenAmtOut, 
         uint256 slippageTolerance
     ) external view returns (
-        uint256 qouteRawIn,
+        uint256 quoteRawIn,
         uint256 slippage,
         uint256 minTokenAmtOut,
         uint256 autoMinTokenAmtOut
@@ -313,7 +313,7 @@ contract WaveFrontMulticall {
         uint256 y0 = IToken(token).reserveTokenAmt();
 
         uint256 quoteWadIn = DIVISOR.mulDivDown(x0.mulDivDown(y0, y0 - tokenAmtOut) - x0, DIVISOR - FEE);
-        qouteRawIn = IToken(token).rawToWad(quoteWadIn);
+        quoteRawIn = IToken(token).wadToRaw(quoteWadIn);
         slippage = 100 * (PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn)));
         minTokenAmtOut = tokenAmtOut.mulDivDown(slippageTolerance, DIVISOR);
         autoMinTokenAmtOut = tokenAmtOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);

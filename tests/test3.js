@@ -393,7 +393,7 @@ describe("local: test3 6 decimals", function () {
     console.log("WFT0 out", divDec(ten18));
     console.log("Slippage Tolerance", "3%");
     console.log();
-    console.log("USDC in", divDec6(res.qouteRawIn));
+    console.log("USDC in", divDec6(res.quoteRawIn));
     console.log("slippage", divDec(res.slippage));
     console.log("min Token out", divDec(res.minTokenAmtOut));
     console.log("min Token out", divDec(res.autoMinTokenAmtOut));
