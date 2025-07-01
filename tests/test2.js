@@ -28,7 +28,7 @@ describe("local: test2 18 decimals", function () {
     console.log("- WETH Initialized");
 
     const preTokenFactoryArtifact = await ethers.getContractFactory(
-      "FairLaunchFactory"
+      "PreTokenFairFactory"
     );
     preTokenFactory = await preTokenFactoryArtifact.deploy();
     console.log("- PreTokenFactory Initialized");

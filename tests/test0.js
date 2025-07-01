@@ -161,7 +161,7 @@ describe("local: test0", function () {
     console.log("- WETH Initialized");
 
     const preTokenFactoryArtifact = await ethers.getContractFactory(
-      "FairLaunchFactory"
+      "PreTokenFairFactory"
     );
     preTokenFactory = await preTokenFactoryArtifact.deploy();
     await preTokenFactory.deployed();
@@ -233,7 +233,7 @@ describe("local: test0", function () {
     wft0 = await ethers.getContractAt("Token", wft0Address);
     wft0PreTokenAddress = await wft0.preToken();
     wft0PreToken = await ethers.getContractAt(
-      "FairLaunch",
+      "PreTokenFair",
       wft0PreTokenAddress
     ); // Get PreToken instance
 

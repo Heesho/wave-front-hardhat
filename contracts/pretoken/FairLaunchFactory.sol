@@ -18,7 +18,7 @@ interface IToken {
     function openMarket() external;
 }
 
-contract FairLaunch is ReentrancyGuard {
+contract PreTokenFair is ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
@@ -87,7 +87,7 @@ contract FairLaunch is ReentrancyGuard {
 
 }
 
-contract FairLaunchFactory {
+contract PreTokenFairFactory {
 
     address public lastPreToken;
 
@@ -97,7 +97,7 @@ contract FairLaunchFactory {
         address token,
         address quote
     ) external returns (address preToken) {
-        preToken = address(new FairLaunch(token, quote));
+        preToken = address(new PreTokenFair(token, quote));
         lastPreToken = preToken;
         emit PreTokenFactory__Created(preToken);
     }
