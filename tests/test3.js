@@ -37,7 +37,7 @@ describe("local: test3 6 decimals", function () {
     console.log("- USDC Initialized");
 
     const preTokenFactoryArtifact = await ethers.getContractFactory(
-      "PreTokenFactory"
+      "FairLaunchFactory"
     );
     preTokenFactory = await preTokenFactoryArtifact.deploy();
     console.log("- PreTokenFactory Initialized");
