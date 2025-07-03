@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../library/FixedPointMathLib.sol";
 
 interface IToken {
-
     function buy(
         uint256 quoteRawIn,
         uint256 minTokenAmtOut,
@@ -14,7 +13,6 @@ interface IToken {
         address to,
         address provider
     ) external returns (uint256 amountTokenOut);
-
     function openMarket() external;
 }
 
@@ -22,10 +20,9 @@ contract PreTokenFair is ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
-    uint256 constant DURATION = 2 hours;
-
     address public immutable quote;
     address public immutable token;
+    uint256 public immutable duration;
     uint256 public immutable endTime;
 
     bool public ended = false;
@@ -42,10 +39,11 @@ contract PreTokenFair is ReentrancyGuard {
     event PreToken__MarketOpened(uint256 totalTokenAmt, uint256 totalQuoteRaw);
     event PreToken__Redeemed(address indexed who, address indexed to, uint256 tokenAmt);
 
-    constructor(address _token, address _quote) {
+    constructor(address _token, address _quote, uint256 _duration) {
         token = _token;
         quote = _quote;
-        endTime = block.timestamp + DURATION;
+        duration = _duration;
+        endTime = block.timestamp + duration;
     }
 
     function contribute(address to, uint256 quoteRaw) external nonReentrant {
@@ -91,15 +89,16 @@ contract PreTokenFairFactory {
 
     address public lastPreToken;
 
-    event PreTokenFactory__Created(address indexed preToken);
+    event PreTokenFactory__PreTokenCreated(address indexed preToken);
 
     function createPreToken(
         address token,
-        address quote
+        address quote,
+        uint256 duration
     ) external returns (address preToken) {
-        preToken = address(new PreTokenFair(token, quote));
+        preToken = address(new PreTokenFair(token, quote, duration));
         lastPreToken = preToken;
-        emit PreTokenFactory__Created(preToken);
+        emit PreTokenFactory__PreTokenCreated(preToken);
     }
     
 }
