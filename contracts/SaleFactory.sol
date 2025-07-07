@@ -16,13 +16,12 @@ interface IToken {
     function openMarket() external;
 }
 
-contract PreToken is ReentrancyGuard {
+contract Sale is ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
     address public immutable quote;
     address public immutable token;
-    uint256 public immutable duration;
     uint256 public immutable endTime;
 
     bool public ended = false;
@@ -30,36 +29,35 @@ contract PreToken is ReentrancyGuard {
     uint256 public totalQuoteRaw;
     mapping(address => uint256) public account_QuoteRaw;
 
-    error PreToken__ZeroInput();
-    error PreToken__Closed();
-    error PreToken__Open();
-    error PreToken__NothingToRedeem();
+    error Sale__ZeroInput();
+    error Sale__Closed();
+    error Sale__Open();
+    error Sale__NothingToRedeem();
 
-    event PreToken__Contributed(address indexed who, address indexed to, uint256 quoteRaw);
-    event PreToken__MarketOpened(uint256 totalTokenAmt, uint256 totalQuoteRaw);
-    event PreToken__Redeemed(address indexed who, address indexed to, uint256 tokenAmt);
+    event Sale__Contributed(address indexed who, address indexed to, uint256 quoteRaw);
+    event Sale__MarketOpened(uint256 totalTokenAmt, uint256 totalQuoteRaw);
+    event Sale__Redeemed(address indexed who, address indexed to, uint256 tokenAmt);
 
     constructor(address _token, address _quote, uint256 _duration) {
         token = _token;
         quote = _quote;
-        duration = _duration;
-        endTime = block.timestamp + duration;
+        endTime = block.timestamp + _duration;
     }
 
     function contribute(address to, uint256 quoteRaw) external nonReentrant {
-        if (quoteRaw == 0) revert PreToken__ZeroInput();
-        if (ended || block.timestamp > endTime) revert PreToken__Closed();
+        if (quoteRaw == 0) revert Sale__ZeroInput();
+        if (ended || block.timestamp > endTime) revert Sale__Closed();
 
         totalQuoteRaw += quoteRaw;
         account_QuoteRaw[to] += quoteRaw;
 
-        emit PreToken__Contributed(msg.sender, to, quoteRaw);
+        emit Sale__Contributed(msg.sender, to, quoteRaw);
         IERC20(quote).safeTransferFrom(msg.sender, address(this), quoteRaw);
     }
 
     function openMarket() external nonReentrant {
-        if (block.timestamp <= endTime) revert PreToken__Open();
-        if (ended) revert PreToken__Closed();
+        if (block.timestamp <= endTime) revert Sale__Open();
+        if (ended) revert Sale__Closed();
         ended = true;
 
         IERC20(quote).safeApprove(token, 0);
@@ -67,39 +65,39 @@ contract PreToken is ReentrancyGuard {
 
         totalTokenAmt = IToken(token).buy(totalQuoteRaw, 0, 0, address(this), address(0));
 
-        emit PreToken__MarketOpened(totalTokenAmt, totalQuoteRaw);
+        emit Sale__MarketOpened(totalTokenAmt, totalQuoteRaw);
         IToken(token).openMarket();
     }
 
     function redeem(address account) external nonReentrant {
-        if (!ended) revert PreToken__Open();
+        if (!ended) revert Sale__Open();
         uint256 quoteRaw = account_QuoteRaw[account];
-        if (quoteRaw == 0) revert PreToken__NothingToRedeem();
+        if (quoteRaw == 0) revert Sale__NothingToRedeem();
 
         account_QuoteRaw[account] = 0;
         uint256 tokenAmt = totalTokenAmt.mulDivDown(quoteRaw, totalQuoteRaw);
 
-        emit PreToken__Redeemed(msg.sender, account, tokenAmt);
+        emit Sale__Redeemed(msg.sender, account, tokenAmt);
         IERC20(token).safeTransfer(account, tokenAmt);
     }
 
 }
 
 
-contract PreTokenFactory {
+contract SaleFactory {
 
-    address public lastPreToken;
+    address public lastSale;
 
-    event PreTokenFactory__PreTokenCreated(address indexed preToken);
+    event SaleFactory__SaleCreated(address indexed sale);
 
     function createPreToken(
         address token,
         address quote,
         uint256 duration
-    ) external returns (address preToken) {
-        preToken = address(new PreToken(token, quote, duration));
-        lastPreToken = preToken;
-        emit PreTokenFactory__PreTokenCreated(preToken);
+    ) external returns (address sale) {
+        sale = address(new Sale(token, quote, duration));
+        lastSale = sale;
+        emit SaleFactory__SaleCreated(sale);
     }
     
 }
