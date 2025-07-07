@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../library/FixedPointMathLib.sol";
+import "./library/FixedPointMathLib.sol";
 
 interface IToken {
     function buy(
@@ -16,7 +16,7 @@ interface IToken {
     function openMarket() external;
 }
 
-contract PreTokenFair is ReentrancyGuard {
+contract PreToken is ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
@@ -85,7 +85,8 @@ contract PreTokenFair is ReentrancyGuard {
 
 }
 
-contract PreTokenFairFactory {
+
+contract PreTokenFactory {
 
     address public lastPreToken;
 
@@ -96,7 +97,7 @@ contract PreTokenFairFactory {
         address quote,
         uint256 duration
     ) external returns (address preToken) {
-        preToken = address(new PreTokenFair(token, quote, duration));
+        preToken = address(new PreToken(token, quote, duration));
         lastPreToken = preToken;
         emit PreTokenFactory__PreTokenCreated(preToken);
     }
