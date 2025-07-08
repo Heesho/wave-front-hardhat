@@ -9,16 +9,19 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./library/FixedPointMathLib.sol";
 
 interface IWaveFront {
-    function ownerOf(uint256 tokenId) external view returns (address);
     function treasury() external view returns (address);
 }
 
-interface IPreTokenFactory {
-    function createPreToken(
-        address token, 
-        address quote, 
-        uint256 duration
-    ) external returns (address preTokenAddress);
+interface ISaleFactory {
+    function createSale(address token, address quote) external returns (address saleAddress);
+}
+
+interface IContentFactory {
+    function createContent(string memory _name, string memory _symbol, address rewarderFactory) external returns (address, address);
+}
+
+interface IFeesFactory {
+    function createFees(address rewarder, address token, address quote) external returns (address fees);
 }
 
 contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
@@ -26,7 +29,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant PRECISION = 1e18;
-    uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * PRECISION;
     uint256 public constant FEE = 100;
     uint256 public constant FEE_AMOUNT = 1_500;
     uint256 public constant DIVISOR = 10_000;
@@ -34,18 +36,19 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     address public immutable wavefront;
     address public immutable quote;
     address public immutable sale;
-    address public immutable community;
+    address public immutable content;
+    address public immutable rewarder;
+    address public immutable fees;
 
     uint8 public immutable quoteDecimals;
     uint256 internal immutable quoteScale;
 
-    uint256 public maxSupply = INITIAL_SUPPLY;
+    uint256 public maxSupply;
     bool public open = false;
-    bool public ownerFeeActive = true;
 
     uint256 public reserveRealQuoteWad;
     uint256 public reserveVirtQuoteWad;
-    uint256 public reserveTokenAmt = INITIAL_SUPPLY;
+    uint256 public reserveTokenAmt;
 
     uint256 public totalDebtRaw;
     mapping(address => uint256) public account_DebtRaw;
@@ -73,7 +76,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     );
     event Token__ProviderFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
     event Token__TreasuryFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
-    event Token__OwnerFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
+    event Token__ContentFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
     event Token__Burn(address indexed who, uint256 tokenAmt);
     event Token__Heal(address indexed who, uint256 quoteRaw);
     event Token__ReserveTokenBurn(uint256 tokenAmt);
@@ -81,7 +84,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     event Token__Borrow(address indexed who, address indexed to, uint256 quoteRaw);
     event Token__Repay(address indexed who, address indexed to, uint256 quoteRaw);
     event Token__MarketOpened();
-    event Token__OwnerFeeSet(bool active);
 
     modifier notZero(uint256 amount) {
         if (amount == 0) revert Token__ZeroInput();
@@ -98,9 +100,12 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         string memory _symbol,
         address _wavefront,
         address _quote,
-        address _preTokenFactory,
+        uint256 _initialSupply,
         uint256 _virtQuoteRaw,
-        uint256 _preTokenDuration
+        address saleFactory,
+        address contentFactory,
+        address feesFactory,
+        address rewarderFactory
     )
         ERC20(_name, _symbol)
         ERC20Permit(_name)
@@ -113,9 +118,13 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         quoteDecimals = _quoteDecimals;
         quoteScale = 10 ** (18 - _quoteDecimals);
 
+        maxSupply = _initialSupply;
+        reserveTokenAmt = _initialSupply;
         reserveVirtQuoteWad = rawToWad(_virtQuoteRaw);
 
-        preToken = IPreTokenFactory(_preTokenFactory).createPreToken(address(this), _quote, _preTokenDuration);
+        sale = ISaleFactory(saleFactory).createSale(address(this), _quote);
+        (content, rewarder) = IContentFactory(contentFactory).createContent(_name, _symbol, rewarderFactory);
+        fees = IFeesFactory(feesFactory).createFees(rewarder, address(this), _quote);
     }
 
     function buy(
@@ -131,7 +140,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         notExpired(deadline)
         returns (uint256 tokenAmtOut)
     {
-        if (!open && msg.sender != preToken) revert Token__MarketClosed();
+        if (!open && msg.sender != sale) revert Token__MarketClosed();
 
         uint256 feeRaw = quoteRawIn * FEE / DIVISOR;
         uint256 netRaw = quoteRawIn - feeRaw;
@@ -277,15 +286,12 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             }
         }
 
-        if (ownerFeeActive) {
-            address owner = IWaveFront(wavefront).ownerOf(wavefrontId);
-            if (owner != address(0) && remainingRaw > 0) {
-                uint256 ownerFee = shareRaw <= remainingRaw ? shareRaw : remainingRaw;
-                if (ownerFee > 0) {
-                    IERC20(quote).safeTransfer(owner, ownerFee);
-                    emit Token__OwnerFee(owner, ownerFee, 0);
-                    remainingRaw -= ownerFee;
-                }
+        if (remainingRaw > 0) {
+            uint256 contentFee = shareRaw <= remainingRaw ? shareRaw : remainingRaw;
+            if (contentFee > 0) {
+                IERC20(quote).safeTransfer(fees, contentFee);
+                emit Token__ContentFee(fees, contentFee, 0);
+                remainingRaw -= contentFee;
             }
         }
 
@@ -317,15 +323,12 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
             }
         }
 
-        if (ownerFeeActive) {
-            address owner = IWaveFront(wavefront).ownerOf(wavefrontId);
-            if (owner != address(0) && remainingAmt > 0) {
-                uint256 ownerFee = shareAmt <= remainingAmt ? shareAmt : remainingAmt;
-                if (ownerFee > 0) {
-                    _mint(owner, ownerFee);
-                    emit Token__OwnerFee(owner, 0, ownerFee);
-                    remainingAmt -= ownerFee;
-                }
+        if (remainingAmt > 0) {
+            uint256 contentFee = shareAmt <= remainingAmt ? shareAmt : remainingAmt;
+            if (contentFee > 0) {
+                _mint(fees, contentFee);
+                emit Token__ContentFee(fees, 0, contentFee);
+                remainingAmt -= contentFee;
             }
         }
 
@@ -480,31 +483,36 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 contract TokenFactory {
     address public lastToken;
 
-    event TokenFactory__TokenCreated(address indexed token, address indexed preToken);
+    event TokenFactory__TokenCreated(address indexed token);
 
     function createToken(
         string memory name,
         string memory symbol,
         address wavefront,
-        address saleFactory,
         address quote,
-        uint256 wavefrontId,
+        uint256 initialSupply,
         uint256 reserveVirtQuoteRaw,
-        uint256 preTokenDuration
-    ) external returns (address token, address preToken) {
+        uint256 saleDuration,
+        address saleFactory,
+        address contentFactory,
+        address feesFactory,
+        address rewarderFactory
+    ) external returns (address token) {
         token = address(new Token(
             name,
             symbol,
             wavefront,
-            preTokenFactory,
             quote,
-            wavefrontId,
+            initialSupply,
             reserveVirtQuoteRaw,
-            preTokenDuration
+            saleDuration,
+            saleFactory,
+            contentFactory,
+            feesFactory,
+            rewarderFactory
         ));
         lastToken = token;
-        preToken = Token(token).preToken();
-        emit TokenFactory__TokenCreated(token, preToken);
+        emit TokenFactory__TokenCreated(token);
     }
     
 }

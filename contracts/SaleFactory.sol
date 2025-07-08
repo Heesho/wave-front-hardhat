@@ -20,6 +20,8 @@ contract Sale is ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
 
+    uint256 public constant DURATION = 2 hours;
+
     address public immutable quote;
     address public immutable token;
     uint256 public immutable endTime;
@@ -38,10 +40,10 @@ contract Sale is ReentrancyGuard {
     event Sale__MarketOpened(uint256 totalTokenAmt, uint256 totalQuoteRaw);
     event Sale__Redeemed(address indexed who, address indexed to, uint256 tokenAmt);
 
-    constructor(address _token, address _quote, uint256 _duration) {
+    constructor(address _token, address _quote) {
         token = _token;
         quote = _quote;
-        endTime = block.timestamp + _duration;
+        endTime = block.timestamp + DURATION;
     }
 
     function contribute(address to, uint256 quoteRaw) external nonReentrant {
@@ -90,12 +92,11 @@ contract SaleFactory {
 
     event SaleFactory__SaleCreated(address indexed sale);
 
-    function createPreToken(
+    function createSale(
         address token,
-        address quote,
-        uint256 duration
+        address quote
     ) external returns (address sale) {
-        sale = address(new Sale(token, quote, duration));
+        sale = address(new Sale(token, quote));
         lastSale = sale;
         emit SaleFactory__SaleCreated(sale);
     }

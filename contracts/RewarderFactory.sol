@@ -12,15 +12,15 @@ contract Rewarder is ReentrancyGuard {
 
     address public immutable content;
 
-    mapping(address => Reward) public rewardData;
-    mapping(address => bool) public isRewardToken;
     address[] public rewardTokens;
+    mapping(address => Reward) public token_RewardData;
+    mapping(address => bool) public token_IsReward;
 
-    mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid;
-    mapping(address => mapping(address => uint256)) public rewards;
+    mapping(address => mapping(address => uint256)) public account_Token_RewardPerTokenPaid;
+    mapping(address => mapping(address => uint256)) public account_Token_Reward;
 
-    uint256 private _totalSupply;
-    mapping(address => uint256) private _balances;
+    uint256 public totalSupply;
+    mapping(address => uint256) public account_Balance;
 
     struct Reward {
         uint256 periodFinish;
@@ -45,12 +45,11 @@ contract Rewarder is ReentrancyGuard {
     modifier updateReward(address account) {
         for (uint256 i; i < rewardTokens.length; i++) {
             address token = rewardTokens[i];
-            rewardData[token].rewardPerTokenStored = rewardPerToken(token);
-            rewardData[token].lastUpdateTime = lastTimeRewardApplicable(token);
+            token_RewardData[token].rewardPerTokenStored = rewardPerToken(token);
+            token_RewardData[token].lastUpdateTime = lastTimeRewardApplicable(token);
             if (account != address(0)) {
-                rewards[account][token] = earned(account, token);
-                userRewardPerTokenPaid[account][token] = rewardData[token]
-                    .rewardPerTokenStored;
+                account_Token_Reward[account][token] = earned(account, token);
+                account_Token_RewardPerTokenPaid[account][token] = token_RewardData[token].rewardPerTokenStored;
             }
         }
         _;
@@ -63,8 +62,8 @@ contract Rewarder is ReentrancyGuard {
         _;
     }
 
-    modifier nonZeroInput(uint256 _amount) {
-        if (_amount == 0) revert Rewarder__InvalidZeroInput();
+    modifier nonZeroInput(uint256 amount) {
+        if (amount == 0) revert Rewarder__InvalidZeroInput();
         _;
     }
 
@@ -78,37 +77,37 @@ contract Rewarder is ReentrancyGuard {
         updateReward(account) 
     {
         for (uint256 i = 0; i < rewardTokens.length; i++) {
-            address _rewardsToken = rewardTokens[i];
-            uint256 reward = rewards[account][_rewardsToken];
-            if (reward > 0) {
-                rewards[account][_rewardsToken] = 0;
-                emit Rewarder__RewardPaid(account, _rewardsToken, reward);
+            address token = rewardTokens[i];
+            uint256 amount = account_Token_Reward[account][token];
+            if (amount > 0) {
+                account_Token_Reward[account][token] = 0;
+                emit Rewarder__RewardPaid(account, token, amount);
 
-                IERC20(_rewardsToken).safeTransfer(account, reward);
+                IERC20(token).safeTransfer(account, amount);
             }
         }
     }
 
-    function notifyRewardAmount(address _rewardsToken, uint256 reward) 
+    function notifyRewardAmount(address token, uint256 amount) 
         external 
         nonReentrant
         updateReward(address(0))
     {
-        if (reward < DURATION) revert Rewarder__RewardSmallerThanDuration();
-        if (reward < left(_rewardsToken)) revert Rewarder__RewardSmallerThanLeft();
-        if (!isRewardToken[_rewardsToken]) revert Rewarder__NotRewardToken();
+        if (amount < DURATION) revert Rewarder__RewardSmallerThanDuration();
+        if (amount < left(token)) revert Rewarder__RewardSmallerThanLeft();
+        if (!token_IsReward[token]) revert Rewarder__NotRewardToken();
 
-        IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
-        if (block.timestamp >= rewardData[_rewardsToken].periodFinish) {
-            rewardData[_rewardsToken].rewardRate = reward / DURATION;
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        if (block.timestamp >= token_RewardData[token].periodFinish) {
+            token_RewardData[token].rewardRate = amount / DURATION;
         } else {
-            uint256 remaining = rewardData[_rewardsToken].periodFinish - block.timestamp;
-            uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
-            rewardData[_rewardsToken].rewardRate = (reward + leftover) / DURATION;
+            uint256 remaining = token_RewardData[token].periodFinish - block.timestamp;
+            uint256 leftover = remaining * token_RewardData[token].rewardRate;
+            token_RewardData[token].rewardRate = (amount + leftover) / DURATION;
         }
-        rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
-        rewardData[_rewardsToken].periodFinish = block.timestamp + DURATION;
-        emit Rewarder__RewardNotified(_rewardsToken, reward);
+        token_RewardData[token].lastUpdateTime = block.timestamp;
+        token_RewardData[token].periodFinish = block.timestamp + DURATION;
+        emit Rewarder__RewardNotified(token, amount);
     }
 
     function deposit(address account, uint256 amount) 
@@ -117,8 +116,8 @@ contract Rewarder is ReentrancyGuard {
         nonZeroInput(amount)
         updateReward(account) 
     {
-        _totalSupply = _totalSupply + amount;
-        _balances[account] = _balances[account] + amount;
+        totalSupply = totalSupply + amount;
+        account_Balance[account] = account_Balance[account] + amount;
         emit Rewarder__Deposited(account, amount);
     }
 
@@ -128,54 +127,44 @@ contract Rewarder is ReentrancyGuard {
         nonZeroInput(amount)
         updateReward(account) 
     {
-        _totalSupply = _totalSupply - amount;
-        _balances[account] = _balances[account] - amount;
+        totalSupply = totalSupply - amount;
+        account_Balance[account] = account_Balance[account] - amount;
         emit Rewarder__Withdrawn(account, amount);
     }
 
-    function addReward(address _rewardsToken) 
+    function addReward(address token) 
         external 
         onlyContent
     {
-        if (isRewardToken[_rewardsToken]) revert Rewarder__RewardTokenAlreadyAdded();
-        isRewardToken[_rewardsToken] = true;
-        rewardTokens.push(_rewardsToken);
-        emit Rewarder__RewardAdded(_rewardsToken);
+        if (token_IsReward[token]) revert Rewarder__RewardTokenAlreadyAdded();
+        token_IsReward[token] = true;
+        rewardTokens.push(token);
+        emit Rewarder__RewardAdded(token);
     }
 
-    function left(address _rewardsToken) public view returns (uint256 leftover) {
-        if (block.timestamp >= rewardData[_rewardsToken].periodFinish) return 0;
-        uint256 remaining = rewardData[_rewardsToken].periodFinish - block.timestamp;
-        return remaining * rewardData[_rewardsToken].rewardRate;
+    function left(address token) public view returns (uint256 leftover) {
+        if (block.timestamp >= token_RewardData[token].periodFinish) return 0;
+        uint256 remaining = token_RewardData[token].periodFinish - block.timestamp;
+        return remaining * token_RewardData[token].rewardRate;
     }
 
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
+    function lastTimeRewardApplicable(address token) public view returns (uint256) {
+        return Math.min(block.timestamp, token_RewardData[token].periodFinish);
     }
 
-    function balanceOf(address account) external view returns (uint256) {
-        return _balances[account];
-    }
-
-    function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
-        return Math.min(block.timestamp, rewardData[_rewardsToken].periodFinish);
-    }
-
-    function rewardPerToken(address _rewardsToken) public view returns (uint256) {
-        if (_totalSupply == 0) return rewardData[_rewardsToken].rewardPerTokenStored;
+    function rewardPerToken(address token) public view returns (uint256) {
+        if (totalSupply == 0) return token_RewardData[token].rewardPerTokenStored;
         return
-            rewardData[_rewardsToken].rewardPerTokenStored + ((lastTimeRewardApplicable(_rewardsToken) - rewardData[_rewardsToken].lastUpdateTime) 
-            * rewardData[_rewardsToken].rewardRate * 1e18 / _totalSupply);
+            token_RewardData[token].rewardPerTokenStored + ((lastTimeRewardApplicable(token) - token_RewardData[token].lastUpdateTime) 
+            * token_RewardData[token].rewardRate * 1e18 / totalSupply);
     }
 
-    function earned(address account, address _rewardsToken) public view returns (uint256) {
-        return
-            (_balances[account] * (rewardPerToken(_rewardsToken) - userRewardPerTokenPaid[account][_rewardsToken]) / 1e18) 
-            + rewards[account][_rewardsToken];
+    function earned(address account, address token) public view returns (uint256) {
+        return (account_Balance[account] * (rewardPerToken(token) - account_Token_RewardPerTokenPaid[account][token]) / 1e18) + account_Token_Reward[account][token];
     }
 
-    function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
-        return rewardData[_rewardsToken].rewardRate * DURATION;
+    function getRewardForDuration(address token) external view returns (uint256) {
+        return token_RewardData[token].rewardRate * DURATION;
     }
 
     function getRewardTokens() external view returns (address[] memory) {

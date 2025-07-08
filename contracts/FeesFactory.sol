@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+interface IRewarder {
+    function left(address token) external view returns (uint256);
+    function notifyRewardAmount(address token, uint256 amount) external;
+}
+
+contract Fees {
+    using SafeERC20 for IERC20;
+
+    address public immutable rewarder;
+    address public immutable quote;
+    address public immutable token;
+
+    constructor(address _rewarder, address _token, address _quote) {
+        rewarder = _rewarder;
+        token = _token;
+        quote = _quote;
+    }
+
+    function distribute() external {
+        uint256 balanceQuote = IERC20(quote).balanceOf(address(this));
+        uint256 leftQuote = IRewarder(rewarder).left(quote);
+        if (balanceQuote > leftQuote) {
+            IERC20(quote).safeApprove(rewarder, 0);
+            IERC20(quote).safeApprove(rewarder, balanceQuote);
+            IRewarder(rewarder).notifyRewardAmount(token, balanceQuote);
+        }
+
+        uint256 balanceToken = IERC20(token).balanceOf(address(this));
+        uint256 leftToken = IRewarder(rewarder).left(token);
+        if (balanceToken > leftToken) {
+            IERC20(token).safeApprove(rewarder, 0);
+            IERC20(token).safeApprove(rewarder, balanceToken);
+            IRewarder(rewarder).notifyRewardAmount(quote, balanceToken);
+        }
+    }
+
+}
+
+
+contract FeesFactory {
+
+    address public lastFees;
+
+    event FeesFactory__FeesCreated(address indexed fees);
+
+    function createFees(
+        address _rewarder,
+        address _token,
+        address _quote
+    ) external returns (address fees) {
+        fees = address(new Fees(_rewarder, _token, _quote));
+        lastFees = fees;
+        emit FeesFactory__FeesCreated(fees);
+    }
+
+}
