@@ -9,97 +9,154 @@ interface ITokenFactory {
         string memory name,
         string memory symbol,
         address wavefront,
-        address preTokenFactory,
         address quote,
-        uint256 wavefrontId,
+        uint256 initialSupply,
         uint256 reserveVirtQuoteRaw,
-        uint256 preTokenDuration
-    ) external returns (address token, address preToken);
+        address saleFactory,
+        address contentFactory,
+        address feesFactory,
+        address rewarderFactory
+    ) external returns (address token);
+}
+
+interface IToken {
+    function sale() external view returns (address);
+    function content() external view returns (address);
+    function rewarder() external view returns (address);
+    function fees() external view returns (address);
 }
 
 contract WaveFront is Ownable {
 
-    uint256 public constant PRETOKEN_DURATION = 2 hours;
+    uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * 10 ** 18;
+    uint256 public constant RESERVE_VIRT_QUOTE_RAW = 100_000 * 10 ** 6;
 
-    uint256 public index;
-    mapping(uint256 => address) public index_Token;
+    address public immutable quote;
+
     address public tokenFactory;
+    address public saleFactory;
+    address public contentFactory;
+    address public rewarderFactory;
+    address public feesFactory;
     address public treasury;
 
-    error WaveFront__NotAuthorized();
+    uint256 public index;
+    mapping(uint256 => WaveFrontToken) public index_WaveFrontToken;
 
-    event WaveFront__Created(
+    struct WaveFrontToken {
+        address token;
+        address sale;
+        address content;
+        address rewarder;
+        address fees;
+        string name;
+        string symbol;
+        string uri;
+    }
+
+    event WaveFront__TokenCreated(
+        uint256 index,
+        address token,
+        address sale,
+        address content,
+        address rewarder,
+        address fees,
         string name,
         string symbol,
-        string uri,
-        address tokenFactory,
-        address preTokenFactory,
-        address token,
-        address preToken,
-        address indexed owner,
-        address quote,
-        uint256 wavefrontId,
-        uint256 reserveVirtQuoteRaw
+        string uri
     );
-    event WaveFront__TreasurySet(address indexed oldTreasury, address indexed newTreasury);
-    event WaveFront__TokenFactorySet(address indexed oldTokenFactory, address indexed newTokenFactory);
+    event WaveFront__TreasurySet(address newTreasury);
+    event WaveFront__TokenFactorySet(address newTokenFactory);
+    event WaveFront__SaleFactorySet(address newSaleFactory);
+    event WaveFront__ContentFactorySet(address newContentFactory);
+    event WaveFront__RewarderFactorySet(address newRewarderFactory);
+    event WaveFront__FeesFactorySet(address newFeesFactory);
 
-    constructor(address _tokenFactory) Ownable() {
+    constructor(address _quote, address _tokenFactory, address _saleFactory, address _contentFactory, address _rewarderFactory, address _feesFactory) Ownable() {
+        quote = _quote;
         tokenFactory = _tokenFactory;
+        saleFactory = _saleFactory;
+        contentFactory = _contentFactory;
+        rewarderFactory = _rewarderFactory;
+        feesFactory = _feesFactory;
     }
 
     function create(
         string memory _name,
         string memory _symbol,
-        string memory _uri,
-        address _owner,
-        address _quote,
-        address _preTokenFactory,
-        uint256 _reserveVirtQuoteRaw
+        string memory _uri
     )
         external
-        returns (address token, address preToken)
+        returns (address token)
     {
         index++;
 
-
-        (token, preToken) = ITokenFactory(tokenFactory).createToken(
+        token = ITokenFactory(tokenFactory).createToken(
             _name,
             _symbol,
             address(this),
-            _preTokenFactory,
-            _quote,
-            index,
-            _reserveVirtQuoteRaw,
-            PRETOKEN_DURATION
+            quote,
+            INITIAL_SUPPLY,
+            RESERVE_VIRT_QUOTE_RAW,
+            saleFactory,
+            contentFactory,
+            feesFactory,
+            rewarderFactory
         );
 
-        index_Token[index] = token;
-        emit WaveFront__Created(
+        WaveFrontToken memory waveFrontToken = WaveFrontToken(
+            token,
+            IToken(token).sale(),
+            IToken(token).content(),
+            IToken(token).rewarder(),
+            IToken(token).fees(),
             _name,
             _symbol,
-            _uri,
-            tokenFactory,
-            _preTokenFactory,
-            token,
-            preToken,
-            _owner,
-            _quote,
-            tokenId,
-            _reserveVirtQuoteRaw
+            _uri
+        );
+        
+        index_WaveFrontToken[index] = waveFrontToken;
+
+        emit WaveFront__TokenCreated(
+            index, 
+            token, 
+            waveFrontToken.sale, 
+            waveFrontToken.content, 
+            waveFrontToken.rewarder, 
+            waveFrontToken.fees, 
+            waveFrontToken.name, 
+            waveFrontToken.symbol, 
+            waveFrontToken.uri
         );
     }
 
     function setTreasury(address _treasury) external onlyOwner {
-        address oldTreasury = treasury;
         treasury = _treasury;
-        emit WaveFront__TreasurySet(oldTreasury, _treasury);
+        emit WaveFront__TreasurySet(_treasury);
     }
 
     function setTokenFactory(address _tokenFactory) external onlyOwner {
-        address oldTokenFactory = tokenFactory;
         tokenFactory = _tokenFactory;
-        emit WaveFront__TokenFactorySet(oldTokenFactory, _tokenFactory);
+        emit WaveFront__TokenFactorySet(_tokenFactory);
     }
 
+    function setSaleFactory(address _saleFactory) external onlyOwner {
+        saleFactory = _saleFactory;
+        emit WaveFront__SaleFactorySet(_saleFactory);
+    }
+
+    function setContentFactory(address _contentFactory) external onlyOwner {
+        contentFactory = _contentFactory;
+        emit WaveFront__ContentFactorySet(_contentFactory);
+    }
+
+    function setRewarderFactory(address _rewarderFactory) external onlyOwner {
+        rewarderFactory = _rewarderFactory;
+        emit WaveFront__RewarderFactorySet(_rewarderFactory);
+    }
+
+    function setFeesFactory(address _feesFactory) external onlyOwner {
+        feesFactory = _feesFactory;
+        emit WaveFront__FeesFactorySet(_feesFactory);
+    }
 }

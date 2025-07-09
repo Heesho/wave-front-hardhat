@@ -17,7 +17,7 @@ interface ISaleFactory {
 }
 
 interface IContentFactory {
-    function createContent(string memory _name, string memory _symbol, address rewarderFactory) external returns (address, address);
+    function createContent(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address);
 }
 
 interface IFeesFactory {
@@ -123,7 +123,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         reserveVirtQuoteWad = rawToWad(_virtQuoteRaw);
 
         sale = ISaleFactory(saleFactory).createSale(address(this), _quote);
-        (content, rewarder) = IContentFactory(contentFactory).createContent(_name, _symbol, rewarderFactory);
+        (content, rewarder) = IContentFactory(contentFactory).createContent(_name, _symbol, address(this), _quote, rewarderFactory);
         fees = IFeesFactory(feesFactory).createFees(rewarder, address(this), _quote);
     }
 
@@ -492,7 +492,6 @@ contract TokenFactory {
         address quote,
         uint256 initialSupply,
         uint256 reserveVirtQuoteRaw,
-        uint256 saleDuration,
         address saleFactory,
         address contentFactory,
         address feesFactory,
@@ -505,7 +504,6 @@ contract TokenFactory {
             quote,
             initialSupply,
             reserveVirtQuoteRaw,
-            saleDuration,
             saleFactory,
             contentFactory,
             feesFactory,

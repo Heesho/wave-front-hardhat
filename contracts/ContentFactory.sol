@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -16,10 +17,16 @@ interface IRewarder {
     function withdraw(address account, uint256 amount) external;
 }
 
+interface IToken {
+    function heal(uint256 amount) external;
+}
+
 contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     using Math for uint256;
 
     address public immutable rewarder;
+    address public immutable token;
     address public immutable quote;
 
     uint256 public nextTokenId;
@@ -36,7 +43,8 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
     event Content__Steal(address indexed account, uint256 indexed tokenId, uint256 price);
     event Content__Mint(address indexed account, uint256 indexed tokenId, string uri);
 
-    constructor(string memory _name, string memory _symbol, address _quote, address rewarderFactory) ERC721(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) ERC721(_name, _symbol) {
+        token = _token;
         quote = _quote;
         rewarder = IRewarderFactory(rewarderFactory).createRewarder(address(this));
     }
@@ -51,6 +59,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         _safeMint(account, tokenId);
         _setTokenURI(tokenId, _uri);
 
+        IERC20(quote).safeTransferFrom(msg.sender, address(this), initialPrice);
         IRewarder(rewarder).deposit(account, initialPrice);
 
         emit Content__Mint(account, tokenId, _uri);
@@ -60,6 +69,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         if (account == address(0)) revert Content__InvalidAccount();
         if (ownerOf(tokenId) == address(0)) revert Content__InvalidTokenId();
 
+        address creator = id_Creator[tokenId];
         uint256 prevPrice = id_Price[tokenId];
         address prevOwner = ownerOf(tokenId);
         uint256 nextPrice = getNextPrice(tokenId);
@@ -68,9 +78,15 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         id_Price[tokenId] = nextPrice;
         _transfer(prevOwner, account, tokenId);
 
-        // distribute 4 / 10 surplus to prevOwner
-        // distribute 4 / 10 surplus to bonding curve
-        // distribute 2 / 10 surplus to creator
+
+        IERC20(quote).safeTransferFrom(msg.sender, address(this), nextPrice);
+
+        IERC20(quote).safeTransfer(prevOwner, prevPrice + (surplus * 3 / 9));
+        IERC20(quote).safeTransfer(creator, surplus * 3 / 9);
+
+        IERC20(quote).safeApprove(token, 0);
+        IERC20(quote).safeApprove(token, surplus * 3 / 9);
+        IToken(token).heal(surplus * 3 / 9);
 
         IRewarder(rewarder).withdraw(prevOwner, prevPrice);
         IRewarder(rewarder).deposit(account, nextPrice);
@@ -142,8 +158,8 @@ contract ContentFactory {
 
     event ContentFactory__ContentCreated(address indexed content);
 
-    function createContent(string memory _name, string memory _symbol, address rewarderFactory) external returns (address, address) {
-        Content content = new Content(_name, _symbol, rewarderFactory);
+    function createContent(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address) {
+        Content content = new Content(_name, _symbol, _token, _quote, rewarderFactory);
         lastContent = address(content);
         emit ContentFactory__ContentCreated(lastContent);
         return (address(content), content.rewarder());
