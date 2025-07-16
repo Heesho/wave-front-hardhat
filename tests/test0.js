@@ -90,8 +90,47 @@ describe("local: test0", function () {
     console.log();
   });
 
-  it("First Test", async function () {
+  it("User0 creates wft0", async function () {
     console.log("******************************************************");
-    console.log("First Test");
+
+    const wft0Name = "wft0";
+    const wft0Symbol = "WFT0";
+    const wft0Uri = "https://wavefront.io/wft0";
+
+    await router.connect(user0).create(wft0Name, wft0Symbol, wft0Uri);
+    wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
+    console.log("- wft0 created");
+  });
+
+  it("User0 contributes 10 usdc to wft0 sale", async function () {
+    console.log("******************************************************");
+
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router.connect(user0).contribute(wft0.address, amount);
+    console.log("- 10 usdc contributed to wft0 sale");
+  });
+
+  it("Forward 2 hour", async function () {
+    console.log("******************************************************");
+    await network.provider.send("evm_increaseTime", [7200]);
+    await network.provider.send("evm_mine");
+    console.log("- 2 hours forwarded");
+  });
+
+  it("User0 redeems wft0 contribution", async function () {
+    console.log("******************************************************");
+    await router.connect(user0).redeem(wft0.address);
+    console.log("- wft0 contribution redeemed");
+  });
+
+  it("User0 buys wft0 with 10 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft0.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft0");
   });
 });

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface ITokenFactory {
-    function createToken(
+    function create(
         string memory name,
         string memory symbol,
         address wavefront,
@@ -75,7 +75,7 @@ contract WaveFront is Ownable {
     function create(string memory name, string memory symbol, string memory uri) external returns (address token) {
         index++;
 
-        token = ITokenFactory(tokenFactory).createToken(
+        token = ITokenFactory(tokenFactory).create(
             name,
             symbol,
             address(this),
