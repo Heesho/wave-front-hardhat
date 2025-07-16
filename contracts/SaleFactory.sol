@@ -90,15 +90,12 @@ contract SaleFactory {
 
     address public lastSale;
 
-    event SaleFactory__SaleCreated(address indexed sale);
+    event SaleFactory__Created(address indexed sale);
 
-    function createSale(
-        address token,
-        address quote
-    ) external returns (address sale) {
+    function create(address token, address quote) external returns (address sale) {
         sale = address(new Sale(token, quote));
         lastSale = sale;
-        emit SaleFactory__SaleCreated(sale);
+        emit SaleFactory__Created(sale);
     }
     
 }

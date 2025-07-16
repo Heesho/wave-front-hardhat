@@ -483,9 +483,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 contract TokenFactory {
     address public lastToken;
 
-    event TokenFactory__TokenCreated(address indexed token);
+    event TokenFactory__Created(address indexed token);
 
-    function createToken(
+    function create(
         string memory name,
         string memory symbol,
         address wavefront,
@@ -510,7 +510,7 @@ contract TokenFactory {
             rewarderFactory
         ));
         lastToken = token;
-        emit TokenFactory__TokenCreated(token);
+        emit TokenFactory__Created(token);
     }
     
 }

@@ -178,12 +178,12 @@ contract RewarderFactory {
 
     address public lastRewarder;
 
-    event RewarderFactory__RewarderCreated(address indexed rewarder);
+    event RewarderFactory__Created(address indexed rewarder);
 
-    function createRewarder(address _content) external returns (address) {
+    function create(address _content) external returns (address) {
         Rewarder rewarder = new Rewarder(_content);
         lastRewarder = address(rewarder);
-        emit RewarderFactory__RewarderCreated(lastRewarder);
+        emit RewarderFactory__Created(lastRewarder);
         return address(rewarder);
     }
     

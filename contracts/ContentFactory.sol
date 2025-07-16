@@ -156,12 +156,12 @@ contract ContentFactory {
 
     address public lastContent;
 
-    event ContentFactory__ContentCreated(address indexed content);
+    event ContentFactory__Created(address indexed content);
 
-    function createContent(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address) {
-        Content content = new Content(_name, _symbol, _token, _quote, rewarderFactory);
+    function create(string memory name, string memory symbol, address token, address quote, address rewarderFactory) external returns (address, address) {
+        Content content = new Content(name, symbol, token, quote, rewarderFactory);
         lastContent = address(content);
-        emit ContentFactory__ContentCreated(lastContent);
+        emit ContentFactory__Created(lastContent);
         return (address(content), content.rewarder());
     }
 

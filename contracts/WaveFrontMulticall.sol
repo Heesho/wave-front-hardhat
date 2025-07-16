@@ -5,37 +5,36 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./library/FixedPointMathLib.sol";
 
-interface IPreToken {
-    function totalQuoteRaw() external view returns (uint256);
-    function totalTokenAmt() external view returns (uint256);
-    function ended() external view returns (bool);
+interface ISale {
     function endTime() external view returns (uint256);
     function account_QuoteRaw(address account) external view returns (uint256);
+    function totalQuoteRaw() external view returns (uint256);
+    function totalTokenAmt() external view returns (uint256);
 }
 
 interface IToken {
     function quote() external view returns (address);
-    function preToken() external view returns (address);
-    function wavefront() external view returns (address);
-    function wavefrontId() external view returns (uint256);
-    function reserveRealQuoteWad() external view returns (uint256);
+    function sale() external view returns (address);
+    function content() external view returns (address);
+    function rewarder() external view returns (address);
+    function fees() external view returns (address);
+    function open() external view returns (bool);
+    function wadToRaw(uint256 wad) external view returns (uint256);
+    function rawToWad(uint256 raw) external view returns (uint256);
     function reserveVirtQuoteWad() external view returns (uint256);
+    function reserveRealQuoteWad() external view returns (uint256);
     function reserveTokenAmt() external view returns (uint256);
     function maxSupply() external view returns (uint256);
     function getMarketPrice() external view returns (uint256);
     function getFloorPrice() external view returns (uint256);
+    function account_DebtRaw(address account) external view returns (uint256);
     function getAccountCredit(address account) external view returns (uint256);
     function getAccountTransferrable(address account) external view returns (uint256);
-    function account_DebtRaw(address account) external view returns (uint256);
-    function totalDebtRaw() external view returns (uint256);
-    function open() external view returns (bool);
-    function rawToWad(uint256 raw) external view returns (uint256);
-    function wadToRaw(uint256 wad) external view returns (uint256);
 }
 
 interface IWaveFront {
-     function ownerOf(uint256 tokenId) external view returns (address owner);
-     function tokenURI(uint256 tokenId) external view returns (string memory);
+    function token_Index(address token) external view returns (uint256);
+    function token_Uri(address token) external view returns (string memory);
 }
 
 contract WaveFrontMulticall {
@@ -45,25 +44,29 @@ contract WaveFrontMulticall {
     uint256 public constant DIVISOR = 10_000;
     uint256 public constant PRECISION = 1e18;
 
-    enum TokenPhase {
+    address public immutable wavefront;
+
+    enum Phase {
         MARKET,
-        CONTRIBUTE,
+        CONTRI,
         REDEEM
     }
 
-    struct TokenData {
+    struct Data {
+        uint256 index;
+
         address token;
         address quote;
-        address preToken;
-        address wavefront;
-        uint256 wavefrontId;
-        address owner;
+        address sale;
+        address content;
+        address rewarder;
+        address fees;
 
         string name;
         string symbol;
         string uri;
 
-        uint256 preTokenEnd;
+        uint256 saleEnd;
         bool marketOpen;
 
         uint256 marketCap;
@@ -75,7 +78,6 @@ contract WaveFrontMulticall {
 
         uint256 totalQuoteContributed;
 
-        uint256 accountNativeBalance;
         uint256 accountQuoteBalance;
         uint256 accountTokenBalance;
         uint256 accountDebt;
@@ -84,16 +86,23 @@ contract WaveFrontMulticall {
         uint256 accountContributed;
         uint256 accountRedeemable;
 
-        TokenPhase tokenPhase;
+        Phase phase;
     }
 
-    function getTokenData(address token, address account) external view returns (TokenData memory tokenData) {
+    constructor(address _wavefront) {
+        wavefront = _wavefront;
+    }
+
+    function getData(address token, address account) external view returns (Data memory data) {
         address quote = IToken(token).quote();
-        address preToken = IToken(token).preToken();
-        address wavefront = IToken(token).wavefront();
-        uint256 wavefrontId = IToken(token).wavefrontId();
+        address sale = IToken(token).sale();
+        address content = IToken(token).content();
+        address rewarder = IToken(token).rewarder();
+        address fees = IToken(token).fees();
+
         bool marketOpen = IToken(token).open();
-        uint256 totalContributed = IPreToken(preToken).totalQuoteRaw();
+
+        uint256 totalContributed = ISale(sale).totalQuoteRaw();
         uint256 xv = IToken(token).reserveVirtQuoteWad();
         uint256 xr = IToken(token).reserveRealQuoteWad();
         uint256 x0 = xv + xr;
@@ -102,77 +111,69 @@ contract WaveFrontMulticall {
         uint256 x1 = x0 + totalContributed - (totalContributed * FEE / DIVISOR);
         uint256 y1 = x0.mulDivDown(y0, x1);
         uint256 expectedTokenAmt = y0 - y1;
+
+        uint256 index = IWaveFront(wavefront).token_Index(token);
+        string memory uri = IWaveFront(wavefront).token_Uri(token);
+
+        data.index = index;
         
-        tokenData.token = token;
-        tokenData.quote = quote;
-        tokenData.preToken = preToken;
-        tokenData.wavefront = wavefront;
-        tokenData.wavefrontId = wavefrontId;
-        tokenData.owner = IWaveFront(wavefront).ownerOf(wavefrontId);
+        data.token = token;
+        data.quote = quote;
+        data.sale = sale;
+        data.content = content;
+        data.rewarder = rewarder;
+        data.fees = fees;
 
-        tokenData.name = IERC20Metadata(token).name();
-        tokenData.symbol = IERC20Metadata(token).symbol();
-        tokenData.uri = IWaveFront(wavefront).tokenURI(wavefrontId);
+        data.name = IERC20Metadata(token).name();
+        data.symbol = IERC20Metadata(token).symbol();
+        data.uri = uri;
 
-        tokenData.preTokenEnd = IPreToken(preToken).endTime();
-        tokenData.marketOpen = marketOpen;
+        data.saleEnd = ISale(sale).endTime();
+        data.marketOpen = marketOpen;
 
-        tokenData.marketCap = marketOpen ? IToken(token).wadToRaw(IToken(token).maxSupply().mulDivDown(IToken(token).getMarketPrice(), PRECISION)) : totalContributed;
-        tokenData.liquidity = IToken(token).wadToRaw(IToken(token).reserveRealQuoteWad() + IToken(token).reserveVirtQuoteWad()) * 2;
-        tokenData.floorPrice = IToken(token).getFloorPrice();
-        tokenData.marketPrice = marketOpen ? IToken(token).getMarketPrice() : x1.mulDivDown(PRECISION, y1);
-        tokenData.circulatingSupply = IERC20(token).totalSupply();
-        tokenData.maxSupply = IToken(token).maxSupply();
+        data.marketCap = marketOpen ? IToken(token).wadToRaw(IToken(token).maxSupply().mulDivDown(IToken(token).getMarketPrice(), PRECISION)) : totalContributed;
+        data.liquidity = IToken(token).wadToRaw(IToken(token).reserveRealQuoteWad() + IToken(token).reserveVirtQuoteWad()) * 2;
+        data.floorPrice = IToken(token).getFloorPrice();
+        data.marketPrice = marketOpen ? IToken(token).getMarketPrice() : x1.mulDivDown(PRECISION, y1);
+        data.circulatingSupply = IERC20(token).totalSupply();
+        data.maxSupply = IToken(token).maxSupply();
 
-        tokenData.totalQuoteContributed = totalContributed;
+        data.totalQuoteContributed = totalContributed;
 
         if (account != address(0)) {
-            tokenData.accountNativeBalance = account.balance;
-            tokenData.accountQuoteBalance = IERC20(quote).balanceOf(account);
-            tokenData.accountTokenBalance = IERC20(token).balanceOf(account);
-            tokenData.accountDebt = IToken(token).account_DebtRaw(account);
-            tokenData.accountCredit = IToken(token).getAccountCredit(account);
-            tokenData.accountTransferrable = IToken(token).getAccountTransferrable(account);
-            tokenData.accountContributed = IPreToken(preToken).account_QuoteRaw(account);
+            data.accountQuoteBalance = IERC20(quote).balanceOf(account);
+            data.accountTokenBalance = IERC20(token).balanceOf(account);
+            data.accountDebt = IToken(token).account_DebtRaw(account);
+            data.accountCredit = IToken(token).getAccountCredit(account);
+            data.accountTransferrable = IToken(token).getAccountTransferrable(account);
+            data.accountContributed = ISale(sale).account_QuoteRaw(account);
             if (totalContributed > 0) {
-                tokenData.accountRedeemable = marketOpen ? IPreToken(preToken).totalTokenAmt().mulDivDown(tokenData.accountContributed, totalContributed) : 
-                    expectedTokenAmt.mulDivDown(tokenData.accountContributed, totalContributed);
+                data.accountRedeemable = marketOpen ? ISale(sale).totalTokenAmt().mulDivDown(data.accountContributed, totalContributed) : 
+                    expectedTokenAmt.mulDivDown(data.accountContributed, totalContributed);
             } else {
-                tokenData.accountRedeemable = 0;
+                data.accountRedeemable = 0;
             }
         }
 
-        if (!marketOpen && block.timestamp < tokenData.preTokenEnd) {
-            tokenData.tokenPhase = TokenPhase.CONTRIBUTE;
-        } else if (!marketOpen && block.timestamp >= tokenData.preTokenEnd) {
-            if (tokenData.accountContributed > 0) {
-                tokenData.tokenPhase = TokenPhase.REDEEM;
+        if (!marketOpen && block.timestamp < data.saleEnd) {
+            data.phase = Phase.CONTRI;
+        } else if (!marketOpen && block.timestamp >= data.saleEnd) {
+            if (data.accountContributed > 0) {
+                data.phase = Phase.REDEEM;
             } else {
-                tokenData.tokenPhase = TokenPhase.CONTRIBUTE;
+                data.phase = Phase.CONTRI;
             }
         } else {
-            if (tokenData.accountContributed > 0) {
-                tokenData.tokenPhase = TokenPhase.REDEEM;
+            if (data.accountContributed > 0) {
+                data.phase = Phase.REDEEM;
             } else {
-                tokenData.tokenPhase = TokenPhase.MARKET;
+                data.phase = Phase.MARKET;
             }
         }
 
-        return tokenData;
+        return data;
     }
 
-    // --- Function: buyQuoteIn ---
-    /**
-     * @notice Calculates the expected token output for a given quote input (buy simulation).
-     * @dev Performs off-chain calculation using the Token contract's AMM logic and reserves. Does not execute a swap.
-     * @param token The address of the WaveFrontToken (Token.sol).
-     * @param quoteRawIn The amount of quote token input (raw).
-     * @param slippageTolerance The maximum allowed slippage percentage (e.g., 9950 for 0.5% slippage). Used to calculate `minTokenAmtOut`.
-     * @return tokenAmtOut Expected token output (18 dec).
-     * @return slippage Calculated slippage percentage * 100 (scaled by 100). Based on original code's formula.
-     * @return minTokenAmtOut Minimum token output based on quote input, market price and `slippageTolerance` (18 dec). Based on original code's formula.
-     * @return autoMinTokenAmtOut Minimum token output based on quote input, market price and calculated `slippage` (18 dec). Based on original code's formula.
-     */
     function buyQuoteIn(
         address token, 
         uint256 quoteRawIn, 

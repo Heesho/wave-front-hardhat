@@ -46,16 +46,12 @@ contract FeesFactory {
 
     address public lastFees;
 
-    event FeesFactory__FeesCreated(address indexed fees);
+    event FeesFactory__Created(address indexed fees);
 
-    function createFees(
-        address _rewarder,
-        address _token,
-        address _quote
-    ) external returns (address fees) {
-        fees = address(new Fees(_rewarder, _token, _quote));
+    function create(address rewarder, address token, address quote) external returns (address fees) {
+        fees = address(new Fees(rewarder, token, quote));
         lastFees = fees;
-        emit FeesFactory__FeesCreated(fees);
+        emit FeesFactory__Created(fees);
     }
 
 }

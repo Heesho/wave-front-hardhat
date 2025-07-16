@@ -41,18 +41,9 @@ contract WaveFront is Ownable {
     address public treasury;
 
     uint256 public index;
-    mapping(uint256 => WaveFrontToken) public index_WaveFrontToken;
-
-    struct WaveFrontToken {
-        address token;
-        address sale;
-        address content;
-        address rewarder;
-        address fees;
-        string name;
-        string symbol;
-        string uri;
-    }
+    mapping(uint256 => address) public index_Token;
+    mapping(address => uint256) public token_Index;
+    mapping(address => string) public token_Uri;
 
     event WaveFront__TokenCreated(
         uint256 index,
@@ -81,19 +72,12 @@ contract WaveFront is Ownable {
         feesFactory = _feesFactory;
     }
 
-    function create(
-        string memory _name,
-        string memory _symbol,
-        string memory _uri
-    )
-        external
-        returns (address token)
-    {
+    function create(string memory name, string memory symbol, string memory uri) external returns (address token) {
         index++;
 
         token = ITokenFactory(tokenFactory).createToken(
-            _name,
-            _symbol,
+            name,
+            symbol,
             address(this),
             quote,
             INITIAL_SUPPLY,
@@ -103,30 +87,21 @@ contract WaveFront is Ownable {
             feesFactory,
             rewarderFactory
         );
-
-        WaveFrontToken memory waveFrontToken = WaveFrontToken(
-            token,
-            IToken(token).sale(),
-            IToken(token).content(),
-            IToken(token).rewarder(),
-            IToken(token).fees(),
-            _name,
-            _symbol,
-            _uri
-        );
         
-        index_WaveFrontToken[index] = waveFrontToken;
+        index_Token[index] = token;
+        token_Index[token] = index;
+        token_Uri[token] = uri;
 
         emit WaveFront__TokenCreated(
             index, 
             token, 
-            waveFrontToken.sale, 
-            waveFrontToken.content, 
-            waveFrontToken.rewarder, 
-            waveFrontToken.fees, 
-            waveFrontToken.name, 
-            waveFrontToken.symbol, 
-            waveFrontToken.uri
+            IToken(token).sale(), 
+            IToken(token).content(), 
+            IToken(token).rewarder(), 
+            IToken(token).fees(), 
+            name, 
+            symbol, 
+            uri
         );
     }
 
