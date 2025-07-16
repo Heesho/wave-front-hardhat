@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface IRewarderFactory {
-    function createRewarder(address _content) external returns (address);
+    function create(address _content) external returns (address);
 }
 
 interface IRewarder {
@@ -46,7 +46,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
     constructor(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) ERC721(_name, _symbol) {
         token = _token;
         quote = _quote;
-        rewarder = IRewarderFactory(rewarderFactory).createRewarder(address(this));
+        rewarder = IRewarderFactory(rewarderFactory).create(address(this));
     }
 
     function mint(address account, string memory _uri) external nonReentrant {

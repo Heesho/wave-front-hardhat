@@ -180,8 +180,8 @@ contract RewarderFactory {
 
     event RewarderFactory__Created(address indexed rewarder);
 
-    function create(address _content) external returns (address) {
-        Rewarder rewarder = new Rewarder(_content);
+    function create(address content) external returns (address) {
+        Rewarder rewarder = new Rewarder(content);
         lastRewarder = address(rewarder);
         emit RewarderFactory__Created(lastRewarder);
         return address(rewarder);

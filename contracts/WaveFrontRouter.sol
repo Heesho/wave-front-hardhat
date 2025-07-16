@@ -7,11 +7,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IWaveFront {
+    function quote() external view returns (address);
     function create(string calldata name, string calldata symbol, string calldata uri) external returns (address token);
 }
 
 interface IToken {
-    function quote() external view returns (address);
     function buy(uint256 amountQuoteIn, uint256 minAmountTokenOut, uint256 expireTimestamp, address to, address provider) external returns (uint256 amountTokenOut);
     function sell(uint256 amountTokenIn, uint256 minAmountQuoteOut, uint256 expireTimestamp, address to, address provider) external returns (uint256 amountQuoteOut);
     function sale() external view returns (address);
@@ -60,7 +60,7 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
          require(amountQuoteIn > 0, "Router: Quote amount required");
         _setAffiliate(affiliate);
 
-        address quote = IToken(token).quote();
+        address quote = IWaveFront(wavefront).quote();
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
         _safeApprove(quote, token, amountQuoteIn);
 
@@ -71,7 +71,7 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
             IERC20(quote).safeTransfer(msg.sender, remainingQuote);
         }
 
-        emit WaveFrontRouter__Buy(token, quote, msg.sender, affiliate, amountQuoteIn, amountTokenOut);
+        emit WaveFrontRouter__Buy(token, msg.sender, affiliate, amountQuoteIn, amountTokenOut);
     }
 
     function sell(
@@ -85,17 +85,16 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         _setAffiliate(affiliate);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountTokenIn);
-        address quote = IToken(token).quote();
         uint256 amountQuoteOut = IToken(token).sell(amountTokenIn, minAmountQuoteOut, expireTimestamp, msg.sender, account_Affiliate[msg.sender]);
 
-        emit WaveFrontRouter__Sell(token, quote, msg.sender, affiliate, amountTokenIn, amountQuoteOut);
+        emit WaveFrontRouter__Sell(token, msg.sender, affiliate, amountTokenIn, amountQuoteOut);
     }
 
     function contribute(address token, uint256 amountQuoteIn) external nonReentrant {
         require(amountQuoteIn > 0, "Router: Quote amount required");
         address sale = IToken(token).sale();
 
-        address quote = IToken(token).quote();
+        address quote = IWaveFront(wavefront).quote();
         IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);   
         _safeApprove(quote, sale, amountQuoteIn);
 

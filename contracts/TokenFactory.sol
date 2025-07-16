@@ -13,15 +13,15 @@ interface IWaveFront {
 }
 
 interface ISaleFactory {
-    function createSale(address token, address quote) external returns (address saleAddress);
+    function create(address token, address quote) external returns (address saleAddress);
 }
 
 interface IContentFactory {
-    function createContent(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address);
+    function create(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address);
 }
 
 interface IFeesFactory {
-    function createFees(address rewarder, address token, address quote) external returns (address fees);
+    function create(address rewarder, address token, address quote) external returns (address fees);
 }
 
 contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
@@ -122,9 +122,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         reserveTokenAmt = _initialSupply;
         reserveVirtQuoteWad = rawToWad(_virtQuoteRaw);
 
-        sale = ISaleFactory(saleFactory).createSale(address(this), _quote);
-        (content, rewarder) = IContentFactory(contentFactory).createContent(_name, _symbol, address(this), _quote, rewarderFactory);
-        fees = IFeesFactory(feesFactory).createFees(rewarder, address(this), _quote);
+        sale = ISaleFactory(saleFactory).create(address(this), _quote);
+        (content, rewarder) = IContentFactory(contentFactory).create(_name, _symbol, address(this), _quote, rewarderFactory);
+        fees = IFeesFactory(feesFactory).create(rewarder, address(this), _quote);
     }
 
     function buy(
