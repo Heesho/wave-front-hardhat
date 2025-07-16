@@ -60,6 +60,9 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         _setTokenURI(tokenId, _uri);
 
         IERC20(quote).safeTransferFrom(msg.sender, address(this), initialPrice);
+        IERC20(quote).safeApprove(token, 0);
+        IERC20(quote).safeApprove(token, initialPrice);
+        IToken(token).heal(initialPrice);
         IRewarder(rewarder).deposit(account, initialPrice);
 
         emit Content__Mint(account, tokenId, _uri);
