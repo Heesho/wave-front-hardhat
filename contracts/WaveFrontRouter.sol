@@ -57,7 +57,6 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         uint256 minAmountTokenOut,
         uint256 expireTimestamp
     ) external nonReentrant {
-         require(amountQuoteIn > 0, "Router: Quote amount required");
         _setAffiliate(affiliate);
 
         address quote = IWaveFront(wavefront).quote();
@@ -81,7 +80,6 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         uint256 minAmountQuoteOut,
         uint256 expireTimestamp
     ) external nonReentrant {
-        require(amountTokenIn > 0, "Router: Token amount required");
         _setAffiliate(affiliate);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountTokenIn);
@@ -91,7 +89,6 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
     }
 
     function contribute(address token, uint256 amountQuoteIn) external nonReentrant {
-        require(amountQuoteIn > 0, "Router: Quote amount required");
         address sale = IToken(token).sale();
 
         address quote = IWaveFront(wavefront).quote();
@@ -113,7 +110,6 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         address sale = IToken(token).sale();
         _checkAndOpenMarket(sale);
 
-        require(ISale(sale).ended(), "Router: Market not open yet");
         ISale(sale).redeem(msg.sender);
 
         emit WaveFrontRouter__Redeem(token, msg.sender);
