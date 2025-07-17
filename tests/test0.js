@@ -6,19 +6,9 @@ const { ethers, network } = require("hardhat");
 const { execPath } = require("process");
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
-const pointEightZerosOne = convert("0.000000001", 18);
-const pointZeroZeroOne = convert("0.001", 18);
-const pointZeroZeroOne6 = convert("0.001", 6);
-const pointZeroOne = convert("0.01", 18);
-const ten = convert("10", 18);
-const ten6 = convert("10", 6);
-const oneHundred = convert("100", 18);
-const oneHundred6 = convert("100", 6);
-const tenThousand = convert("10000", 18);
-const tenThousand6 = convert("10000", 6);
 
 let owner, multisig, treasury, user0, user1, user2, user3;
-let usdc, wft0, wft1;
+let usdc, wft;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory, feesFactory;
 let wavefront, multicall, router;
 
@@ -80,35 +70,48 @@ describe("local: test0", function () {
     router = await routerArtifact.deploy(wavefront.address);
     console.log("- Router Initialized");
 
-    await usdc.connect(owner).mint(user0.address, tenThousand6);
-    await usdc.connect(owner).mint(user1.address, tenThousand6);
-    await usdc.connect(owner).mint(user2.address, tenThousand6);
-    await usdc.connect(owner).mint(user3.address, tenThousand6);
+    const amount = convert("100000", 6);
+    await usdc.connect(owner).mint(user0.address, amount);
+    await usdc.connect(owner).mint(user1.address, amount);
+    await usdc.connect(owner).mint(user2.address, amount);
+    await usdc.connect(owner).mint(user3.address, amount);
     console.log("- System set up");
 
     console.log("Initialization Complete");
     console.log();
   });
 
-  it("User0 creates wft0", async function () {
+  it("User0 creates wft", async function () {
     console.log("******************************************************");
 
-    const wft0Name = "wft0";
-    const wft0Symbol = "WFT0";
-    const wft0Uri = "https://wavefront.io/wft0";
+    const wftName = "wft";
+    const wftSymbol = "wft";
+    const wftUri = "https://wavefront.io/wft";
 
-    await router.connect(user0).create(wft0Name, wft0Symbol, wft0Uri);
-    wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
-    console.log("- wft0 created");
+    await router.connect(user0).create(wftName, wftSymbol, wftUri);
+    wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
+    console.log("- wft created");
   });
 
-  it("User0 contributes 10 usdc to wft0 sale", async function () {
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 contributes 10 usdc to wft sale", async function () {
     console.log("******************************************************");
 
     const amount = convert("10", 6);
     await usdc.connect(user0).approve(router.address, amount);
-    await router.connect(user0).contribute(wft0.address, amount);
-    console.log("- 10 usdc contributed to wft0 sale");
+    await router.connect(user0).contribute(wft.address, amount);
+    console.log("- 10 usdc contributed to wft sale");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
   });
 
   it("Forward 2 hour", async function () {
@@ -118,19 +121,203 @@ describe("local: test0", function () {
     console.log("- 2 hours forwarded");
   });
 
-  it("User0 redeems wft0 contribution", async function () {
+  it("User0 redeems wft contribution", async function () {
     console.log("******************************************************");
-    await router.connect(user0).redeem(wft0.address);
-    console.log("- wft0 contribution redeemed");
+    await router.connect(user0).redeem(wft.address);
+    console.log("- wft contribution redeemed");
   });
 
-  it("User0 buys wft0 with 10 usdc", async function () {
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 buys wft with 10 usdc", async function () {
     console.log("******************************************************");
     const amount = convert("10", 6);
     await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buy(wft0.address, AddressZero, amount, 0, 2000000000);
-    console.log("- 10 usdc bought wft0");
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
+  });
+
+  it("User0 sells 0.001 wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.001", 18);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.001 wft sold");
+  });
+
+  it("User0 buys wft with 0.01 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.01", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.01 usdc bought wft");
+  });
+
+  it("User0 sells 0.01 wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.01", 18);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.01 wft sold");
+  });
+
+  it("User0 buys wft with 0.00001 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.00001", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.00001 usdc bought wft");
+  });
+
+  it("User0 buys wft with 0.000001 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.000001", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.000001 usdc bought wft");
+  });
+
+  it("User0 buys wft with 0.000001 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.000001", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.000001 usdc bought wft");
+  });
+
+  it("User0 sells 0.000000001 wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("0.000000001", 18);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 0.000000001 wft sold");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User0 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("10000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User0 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("User0 heals 100 usdc on wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("100", 6);
+    await usdc.connect(user0).approve(wft.address, amount);
+    await wft.connect(user0).heal(amount);
+    console.log("- 100 usdc healed on wft");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("10000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User0 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
   });
 });
