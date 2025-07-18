@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IRewarder {
+    function DURATION() external view returns (uint256);
     function left(address token) external view returns (uint256);
     function notifyRewardAmount(address token, uint256 amount) external;
 }
@@ -22,20 +23,22 @@ contract Fees {
     }
 
     function distribute() external {
+        uint256 duration = IRewarder(rewarder).DURATION();
+
         uint256 balanceQuote = IERC20(quote).balanceOf(address(this));
         uint256 leftQuote = IRewarder(rewarder).left(quote);
-        if (balanceQuote > leftQuote) {
+        if (balanceQuote > leftQuote && balanceQuote > duration) {
             IERC20(quote).safeApprove(rewarder, 0);
             IERC20(quote).safeApprove(rewarder, balanceQuote);
-            IRewarder(rewarder).notifyRewardAmount(token, balanceQuote);
+            IRewarder(rewarder).notifyRewardAmount(quote, balanceQuote);
         }
 
         uint256 balanceToken = IERC20(token).balanceOf(address(this));
         uint256 leftToken = IRewarder(rewarder).left(token);
-        if (balanceToken > leftToken) {
+        if (balanceToken > leftToken && balanceToken > duration) {
             IERC20(token).safeApprove(rewarder, 0);
             IERC20(token).safeApprove(rewarder, balanceToken);
-            IRewarder(rewarder).notifyRewardAmount(quote, balanceToken);
+            IRewarder(rewarder).notifyRewardAmount(token, balanceToken);
         }
     }
 

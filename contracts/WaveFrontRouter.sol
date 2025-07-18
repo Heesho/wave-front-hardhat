@@ -13,9 +13,11 @@ interface IWaveFront {
 
 interface IToken {
     function content() external view returns (address);
+    function sale() external view returns (address);
+    function fees() external view returns (address);
+    function rewarder() external view returns (address);
     function buy(uint256 amountQuoteIn, uint256 minAmountTokenOut, uint256 expireTimestamp, address to, address provider) external returns (uint256 amountTokenOut);
     function sell(uint256 amountTokenIn, uint256 minAmountQuoteOut, uint256 expireTimestamp, address to, address provider) external returns (uint256 amountQuoteOut);
-    function sale() external view returns (address);
 }
 
 interface ISale {
@@ -32,6 +34,14 @@ interface IContent {
     function getNextPrice(uint256 tokenId) external view returns (uint256);
     function create(address account, string memory _uri) external returns (uint256);
     function curate(address account, uint256 tokenId) external;
+}
+
+interface IFees {
+    function distribute() external;
+}
+
+interface IRewarder {
+    function getReward(address account) external;
 }
 
 contract WaveFrontRouter is ReentrancyGuard, Ownable {
@@ -80,6 +90,8 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
             IERC20(quote).safeTransfer(msg.sender, remainingQuote);
         }
 
+        _distributeFees(token);
+
         emit WaveFrontRouter__Buy(token, msg.sender, affiliate, amountQuoteIn, amountTokenOut);
     }
 
@@ -94,6 +106,8 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountTokenIn);
         uint256 amountQuoteOut = IToken(token).sell(amountTokenIn, minAmountQuoteOut, expireTimestamp, msg.sender, account_Affiliate[msg.sender]);
+
+        _distributeFees(token);
 
         emit WaveFrontRouter__Sell(token, msg.sender, affiliate, amountTokenIn, amountQuoteOut);
     }
@@ -151,6 +165,11 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         emit WaveFrontRouter__ContentCurated(token, content, msg.sender, price, tokenId);
     }
 
+    function getContentReward(address token) external {
+        address rewarder = IToken(token).rewarder();
+        IRewarder(rewarder).getReward(msg.sender);
+    }
+
     function _setAffiliate(address affiliate) internal {
         if (account_Affiliate[msg.sender] == address(0) && affiliate != address(0)) {
             account_Affiliate[msg.sender] = affiliate;
@@ -168,6 +187,11 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
             ISale(sale).openMarket();
             emit WaveFrontRouter__MarketOpened(ISale(sale).token(), sale);
         }
+    }
+
+    function _distributeFees(address token) internal {
+        address fees = IToken(token).fees();
+        IFees(fees).distribute();
     }
 
     function withdrawStuckTokens(address _token, address _to) external onlyOwner {

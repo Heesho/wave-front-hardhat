@@ -15,6 +15,7 @@ interface IRewarderFactory {
 interface IRewarder {
     function deposit(address account, uint256 amount) external;
     function withdraw(address account, uint256 amount) external;
+    function addReward(address token) external;
 }
 
 interface IToken {
@@ -30,7 +31,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
     address public immutable quote;
 
     uint256 public nextTokenId;
-    uint256 public initialPrice = 1 ether;
+    uint256 public initialPrice = 1e6;
 
     mapping(uint256 => uint256) public id_Price;
     mapping(uint256 => address) public id_Creator;
@@ -47,12 +48,14 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         token = _token;
         quote = _quote;
         rewarder = IRewarderFactory(rewarderFactory).create(address(this));
+        IRewarder(rewarder).addReward(quote);
+        IRewarder(rewarder).addReward(token);
     }
 
-    function create(address account, string memory _uri) external nonReentrant {
+    function create(address account, string memory _uri) external nonReentrant returns (uint256 tokenId) {
         if (account == address(0)) revert Content__InvalidAccount();
 
-        uint256 tokenId = nextTokenId++;
+        tokenId = ++nextTokenId;
         id_Price[tokenId] = initialPrice;
         id_Creator[tokenId] = account;
 

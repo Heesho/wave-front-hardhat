@@ -979,4 +979,95 @@ describe("local: test1", function () {
     let res = await multicall.getData(wft.address, AddressZero);
     console.log(res);
   });
+
+  it("User0 creates content", async function () {
+    console.log("******************************************************");
+    const uri = "https://wavefront.io/content1";
+    const amount = await multicall.contentPrice(wft.address, 0);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router.connect(user0).createContent(wft.address, uri);
+    console.log("- content created");
+  });
+
+  it("User1 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("User1 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("User2 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user2).approve(router.address, amount);
+    await router.connect(user2).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("User0 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router.connect(user0).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User1 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user1.address);
+    console.log(res);
+  });
+
+  it("User0 gets content reward", async function () {
+    console.log("******************************************************");
+    await router.connect(user0).getContentReward(wft.address);
+    console.log("- content reward got");
+  });
+
+  it("User1 gets content reward", async function () {
+    console.log("******************************************************");
+    await router.connect(user1).getContentReward(wft.address);
+    console.log("- content reward got");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user1.address);
+    console.log(res);
+  });
 });

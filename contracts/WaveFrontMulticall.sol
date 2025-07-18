@@ -44,6 +44,11 @@ interface IRewarder {
     function earned(address account, address token) external view returns (uint256);
 }
 
+interface IContent {
+    function initialPrice() external view returns (uint256);
+    function getNextPrice(uint256 tokenId) external view returns (uint256);
+}
+
 contract WaveFrontMulticall {
     using FixedPointMathLib for uint256;
 
@@ -309,6 +314,15 @@ contract WaveFrontMulticall {
         minQuoteRawOut = IToken(token).wadToRaw(minQuoteWadIn);
         uint256 autoMinQuoteWadIn = quoteWadOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
         autoMinQuoteRawOut = IToken(token).wadToRaw(autoMinQuoteWadIn);
+    }
+
+    function contentPrice(address token, uint256 tokenId) external view returns (uint256) {
+        address content = IToken(token).content();
+        if (tokenId == 0) {
+            return IContent(content).initialPrice();
+        } else {
+            return IContent(content).getNextPrice(tokenId);
+        }
     }
     
 }
