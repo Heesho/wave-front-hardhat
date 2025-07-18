@@ -365,8 +365,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     function _burnTokenReserves(uint256 tokenAmt)
         internal
     {
-        if (tokenAmt == 0) return;
-
         uint256 m = maxSupply;
         uint256 y = reserveTokenAmt;
         if (m <= y) revert Token__InvalidShift();
