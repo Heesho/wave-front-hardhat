@@ -37,6 +37,13 @@ interface IWaveFront {
     function token_Uri(address token) external view returns (string memory);
 }
 
+interface IRewarder {
+    function totalSupply() external view returns (uint256);
+    function getRewardForDuration(address token) external view returns (uint256);
+    function account_Balance(address account) external view returns (uint256);
+    function earned(address account, address token) external view returns (uint256);
+}
+
 contract WaveFrontMulticall {
     using FixedPointMathLib for uint256;
 
@@ -66,8 +73,9 @@ contract WaveFrontMulticall {
         string symbol;
         string uri;
 
-        uint256 saleEnd;
         bool marketOpen;
+        uint256 saleEnd;
+        uint256 totalQuoteContributed;
 
         uint256 marketCap;
         uint256 liquidity;
@@ -76,15 +84,20 @@ contract WaveFrontMulticall {
         uint256 circulatingSupply;
         uint256 maxSupply;
 
-        uint256 totalQuoteContributed;
+        uint256 contentApr;
 
         uint256 accountQuoteBalance;
         uint256 accountTokenBalance;
         uint256 accountDebt;
         uint256 accountCredit;
         uint256 accountTransferrable;
+
         uint256 accountContributed;
         uint256 accountRedeemable;
+
+        uint256 accountContentStaked;
+        uint256 accountQuoteEarned;
+        uint256 accountTokenEarned;
 
         Phase phase;
     }
@@ -128,8 +141,9 @@ contract WaveFrontMulticall {
         data.symbol = IERC20Metadata(token).symbol();
         data.uri = uri;
 
-        data.saleEnd = ISale(sale).endTime();
         data.marketOpen = marketOpen;
+        data.saleEnd = ISale(sale).endTime();
+        data.totalQuoteContributed = totalContributed;
 
         data.marketCap = marketOpen ? IToken(token).wadToRaw(IToken(token).maxSupply().mulDivDown(IToken(token).getMarketPrice(), PRECISION)) : totalContributed;
         data.liquidity = IToken(token).wadToRaw(IToken(token).reserveRealQuoteWad() + IToken(token).reserveVirtQuoteWad()) * 2;
@@ -138,7 +152,15 @@ contract WaveFrontMulticall {
         data.circulatingSupply = IERC20(token).totalSupply();
         data.maxSupply = IToken(token).maxSupply();
 
-        data.totalQuoteContributed = totalContributed;
+        uint256 totalContentStaked = IToken(token).rawToWad(IRewarder(rewarder).totalSupply());
+        uint256 accountContentStaked = IToken(token).rawToWad(IRewarder(rewarder).account_Balance(account));
+
+        uint256 contentQuoteRewardForDuration = totalContentStaked == 0 ? 0 : IToken(token).rawToWad(IRewarder(rewarder).getRewardForDuration(quote));
+        uint256 contentTokenRewardForDuration = totalContentStaked == 0 ? 0 : IRewarder(rewarder).getRewardForDuration(token);
+        uint256 contentApr = totalContentStaked == 0 ? 0 : (contentQuoteRewardForDuration + (contentTokenRewardForDuration * IToken(token).getMarketPrice() / PRECISION)) 
+            * 365 * 100 * PRECISION / (7 * totalContentStaked);
+
+        data.contentApr = contentApr;
 
         if (account != address(0)) {
             data.accountQuoteBalance = IERC20(quote).balanceOf(account);
@@ -153,6 +175,9 @@ contract WaveFrontMulticall {
             } else {
                 data.accountRedeemable = 0;
             }
+            data.accountContentStaked = accountContentStaked;
+            data.accountQuoteEarned = IRewarder(rewarder).earned(account, quote);
+            data.accountTokenEarned = IRewarder(rewarder).earned(account, token);
         }
 
         if (!marketOpen && block.timestamp < data.saleEnd) {
