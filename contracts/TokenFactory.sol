@@ -20,10 +20,6 @@ interface IContentFactory {
     function create(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address);
 }
 
-interface IFeesFactory {
-    function create(address rewarder, address token, address quote) external returns (address fees);
-}
-
 contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeERC20 for IERC20;
@@ -38,7 +34,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     address public immutable sale;
     address public immutable content;
     address public immutable rewarder;
-    address public immutable fees;
 
     uint8 public immutable quoteDecimals;
     uint256 internal immutable quoteScale;
@@ -104,7 +99,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         uint256 _virtQuoteRaw,
         address saleFactory,
         address contentFactory,
-        address feesFactory,
         address rewarderFactory
     )
         ERC20(_name, _symbol)
@@ -124,7 +118,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
         sale = ISaleFactory(saleFactory).create(address(this), _quote);
         (content, rewarder) = IContentFactory(contentFactory).create(_name, _symbol, address(this), _quote, rewarderFactory);
-        fees = IFeesFactory(feesFactory).create(rewarder, address(this), _quote);
     }
 
     function buy(
@@ -289,8 +282,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         if (remainingRaw > 0) {
             uint256 contentFee = shareRaw <= remainingRaw ? shareRaw : remainingRaw;
             if (contentFee > 0) {
-                IERC20(quote).safeTransfer(fees, contentFee);
-                emit Token__ContentFee(fees, contentFee, 0);
+                IERC20(quote).safeTransfer(content, contentFee);
+                emit Token__ContentFee(content, contentFee, 0);
                 remainingRaw -= contentFee;
             }
         }
@@ -326,8 +319,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         if (remainingAmt > 0) {
             uint256 contentFee = shareAmt <= remainingAmt ? shareAmt : remainingAmt;
             if (contentFee > 0) {
-                _mint(fees, contentFee);
-                emit Token__ContentFee(fees, 0, contentFee);
+                _mint(content, contentFee);
+                emit Token__ContentFee(content, 0, contentFee);
                 remainingAmt -= contentFee;
             }
         }
@@ -492,7 +485,6 @@ contract TokenFactory {
         uint256 reserveVirtQuoteRaw,
         address saleFactory,
         address contentFactory,
-        address feesFactory,
         address rewarderFactory
     ) external returns (address token) {
         token = address(new Token(
@@ -504,7 +496,6 @@ contract TokenFactory {
             reserveVirtQuoteRaw,
             saleFactory,
             contentFactory,
-            feesFactory,
             rewarderFactory
         ));
         lastToken = token;

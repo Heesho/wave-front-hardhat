@@ -17,7 +17,6 @@ interface IToken {
     function sale() external view returns (address);
     function content() external view returns (address);
     function rewarder() external view returns (address);
-    function fees() external view returns (address);
     function open() external view returns (bool);
     function wadToRaw(uint256 wad) external view returns (uint256);
     function rawToWad(uint256 raw) external view returns (uint256);
@@ -72,7 +71,6 @@ contract WaveFrontMulticall {
         address sale;
         address content;
         address rewarder;
-        address fees;
 
         string name;
         string symbol;
@@ -116,7 +114,6 @@ contract WaveFrontMulticall {
         address sale = IToken(token).sale();
         address content = IToken(token).content();
         address rewarder = IToken(token).rewarder();
-        address fees = IToken(token).fees();
 
         bool marketOpen = IToken(token).open();
 
@@ -140,7 +137,6 @@ contract WaveFrontMulticall {
         data.sale = sale;
         data.content = content;
         data.rewarder = rewarder;
-        data.fees = fees;
 
         data.name = IERC20Metadata(token).name();
         data.symbol = IERC20Metadata(token).symbol();

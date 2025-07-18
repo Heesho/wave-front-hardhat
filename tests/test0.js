@@ -9,7 +9,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, wft;
-let tokenFactory, saleFactory, contentFactory, rewarderFactory, feesFactory;
+let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let wavefront, multicall, router;
 
 describe("local: test0", function () {
@@ -45,18 +45,13 @@ describe("local: test0", function () {
     rewarderFactory = await rewarderFactoryArtifact.deploy();
     console.log("- RewarderFactory Initialized");
 
-    const feesFactoryArtifact = await ethers.getContractFactory("FeesFactory");
-    feesFactory = await feesFactoryArtifact.deploy();
-    console.log("- FeesFactory Initialized");
-
     const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
     wavefront = await wavefrontArtifact.deploy(
       usdc.address,
       tokenFactory.address,
       saleFactory.address,
       contentFactory.address,
-      rewarderFactory.address,
-      feesFactory.address
+      rewarderFactory.address
     );
     console.log("- WaveFront Initialized");
 

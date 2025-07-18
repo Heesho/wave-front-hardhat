@@ -14,7 +14,6 @@ interface ITokenFactory {
         uint256 reserveVirtQuoteRaw,
         address saleFactory,
         address contentFactory,
-        address feesFactory,
         address rewarderFactory
     ) external returns (address token);
 }
@@ -23,7 +22,6 @@ interface IToken {
     function sale() external view returns (address);
     function content() external view returns (address);
     function rewarder() external view returns (address);
-    function fees() external view returns (address);
 }
 
 contract WaveFront is Ownable {
@@ -37,7 +35,6 @@ contract WaveFront is Ownable {
     address public saleFactory;
     address public contentFactory;
     address public rewarderFactory;
-    address public feesFactory;
     address public treasury;
 
     uint256 public index;
@@ -51,7 +48,6 @@ contract WaveFront is Ownable {
         address sale,
         address content,
         address rewarder,
-        address fees,
         string name,
         string symbol,
         string uri
@@ -61,15 +57,13 @@ contract WaveFront is Ownable {
     event WaveFront__SaleFactorySet(address newSaleFactory);
     event WaveFront__ContentFactorySet(address newContentFactory);
     event WaveFront__RewarderFactorySet(address newRewarderFactory);
-    event WaveFront__FeesFactorySet(address newFeesFactory);
 
-    constructor(address _quote, address _tokenFactory, address _saleFactory, address _contentFactory, address _rewarderFactory, address _feesFactory) Ownable() {
+    constructor(address _quote, address _tokenFactory, address _saleFactory, address _contentFactory, address _rewarderFactory) Ownable() {
         quote = _quote;
         tokenFactory = _tokenFactory;
         saleFactory = _saleFactory;
         contentFactory = _contentFactory;
         rewarderFactory = _rewarderFactory;
-        feesFactory = _feesFactory;
     }
 
     function create(string memory name, string memory symbol, string memory uri) external returns (address token) {
@@ -84,7 +78,6 @@ contract WaveFront is Ownable {
             RESERVE_VIRT_QUOTE_RAW,
             saleFactory,
             contentFactory,
-            feesFactory,
             rewarderFactory
         );
         
@@ -98,7 +91,6 @@ contract WaveFront is Ownable {
             IToken(token).sale(), 
             IToken(token).content(), 
             IToken(token).rewarder(), 
-            IToken(token).fees(), 
             name, 
             symbol, 
             uri
@@ -130,8 +122,4 @@ contract WaveFront is Ownable {
         emit WaveFront__RewarderFactorySet(_rewarderFactory);
     }
 
-    function setFeesFactory(address _feesFactory) external onlyOwner {
-        feesFactory = _feesFactory;
-        emit WaveFront__FeesFactorySet(_feesFactory);
-    }
 }

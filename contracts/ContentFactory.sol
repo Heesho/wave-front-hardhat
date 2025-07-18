@@ -13,6 +13,9 @@ interface IRewarderFactory {
 }
 
 interface IRewarder {
+    function DURATION() external view returns (uint256);
+    function left(address token) external view returns (uint256);
+    function notifyRewardAmount(address token, uint256 amount) external;
     function deposit(address account, uint256 amount) external;
     function withdraw(address account, uint256 amount) external;
     function addReward(address token) external;
@@ -98,6 +101,26 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         IRewarder(rewarder).deposit(account, nextPrice);
 
         emit Content__Curated(account, tokenId, nextPrice);
+    }
+
+    function distribute() external {
+        uint256 duration = IRewarder(rewarder).DURATION();
+
+        uint256 balanceQuote = IERC20(quote).balanceOf(address(this));
+        uint256 leftQuote = IRewarder(rewarder).left(quote);
+        if (balanceQuote > leftQuote && balanceQuote > duration) {
+            IERC20(quote).safeApprove(rewarder, 0);
+            IERC20(quote).safeApprove(rewarder, balanceQuote);
+            IRewarder(rewarder).notifyRewardAmount(quote, balanceQuote);
+        }
+
+        uint256 balanceToken = IERC20(token).balanceOf(address(this));
+        uint256 leftToken = IRewarder(rewarder).left(token);
+        if (balanceToken > leftToken && balanceToken > duration) {
+            IERC20(token).safeApprove(rewarder, 0);
+            IERC20(token).safeApprove(rewarder, balanceToken);
+            IRewarder(rewarder).notifyRewardAmount(token, balanceToken);
+        }
     }
 
     function transferFrom(

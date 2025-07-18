@@ -14,7 +14,6 @@ interface IWaveFront {
 interface IToken {
     function content() external view returns (address);
     function sale() external view returns (address);
-    function fees() external view returns (address);
     function rewarder() external view returns (address);
     function buy(uint256 amountQuoteIn, uint256 minAmountTokenOut, uint256 expireTimestamp, address to, address provider) external returns (uint256 amountTokenOut);
     function sell(uint256 amountTokenIn, uint256 minAmountQuoteOut, uint256 expireTimestamp, address to, address provider) external returns (uint256 amountQuoteOut);
@@ -34,9 +33,6 @@ interface IContent {
     function getNextPrice(uint256 tokenId) external view returns (uint256);
     function create(address account, string memory _uri) external returns (uint256);
     function curate(address account, uint256 tokenId) external;
-}
-
-interface IFees {
     function distribute() external;
 }
 
@@ -190,8 +186,8 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
     }
 
     function _distributeFees(address token) internal {
-        address fees = IToken(token).fees();
-        IFees(fees).distribute();
+        address content = IToken(token).content();
+        IContent(content).distribute();
     }
 
     function withdrawStuckTokens(address _token, address _to) external onlyOwner {

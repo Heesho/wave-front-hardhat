@@ -9,7 +9,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, wft0, wft1, wft2, wft3;
-let tokenFactory, saleFactory, contentFactory, rewarderFactory, feesFactory;
+let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let wavefront, multicall, router;
 
 describe("local: test0", function () {
@@ -45,18 +45,13 @@ describe("local: test0", function () {
     rewarderFactory = await rewarderFactoryArtifact.deploy();
     console.log("- RewarderFactory Initialized");
 
-    const feesFactoryArtifact = await ethers.getContractFactory("FeesFactory");
-    feesFactory = await feesFactoryArtifact.deploy();
-    console.log("- FeesFactory Initialized");
-
     const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
     wavefront = await wavefrontArtifact.deploy(
       usdc.address,
       tokenFactory.address,
       saleFactory.address,
       contentFactory.address,
-      rewarderFactory.address,
-      feesFactory.address
+      rewarderFactory.address
     );
     console.log("- WaveFront Initialized");
 
@@ -136,7 +131,6 @@ describe("local: test0", function () {
     console.log("saleFactory: ", await wavefront.saleFactory());
     console.log("contentFactory: ", await wavefront.contentFactory());
     console.log("rewarderFactory: ", await wavefront.rewarderFactory());
-    console.log("feesFactory: ", await wavefront.feesFactory());
     console.log("treasury: ", await wavefront.treasury());
     console.log("index: ", await wavefront.index());
     console.log("index_Token[0]: ", await wavefront.index_Token(0));
@@ -182,11 +176,6 @@ describe("local: test0", function () {
     await wavefront.connect(owner).setContentFactory(AddressZero);
     await wavefront.connect(owner).setContentFactory(contentFactory.address);
     await expect(wavefront.connect(user0).setContentFactory(AddressZero)).to.be
-      .reverted;
-
-    await wavefront.connect(owner).setFeesFactory(AddressZero);
-    await wavefront.connect(owner).setFeesFactory(feesFactory.address);
-    await expect(wavefront.connect(user0).setFeesFactory(AddressZero)).to.be
       .reverted;
 
     await wavefront.connect(owner).setRewarderFactory(AddressZero);
