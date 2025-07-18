@@ -40,8 +40,8 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
     error Content__InvalidTokenId();
     error Content__TransferDisabled();
 
-    event Content__Steal(address indexed account, uint256 indexed tokenId, uint256 price);
-    event Content__Mint(address indexed account, uint256 indexed tokenId, string uri);
+    event Content__Created(address indexed account, uint256 indexed tokenId, string uri);
+    event Content__Curated(address indexed account, uint256 indexed tokenId, uint256 price);
 
     constructor(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) ERC721(_name, _symbol) {
         token = _token;
@@ -49,7 +49,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         rewarder = IRewarderFactory(rewarderFactory).create(address(this));
     }
 
-    function mint(address account, string memory _uri) external nonReentrant {
+    function create(address account, string memory _uri) external nonReentrant {
         if (account == address(0)) revert Content__InvalidAccount();
 
         uint256 tokenId = nextTokenId++;
@@ -65,10 +65,10 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         IToken(token).heal(initialPrice);
         IRewarder(rewarder).deposit(account, initialPrice);
 
-        emit Content__Mint(account, tokenId, _uri);
+        emit Content__Created(account, tokenId, _uri);
     }
 
-    function steal(address account, uint256 tokenId) external nonReentrant {
+    function curate(address account, uint256 tokenId) external nonReentrant {
         if (account == address(0)) revert Content__InvalidAccount();
         if (ownerOf(tokenId) == address(0)) revert Content__InvalidTokenId();
 
@@ -94,7 +94,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         IRewarder(rewarder).withdraw(prevOwner, prevPrice);
         IRewarder(rewarder).deposit(account, nextPrice);
 
-        emit Content__Steal(account, tokenId, nextPrice);
+        emit Content__Curated(account, tokenId, nextPrice);
     }
 
     function transferFrom(

@@ -88,7 +88,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft0";
     const wftUri = "https://wavefront.io/wft0";
 
-    await router.connect(user0).create(wftName, wftSymbol, wftUri);
+    await router.connect(user0).createToken(wftName, wftSymbol, wftUri);
     wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft0 created");
   });
@@ -100,7 +100,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft1";
     const wftUri = "https://wavefront.io/wft1";
 
-    await router.connect(user1).create(wftName, wftSymbol, wftUri);
+    await router.connect(user1).createToken(wftName, wftSymbol, wftUri);
     wft1 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft1 created");
   });
@@ -112,7 +112,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft2";
     const wftUri = "https://wavefront.io/wft2";
 
-    await router.connect(user2).create(wftName, wftSymbol, wftUri);
+    await router.connect(user2).createToken(wftName, wftSymbol, wftUri);
     wft2 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft2 created");
   });
@@ -124,7 +124,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft3";
     const wftUri = "https://wavefront.io/wft3";
 
-    await router.connect(user3).create(wftName, wftSymbol, wftUri);
+    await router.connect(user3).createToken(wftName, wftSymbol, wftUri);
     wft3 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft3 created");
   });

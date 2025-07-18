@@ -88,7 +88,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft";
     const wftUri = "https://wavefront.io/wft";
 
-    await router.connect(user0).create(wftName, wftSymbol, wftUri);
+    await router.connect(user0).createToken(wftName, wftSymbol, wftUri);
     wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft created");
   });
