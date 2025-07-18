@@ -8,7 +8,7 @@ const { execPath } = require("process");
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 let owner, multisig, treasury, user0, user1, user2, user3;
-let usdc, wft0, wft1, wft2, wft3;
+let usdc, usdt, wft0, wft1, wft2, wft3;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let wavefront, multicall, router;
 
@@ -21,7 +21,9 @@ describe("local: test0", function () {
 
     const usdcArtifact = await ethers.getContractFactory("USDC");
     usdc = await usdcArtifact.deploy();
+    usdt = await usdcArtifact.deploy();
     console.log("- USDC Initialized");
+    console.log("- USDT Initialized");
 
     const tokenFactoryArtifact = await ethers.getContractFactory(
       "TokenFactory"
@@ -182,5 +184,33 @@ describe("local: test0", function () {
     await wavefront.connect(owner).setRewarderFactory(rewarderFactory.address);
     await expect(wavefront.connect(user0).setRewarderFactory(AddressZero)).to.be
       .reverted;
+  });
+
+  it("Rewarder coverage", async function () {
+    console.log("******************************************************");
+    await wavefront.connect(owner).addContentReward(wft0.address, usdt.address);
+    console.log("- content reward added");
+    await usdt.connect(owner).mint(owner.address, convert("10", 6));
+    await usdt.connect(owner).approve(router.address, convert("2", 6));
+    await router
+      .connect(owner)
+      .notifyContentRewardAmount(wft0.address, usdt.address, convert("2", 6));
+    console.log("- content reward notified");
+    await usdt.connect(owner).approve(router.address, convert("1", 6));
+    await expect(
+      router
+        .connect(owner)
+        .notifyContentRewardAmount(wft0.address, usdt.address, convert("1", 6))
+    ).to.be.revertedWith("Rewarder__RewardSmallerThanLeft");
+    await usdt.connect(owner).approve(router.address, convert("0.1", 6));
+    await expect(
+      router
+        .connect(owner)
+        .notifyContentRewardAmount(
+          wft0.address,
+          usdt.address,
+          convert("0.1", 6)
+        )
+    ).to.be.revertedWith("Rewarder__RewardSmallerThanDuration");
   });
 });

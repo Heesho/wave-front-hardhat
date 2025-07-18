@@ -24,6 +24,10 @@ interface IToken {
     function rewarder() external view returns (address);
 }
 
+interface IRewarder {
+    function addReward(address token) external;
+}
+
 contract WaveFront is Ownable {
 
     uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * 10 ** 18;
@@ -85,12 +89,16 @@ contract WaveFront is Ownable {
         token_Index[token] = index;
         token_Uri[token] = uri;
 
+        address rewarder = IToken(token).rewarder();
+        IRewarder(rewarder).addReward(quote);
+        IRewarder(rewarder).addReward(token);
+
         emit WaveFront__TokenCreated(
             index, 
             token, 
             IToken(token).sale(), 
             IToken(token).content(), 
-            IToken(token).rewarder(), 
+            rewarder, 
             name, 
             symbol, 
             uri
@@ -120,6 +128,11 @@ contract WaveFront is Ownable {
     function setRewarderFactory(address _rewarderFactory) external onlyOwner {
         rewarderFactory = _rewarderFactory;
         emit WaveFront__RewarderFactorySet(_rewarderFactory);
+    }
+
+    function addContentReward(address token, address rewardToken) external onlyOwner {
+        address rewarder = IToken(token).rewarder();
+        IRewarder(rewarder).addReward(rewardToken);
     }
 
 }

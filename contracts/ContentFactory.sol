@@ -18,7 +18,6 @@ interface IRewarder {
     function notifyRewardAmount(address token, uint256 amount) external;
     function deposit(address account, uint256 amount) external;
     function withdraw(address account, uint256 amount) external;
-    function addReward(address token) external;
 }
 
 interface IToken {
@@ -51,8 +50,6 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard 
         token = _token;
         quote = _quote;
         rewarder = IRewarderFactory(rewarderFactory).create(address(this));
-        IRewarder(rewarder).addReward(quote);
-        IRewarder(rewarder).addReward(token);
     }
 
     function create(address account, string memory _uri) external nonReentrant returns (uint256 tokenId) {

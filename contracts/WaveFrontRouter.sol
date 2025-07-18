@@ -38,6 +38,7 @@ interface IContent {
 
 interface IRewarder {
     function getReward(address account) external;
+    function notifyRewardAmount(address token, uint256 amount) external;
 }
 
 contract WaveFrontRouter is ReentrancyGuard, Ownable {
@@ -164,6 +165,13 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
     function getContentReward(address token) external {
         address rewarder = IToken(token).rewarder();
         IRewarder(rewarder).getReward(msg.sender);
+    }
+
+    function notifyContentRewardAmount(address token, address rewardToken, uint256 amount) external {
+        address rewarder = IToken(token).rewarder();
+        IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), amount);
+        _safeApprove(rewardToken, rewarder, amount);
+        IRewarder(rewarder).notifyRewardAmount(rewardToken, amount);
     }
 
     function _setAffiliate(address affiliate) internal {
