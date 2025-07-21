@@ -6,42 +6,22 @@ const { ethers, network } = require("hardhat");
 const { execPath } = require("process");
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
-const pointEightZerosOne = convert("0.000000001", 18);
-const pointZeroZeroOne = convert("0.001", 18);
-const pointZeroZeroOne6 = convert("0.001", 6);
-const pointZeroOne = convert("0.01", 18);
-const ten = convert("10", 18);
-const ten6 = convert("10", 6);
-const oneHundred = convert("100", 18);
-const oneHundred6 = convert("100", 6);
-const tenThousand = convert("10000", 18);
-const tenThousand6 = convert("10000", 6);
 
-let owner, multisig, user0, user1, user2, treasury;
-let weth, usdc, wft0, wft1;
-let preTokenFactory, tokenFactory, wavefront;
-let multicall, router;
+let owner, multisig, treasury, user0, user1, user2, user3;
+let usdc, wft;
+let tokenFactory, saleFactory, contentFactory, rewarderFactory;
+let wavefront, multicall, router;
 
 describe("local: test1", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
-    [owner, multisig, user0, user1, user2, treasury] =
+    [owner, multisig, treasury, user0, user1, user2, user3] =
       await ethers.getSigners();
-
-    const wethArtifact = await ethers.getContractFactory("WETH");
-    weth = await wethArtifact.deploy();
-    console.log("- WETH Initialized");
 
     const usdcArtifact = await ethers.getContractFactory("USDC");
     usdc = await usdcArtifact.deploy();
     console.log("- USDC Initialized");
-
-    const preTokenFactoryArtifact = await ethers.getContractFactory(
-      "PreTokenFairFactory"
-    );
-    preTokenFactory = await preTokenFactoryArtifact.deploy();
-    console.log("- PreTokenFactory Initialized");
 
     const tokenFactoryArtifact = await ethers.getContractFactory(
       "TokenFactory"
@@ -49,58 +29,131 @@ describe("local: test1", function () {
     tokenFactory = await tokenFactoryArtifact.deploy();
     console.log("- TokenFactory Initialized");
 
+    const saleFactoryArtifact = await ethers.getContractFactory("SaleFactory");
+    saleFactory = await saleFactoryArtifact.deploy();
+    console.log("- SaleFactory Initialized");
+
+    const contentFactoryArtifact = await ethers.getContractFactory(
+      "ContentFactory"
+    );
+    contentFactory = await contentFactoryArtifact.deploy();
+    console.log("- ContentFactory Initialized");
+
+    const rewarderFactoryArtifact = await ethers.getContractFactory(
+      "RewarderFactory"
+    );
+    rewarderFactory = await rewarderFactoryArtifact.deploy();
+    console.log("- RewarderFactory Initialized");
+
     const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
-    wavefront = await wavefrontArtifact.deploy(tokenFactory.address);
+    wavefront = await wavefrontArtifact.deploy(
+      usdc.address,
+      tokenFactory.address,
+      saleFactory.address,
+      contentFactory.address,
+      rewarderFactory.address
+    );
     console.log("- WaveFront Initialized");
 
     const multicallArtifact = await ethers.getContractFactory(
       "WaveFrontMulticall"
     );
-    multicall = await multicallArtifact.deploy();
+    multicall = await multicallArtifact.deploy(wavefront.address);
     console.log("- Multicall Initialized");
 
     const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(
-      wavefront.address,
-      preTokenFactory.address
-    );
-    await router.deployed();
+    router = await routerArtifact.deploy(wavefront.address);
     console.log("- Router Initialized");
 
-    await usdc.connect(user0).mint(user0.address, tenThousand6);
-    await usdc.connect(user1).mint(user1.address, tenThousand6);
-    await usdc.connect(user2).mint(user2.address, tenThousand6);
+    const amount = convert("10000000", 6);
+    await usdc.connect(owner).mint(user0.address, amount);
+    await usdc.connect(owner).mint(user1.address, amount);
+    await usdc.connect(owner).mint(user2.address, amount);
+    await usdc.connect(owner).mint(user3.address, amount);
     console.log("- System set up");
 
     console.log("Initialization Complete");
     console.log();
   });
 
-  it("First Test", async function () {
+  it("User0 creates wft", async function () {
     console.log("******************************************************");
-    console.log("First Test");
+
+    const wftName = "wft";
+    const wftSymbol = "wft";
+    const wftUri = "https://wavefront.io/wft";
+
+    await router.connect(user0).createToken(wftName, wftSymbol, wftUri);
+    wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
+    console.log("- wft created");
   });
 
-  it("User0 creates wft0 with weth as quote token", async function () {
+  it("User0 contributes 10 usdc to wft", async function () {
     console.log("******************************************************");
-    await router
-      .connect(user0)
-      .createWaveFrontToken(
-        "WFT0",
-        "WFT0",
-        "http/ipfs.com/0",
-        weth.address,
-        oneHundred
-      );
-    wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
-    console.log("WFT0 Created");
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router.connect(user0).contribute(wft.address, amount);
+    console.log("- 10 usdc contributed to wft sale");
   });
 
-  it("User0 contributes 10 weth to wft0", async function () {
+  it("Token Data", async function () {
     console.log("******************************************************");
-    await router
-      .connect(user0)
-      .contributeWithNative(wft0.address, { value: ten });
+    let res = await multicall.getData(wft.address, user1.address);
+    console.log(res);
+  });
+
+  it("User1 contributes 0 usdc to wft and fails", async function () {
+    console.log("******************************************************");
+    const amount = convert("0", 6);
+    await usdc.connect(user1).approve(router.address, amount);
+    await expect(
+      router.connect(user1).contribute(wft.address, amount)
+    ).to.be.revertedWith("Sale__ZeroInput");
+    console.log("- 0 usdc contributed to wft sale failed");
+  });
+
+  it("User1 contributes 100 usdc to wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("100", 6);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).contribute(wft.address, amount);
+    console.log("- 100 usdc contributed to wft sale");
+  });
+
+  it("User1 contributes 100 usdc to wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("100", 6);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).contribute(wft.address, amount);
+    console.log("- 100 usdc contributed to wft sale");
+  });
+
+  it("User2 contributes 1000 usdc to wft", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user2).approve(router.address, amount);
+    await router.connect(user2).contribute(wft.address, amount);
+    console.log("- 1000 usdc contributed to wft sale");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User0 redeems wft and fails", async function () {
+    console.log("******************************************************");
+    await expect(router.connect(user0).redeem(wft.address)).to.be.revertedWith(
+      "Sale__Open"
+    );
+    console.log("- wft redemption failed");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
   });
 
   it("Forward 2 hour", async function () {
@@ -109,391 +162,905 @@ describe("local: test1", function () {
     await network.provider.send("evm_mine");
   });
 
-  it("User0 redeems wft0 contribution", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).redeem(wft0.address);
-  });
-
-  it("User0 buys wft0", async function () {
-    console.log("******************************************************");
-    await router
-      .connect(user0)
-      .buyWithNative(wft0.address, AddressZero, 0, 1904422437, {
-        value: pointZeroZeroOne,
-      });
-  });
-
-  it("User0 sells wft0", async function () {
-    console.log("******************************************************");
-    await wft0.connect(user0).approve(router.address, pointZeroZeroOne);
-    await router
-      .connect(user0)
-      .sellToNative(wft0.address, AddressZero, pointZeroZeroOne, 0, 1904422437);
-  });
-
-  it("User0 buys wft0", async function () {
-    console.log("******************************************************");
-    await router
-      .connect(user0)
-      .buyWithNative(wft0.address, AddressZero, 0, 1904422437, {
-        value: pointZeroOne,
-      });
-  });
-
-  it("User0 sells wft0", async function () {
-    console.log("******************************************************");
-    await wft0.connect(user0).approve(router.address, pointZeroOne);
-    await router
-      .connect(user0)
-      .sellToNative(wft0.address, AddressZero, pointZeroOne, 0, 1904422437);
-  });
-
-  it("User0 buys wft0", async function () {
-    console.log("******************************************************");
-    await router
-      .connect(user0)
-      .buyWithNative(wft0.address, AddressZero, 0, 1904422437, {
-        value: pointEightZerosOne,
-      });
-  });
-
-  it("User0 sells wft0", async function () {
-    console.log("******************************************************");
-    await wft0.connect(user0).approve(router.address, pointEightZerosOne);
-    await router
-      .connect(user0)
-      .sellToNative(
-        wft0.address,
-        AddressZero,
-        pointEightZerosOne,
-        0,
-        1904422437
-      );
-  });
-
-  it("User0 creates wft1 with usdc as quote token", async function () {
-    console.log("******************************************************");
-    await router
-      .connect(user0)
-      .createWaveFrontToken(
-        "WFT1",
-        "WFT1",
-        "http/ipfs.com/1",
-        usdc.address,
-        oneHundred6
-      );
-    wft1 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
-    console.log("WFT1 Created");
-  });
-
-  it("User0 contributes 10 usdc to wft1", async function () {
-    console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, ten6);
-    await router.connect(user0).contributeWithQuote(wft1.address, ten6);
-  });
-
-  it("Forward 2 hour", async function () {
-    console.log("******************************************************");
-    await network.provider.send("evm_increaseTime", [7200]);
-    await network.provider.send("evm_mine");
-  });
-
-  it("User0 redeems wft1 contribution", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).redeem(wft1.address);
-  });
-
-  it("User0 buys wft1", async function () {
-    console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
-    await router
-      .connect(user0)
-      .buyWithQuote(
-        wft1.address,
-        AddressZero,
-        pointZeroZeroOne6,
-        0,
-        1904422437
-      );
-  });
-
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft0.address, user0.address);
+    let res = await multicall.getData(wft.address, user0.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft1.address, user0.address);
+    let res = await multicall.getData(wft.address, user3.address);
     console.log(res);
   });
 
-  it("User0 sells wft1", async function () {
+  it("User0 redeems wft contribution", async function () {
     console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
-    await router
-      .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+    await router.connect(user0).redeem(wft.address);
+    console.log("- wft contribution redeemed");
+  });
+
+  it("User0 redeems again wft contribution and fails", async function () {
+    console.log("******************************************************");
+    await expect(router.connect(user0).redeem(wft.address)).to.be.revertedWith(
+      "Sale__NothingToRedeem"
+    );
+    console.log("- wft contribution redemption failed");
+  });
+
+  it("User3 redeems wft contribution but fails", async function () {
+    console.log("******************************************************");
+    await expect(router.connect(user3).redeem(wft.address)).to.be.revertedWith(
+      "Sale__NothingToRedeem"
+    );
+    console.log("- wft contribution redemption failed");
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft0.address, user0.address);
+    let res = await multicall.getData(wft.address, user0.address);
     console.log(res);
+  });
+
+  it("User1 redeems wft contribution", async function () {
+    console.log("******************************************************");
+    await router.connect(user1).redeem(wft.address);
+    console.log("- wft contribution redeemed");
+  });
+
+  it("User0 tries to contribute 1000 usdc to wft and fails", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await expect(
+      router.connect(user0).contribute(wft.address, amount)
+    ).to.be.revertedWith("Sale__Closed");
+    console.log("- 1000 usdc contribution failed");
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft1.address, user0.address);
+    let res = await multicall.getData(wft.address, user0.address);
     console.log(res);
   });
 
-  it("User0 buys wft1", async function () {
+  it("User0 buys wft with 10 usdc", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buyWithQuote(
-        wft1.address,
-        AddressZero,
-        pointZeroZeroOne6,
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
   });
 
-  it("User0 buys wft1", async function () {
+  it("User0 buys wft with 10 usdc", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buyWithQuote(
-        wft1.address,
-        AddressZero,
-        pointZeroZeroOne6,
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
   });
 
-  it("User0 sells wft1", async function () {
+  it("User0 sells all wft", async function () {
     console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
   });
 
-  it("User0 buys wft1", async function () {
+  it("User0 buys wft with 10 usdc", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buyWithQuote(
-        wft1.address,
-        AddressZero,
-        pointZeroZeroOne6,
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
   });
 
-  it("User0 sells wft1", async function () {
+  it("User0 sells all wft", async function () {
     console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
   });
 
-  it("User0 buys wft1", async function () {
+  it("User0 buys wft with 1000 usdc", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, pointZeroZeroOne6);
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buyWithQuote(
-        wft1.address,
-        AddressZero,
-        pointZeroZeroOne6,
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
   });
 
-  it("User0 sells wft1", async function () {
+  it("User0 buys wft with 10 usdc", async function () {
     console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
   });
 
-  it("User0 heals 100 ETH on wft0", async function () {
+  it("User1 buys wft with 10 usdc", async function () {
     console.log("******************************************************");
-    await weth.connect(user0).deposit({ value: oneHundred });
-    await weth.connect(user0).approve(wft0.address, oneHundred);
-    await wft0.connect(user0).heal(oneHundred);
-  });
-
-  it("User0 heals 100 usdc on wft1", async function () {
-    console.log("******************************************************");
-    await usdc.connect(user0).approve(wft1.address, oneHundred6);
-    await wft1.connect(user0).heal(oneHundred6);
-  });
-
-  it("User0 sells wft1", async function () {
-    console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
+    const amount = convert("10", 6);
+    await usdc.connect(user1).approve(router.address, amount);
     await router
-      .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+      .connect(user1)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft0.address, user0.address);
+    let res = await multicall.getData(wft.address, user1.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft1.address, user0.address);
+    let res = await multicall.getData(wft.address, user2.address);
     console.log(res);
   });
 
-  it("User0 buys wft1", async function () {
+  it("User2 redeems wft contribution", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, ten6);
+    await router.connect(user2).redeem(wft.address);
+    console.log("- wft contribution redeemed");
+  });
+
+  it("User0 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buyWithQuote(wft1.address, AddressZero, ten6, 0, 1904422437);
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
   });
 
-  it("User0 sells wft1", async function () {
+  it("User1 sells all wft", async function () {
     console.log("******************************************************");
-    await wft1
-      .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
+    const amount = await wft.balanceOf(user1.address);
+    await wft.connect(user1).approve(router.address, amount);
+    await router
+      .connect(user1)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("User2 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user2.address);
+    await wft.connect(user2).approve(router.address, amount);
+    await router
+      .connect(user2)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("Quote Buy In", async function () {
+    console.log("******************************************************");
+    const amount = convert("10", 6);
+    await multicall.buyQuoteIn(wft.address, 0, 9800);
+    let res = await multicall
+      .connect(owner)
+      .buyQuoteIn(wft.address, amount, 9800);
+
+    console.log("USDC in", divDec6(amount));
+    console.log("Slippage Tolerance", "2%");
+    console.log();
+    console.log("WFT0 out", divDec(res.tokenAmtOut));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min WFT0 out", divDec(res.minTokenAmtOut));
+    console.log("min USDC out", divDec6(res.autoMinTokenAmtOut));
+  });
+
+  it("User0 buys wft with 10 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("10", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 10 usdc bought wft");
+  });
+
+  it("Quote Sell In", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await multicall.sellTokenIn(wft.address, 0, 9800);
+    let res = await multicall.sellTokenIn(wft.address, amount, 9700);
+    console.log("WFT in", divDec(amount));
+    console.log("Slippage Tolerance", "3%");
+    console.log();
+    console.log("USDC out", divDec6(res.quoteRawOut));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min USDC out", divDec6(res.minQuoteRawOut));
+    console.log("min USDC out", divDec6(res.autoMinQuoteRawOut));
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
+  });
+
+  it("Quote buy out", async function () {
+    console.log("******************************************************");
+    const amount = convert("10", 18);
+    let res = await multicall
+      .connect(owner)
+      .buyTokenOut(wft.address, amount, 9700);
+    console.log("WFT out", divDec(amount));
+    console.log("Slippage Tolerance", "3%");
+    console.log();
+    console.log("USDC in", divDec6(res.quoteRawIn));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min Token out", divDec(res.minTokenAmtOut));
+    console.log("min Token out", divDec(res.autoMinTokenAmtOut));
+  });
+
+  it("Quote sell out", async function () {
+    console.log("******************************************************");
+    const amount = convert("10", 6);
+    let res = await multicall
+      .connect(owner)
+      .sellQuoteOut(wft.address, amount, 9950);
+    console.log("USDC out", divDec6(amount));
+    console.log("Slippage Tolerance", "0.5%");
+    console.log();
+    console.log("WFT in", divDec(res.tokenAmtIn));
+    console.log("slippage", divDec(res.slippage));
+    console.log("min USDC out", divDec6(res.minQuoteRawOut));
+    console.log("min USDC out", divDec6(res.autoMinQuoteRawOut));
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft0.address, user0.address);
+    let res = await multicall.getData(wft.address, user2.address);
     console.log(res);
   });
 
-  it("Token Data", async function () {
+  it("User0 borrows against wft0", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft1.address, user0.address);
-    console.log(res);
-  });
-
-  it("User0 sells wft1", async function () {
-    console.log("******************************************************");
-    await wft1
+    console.log("Contract USDC balance: ", await usdc.balanceOf(wft.address));
+    console.log("User0 Credit: ", await wft.getAccountCredit(user0.address));
+    await wft
       .connect(user0)
-      .approve(router.address, await wft1.balanceOf(user0.address));
+      .borrow(user0.address, await wft.getAccountCredit(user0.address));
+  });
+
+  it("User0 tries to transfer and tries to sell", async function () {
+    console.log("******************************************************");
+    const transferrable = await wft.getAccountTransferrable(user0.address);
+    console.log("User0 transferrable wft: ", divDec(transferrable));
+    const amount = convert("1", 18);
+    await expect(
+      wft.connect(user0).transfer(user1.address, amount)
+    ).to.be.revertedWith("Token__CollateralLocked");
+    await wft.connect(user0).transfer(user1.address, transferrable);
+    console.log(
+      "User0 transferrable wft: ",
+      divDec(await wft.getAccountTransferrable(user0.address))
+    );
+    console.log("- wft transferred");
+  });
+
+  it("User0 tries to sell wft0", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
+    await expect(
+      router
+        .connect(user0)
+        .sell(wft.address, AddressZero, amount, 0, 2000000000)
+    ).to.be.revertedWith("Token__CollateralLocked");
+  });
+
+  it("User0 repays some usdc for wft0", async function () {
+    console.log("******************************************************");
+    const amount = convert("1", 6);
+    await usdc.connect(user0).approve(wft.address, amount);
+    await wft.connect(user0).repay(user0.address, amount);
+    console.log("- 1 usdc repaid for wft");
+  });
+
+  it("User0 tries to transfer and tries to sell", async function () {
+    console.log("******************************************************");
+    const transferrable = await wft.getAccountTransferrable(user0.address);
+    console.log("User0 transferrable wft: ", divDec(transferrable));
+    const amount = await wft.balanceOf(user0.address);
+    await expect(
+      wft.connect(user0).transfer(user1.address, amount)
+    ).to.be.revertedWith("Token__CollateralLocked");
+    await wft.connect(user0).transfer(user1.address, transferrable);
+    console.log(
+      "User0 transferrable wft: ",
+      divDec(await wft.getAccountTransferrable(user0.address))
+    );
+    console.log("- wft transferred");
+  });
+
+  it("User0 repays all usdc", async function () {
+    console.log("******************************************************");
+    console.log(
+      "User0 transferrable wft: ",
+      divDec(await wft.getAccountTransferrable(user0.address))
+    );
+    await usdc
+      .connect(user0)
+      .approve(wft.address, await wft.account_DebtRaw(user0.address));
+    await wft
+      .connect(user0)
+      .repay(user0.address, await wft.account_DebtRaw(user0.address));
+    console.log(
+      "User0 transferrable wft: ",
+      divDec(await wft.getAccountTransferrable(user0.address))
+    );
+    console.log("- all usdc repaid for wft");
+  });
+
+  it("User0 transfers wft0", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).transfer(user1.address, amount);
+    console.log("- wft transferred");
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user3.address);
+    console.log(res);
+  });
+
+  it("User1 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user1.address);
+    await wft.connect(user1).approve(router.address, amount);
+    await router
+      .connect(user1)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
+  });
+
+  it("User0 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .sellToQuote(
-        wft1.address,
-        AddressZero,
-        await wft1.balanceOf(user0.address),
-        0,
-        1904422437
-      );
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User1 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router
+      .connect(user1)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User2 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user2).approve(router.address, amount);
+    await router
+      .connect(user2)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User3 buys wft with 10000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("10000000", 6);
+    await usdc.connect(user3).approve(router.address, amount);
+    await router
+      .connect(user3)
+      .buy(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- 1,000,0000 usdc bought wft");
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft0.address, user0.address);
+    let res = await multicall.getData(wft.address, user3.address);
     console.log(res);
+  });
+
+  it("User0 heals with 1 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(wft.address, amount);
+    await wft.connect(user0).heal(amount);
+    console.log("- 1000 usdc healed for wft");
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
+  });
+
+  it("User3 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user3.address);
+    await wft.connect(user3).approve(router.address, amount);
+    await router
+      .connect(user3)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("User0 heals with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(wft.address, amount);
+    await wft.connect(user0).heal(amount);
+    console.log("- 1000 usdc healed for wft");
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft1.address, user0.address);
+    let res = await multicall.getData(wft.address, user3.address);
     console.log(res);
   });
 
-  it("User0 buys wft1", async function () {
+  it("User0 burns all wft", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(router.address, ten6);
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(wft.address, amount);
+    await wft.connect(user0).burn(amount);
+    console.log("- all wft burned");
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
+  });
+
+  it("Set wavefront treasury to treasury", async function () {
+    console.log("******************************************************");
+    await expect(wavefront.connect(user0).setTreasury(treasury.address)).to.be
+      .reverted;
+    await wavefront.connect(owner).setTreasury(treasury.address);
+    await wavefront.connect(owner).setTreasury(AddressZero);
+    await wavefront.connect(owner).setTreasury(treasury.address);
+    console.log("- wavefront treasury set to treasury");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, treasury.address);
+    console.log(res);
+  });
+
+  it("User0 buys wft with 1000 usdc", async function () {
+    console.log("******************************************************");
+    const amount = convert("1000", 6);
+    await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
-      .buyWithQuote(wft1.address, AddressZero, ten6, 0, 1904422437);
+      .buy(wft.address, user1.address, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
   });
 
-  it("User0 burns 10 wft0", async function () {
+  it("User1 buys wft with 1000 usdc", async function () {
     console.log("******************************************************");
-    await wft0.connect(user0).burn(ten);
+    const amount = convert("1000", 6);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router
+      .connect(user1)
+      .buy(wft.address, user2.address, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
   });
 
-  it("User0 burns 10 wft1", async function () {
+  it("User2 buys wft with 1000 usdc", async function () {
     console.log("******************************************************");
-    await usdc.connect(user0).approve(wft1.address, ten6);
-    await wft1.connect(user0).burn(ten6);
+    const amount = convert("1000", 6);
+    await usdc.connect(user2).approve(router.address, amount);
+    await router
+      .connect(user2)
+      .buy(wft.address, user2.address, amount, 0, 2000000000);
+    console.log("- 1000 usdc bought wft");
+  });
+
+  it("User0 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user0.address);
+    await wft.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .sell(wft.address, user1.address, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("User1 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user1.address);
+    await wft.connect(user1).approve(router.address, amount);
+    await router
+      .connect(user1)
+      .sell(wft.address, user2.address, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("User2 sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(user2.address);
+    await wft.connect(user2).approve(router.address, amount);
+    await router
+      .connect(user2)
+      .sell(wft.address, user2.address, amount, 0, 2000000000);
+    console.log("- all wft sold");
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft0.address, user0.address);
+    let res = await multicall.getData(wft.address, treasury.address);
+    console.log(res);
+  });
+
+  it("Treasury sells all wft", async function () {
+    console.log("******************************************************");
+    const amount = await wft.balanceOf(treasury.address);
+    await wft.connect(treasury).approve(router.address, amount);
+    await router
+      .connect(treasury)
+      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    console.log("- all wft sold");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, treasury.address);
+    console.log(res);
+  });
+
+  it("Invariants wft0", async function () {
+    console.log("******************************************************");
+    const reserveRealQuote = await wft.wadToRaw(
+      await wft.reserveRealQuoteWad()
+    );
+    const reserveVirtQuote = await wft.wadToRaw(
+      await wft.reserveVirtQuoteWad()
+    );
+    const reserveToken = await wft.reserveTokenAmt();
+    const totalSupply = await wft.totalSupply();
+    const maxSupply = await wft.maxSupply();
+    const maxReserve = reserveToken.add(totalSupply);
+    const usdcBalance = await usdc.balanceOf(wft.address);
+    const usdcRemaining = (await wft.reserveRealQuoteWad())
+      .add(await wft.reserveVirtQuoteWad())
+      .mul(reserveToken)
+      .div(maxReserve);
+
+    console.log("USDC Balance: ", divDec6(usdcBalance));
+    console.log("Reserve USDC: ", divDec6(reserveRealQuote));
+    expect(usdcBalance).to.be.at.least(reserveRealQuote);
+
+    console.log("Max WFT Reserve: ", divDec(maxReserve));
+    console.log("Max WFT Supply: ", divDec(maxSupply));
+    expect(maxReserve).to.be.at.least(maxSupply);
+
+    console.log("Remaining USDC: ", usdcRemaining);
+    console.log("Initial USDC: ", await wft.reserveVirtQuoteWad());
+    expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, AddressZero);
+    console.log(res);
+  });
+
+  it("User0 creates content", async function () {
+    console.log("******************************************************");
+    const uri = "https://wavefront.io/content1";
+    await router.connect(user0).createContent(wft.address, uri);
+    console.log("- content created");
+  });
+
+  it("User1 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("User1 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("User2 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user2).approve(router.address, amount);
+    await router.connect(user2).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("User0 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router.connect(user0).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("User1 curates content", async function () {
+    console.log("******************************************************");
+    const amount = await multicall.contentPrice(wft.address, 1);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router.connect(user1).curateContent(wft.address, 1);
+    console.log("- content curated");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getTokenData(wft1.address, user0.address);
+    let res = await multicall.getData(wft.address, user1.address);
+    console.log(res);
+  });
+
+  it("User0 gets content reward", async function () {
+    console.log("******************************************************");
+    await router.connect(user0).getContentReward(wft.address);
+    console.log("- content reward got");
+  });
+
+  it("User1 gets content reward", async function () {
+    console.log("******************************************************");
+    await router.connect(user1).getContentReward(wft.address);
+    console.log("- content reward got");
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user0.address);
+    console.log(res);
+  });
+
+  it("Token Data", async function () {
+    console.log("******************************************************");
+    let res = await multicall.getData(wft.address, user1.address);
     console.log(res);
   });
 });

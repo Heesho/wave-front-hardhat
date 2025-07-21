@@ -1,140 +1,151 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface ITokenFactory {
-    function createToken(
+    function create(
         string memory name,
         string memory symbol,
         address wavefront,
-        address preTokenFactory,
         address quote,
-        uint256 wavefrontId,
+        uint256 initialSupply,
         uint256 reserveVirtQuoteRaw,
-        uint256 preTokenDuration
-    ) external returns (address token, address preToken);
+        address saleFactory,
+        address contentFactory,
+        address rewarderFactory
+    ) external returns (address token);
 }
 
-contract WaveFront is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
+interface IToken {
+    function sale() external view returns (address);
 
-    uint256 public constant PRETOKEN_DURATION = 2 hours;
+    function content() external view returns (address);
 
-    uint256 public currentTokenId;
-    mapping(uint256 => address) public tokenId_WaveFrontToken;
+    function rewarder() external view returns (address);
+}
+
+interface IRewarder {
+    function addReward(address token) external;
+}
+
+contract WaveFront is Ownable {
+    uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * 10 ** 18;
+    uint256 public constant RESERVE_VIRT_QUOTE_RAW = 100_000 * 10 ** 6;
+
+    address public immutable quote;
+
     address public tokenFactory;
+    address public saleFactory;
+    address public contentFactory;
+    address public rewarderFactory;
     address public treasury;
 
-    error WaveFront__NotAuthorized();
+    uint256 public index;
+    mapping(uint256 => address) public index_Token;
+    mapping(address => uint256) public token_Index;
+    mapping(address => string) public token_Uri;
 
-    event WaveFront__Created(
+    event WaveFront__TokenCreated(
+        uint256 index,
+        address token,
+        address sale,
+        address content,
+        address rewarder,
         string name,
         string symbol,
-        string uri,
-        address tokenFactory,
-        address preTokenFactory,
-        address token,
-        address preToken,
-        address indexed owner,
-        address quote,
-        uint256 wavefrontId,
-        uint256 reserveVirtQuoteRaw
+        string uri
     );
-    event WaveFront__TokenURISet(uint256 indexed tokenId, string uri);
-    event WaveFront__TreasurySet(address indexed oldTreasury, address indexed newTreasury);
-    event WaveFront__TokenFactorySet(address indexed oldTokenFactory, address indexed newTokenFactory);
+    event WaveFront__TreasurySet(address newTreasury);
+    event WaveFront__TokenFactorySet(address newTokenFactory);
+    event WaveFront__SaleFactorySet(address newSaleFactory);
+    event WaveFront__ContentFactorySet(address newContentFactory);
+    event WaveFront__RewarderFactorySet(address newRewarderFactory);
 
-    constructor(address _tokenFactory) ERC721("WaveFront", "WF") Ownable() {
+    constructor(
+        address _quote,
+        address _tokenFactory,
+        address _saleFactory,
+        address _contentFactory,
+        address _rewarderFactory
+    ) Ownable() {
+        quote = _quote;
         tokenFactory = _tokenFactory;
+        saleFactory = _saleFactory;
+        contentFactory = _contentFactory;
+        rewarderFactory = _rewarderFactory;
     }
 
     function create(
-        string memory _name,
-        string memory _symbol,
-        string memory _uri,
-        address _owner,
-        address _quote,
-        address _preTokenFactory,
-        uint256 _reserveVirtQuoteRaw
-    )
-        external
-        returns (address token, address preToken, uint256 tokenId)
-    {
-        tokenId = ++currentTokenId;
-        _safeMint(_owner, tokenId);
-        _setTokenURI(tokenId, _uri);
+        string memory name,
+        string memory symbol,
+        string memory uri
+    ) external returns (address token) {
+        index++;
 
-        (token, preToken) = ITokenFactory(tokenFactory).createToken(
-            _name,
-            _symbol,
+        token = ITokenFactory(tokenFactory).create(
+            name,
+            symbol,
             address(this),
-            _preTokenFactory,
-            _quote,
-            tokenId,
-            _reserveVirtQuoteRaw,
-            PRETOKEN_DURATION
+            quote,
+            INITIAL_SUPPLY,
+            RESERVE_VIRT_QUOTE_RAW,
+            saleFactory,
+            contentFactory,
+            rewarderFactory
         );
 
-        tokenId_WaveFrontToken[tokenId] = token;
-        emit WaveFront__Created(
-            _name,
-            _symbol,
-            _uri,
-            tokenFactory,
-            _preTokenFactory,
+        index_Token[index] = token;
+        token_Index[token] = index;
+        token_Uri[token] = uri;
+
+        address rewarder = IToken(token).rewarder();
+        IRewarder(rewarder).addReward(quote);
+        IRewarder(rewarder).addReward(token);
+
+        emit WaveFront__TokenCreated(
+            index,
             token,
-            preToken,
-            _owner,
-            _quote,
-            tokenId,
-            _reserveVirtQuoteRaw
+            IToken(token).sale(),
+            IToken(token).content(),
+            rewarder,
+            name,
+            symbol,
+            uri
         );
-    }
-
-    function setTokenURI(uint256 tokenId, string memory _uri) external {
-        if (msg.sender != ownerOf(tokenId)) revert WaveFront__NotAuthorized();
-        _setTokenURI(tokenId, _uri);
-        emit WaveFront__TokenURISet(tokenId, _uri);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
-        address oldTreasury = treasury;
         treasury = _treasury;
-        emit WaveFront__TreasurySet(oldTreasury, _treasury);
+        emit WaveFront__TreasurySet(_treasury);
     }
 
     function setTokenFactory(address _tokenFactory) external onlyOwner {
-        address oldTokenFactory = tokenFactory;
         tokenFactory = _tokenFactory;
-        emit WaveFront__TokenFactorySet(oldTokenFactory, _tokenFactory);
+        emit WaveFront__TokenFactorySet(_tokenFactory);
     }
 
-    function _baseURI() internal view override returns (string memory) {
-        return "";
+    function setSaleFactory(address _saleFactory) external onlyOwner {
+        saleFactory = _saleFactory;
+        emit WaveFront__SaleFactorySet(_saleFactory);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 firstTokenId,
-        uint256 batchSize
-    ) internal virtual override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+    function setContentFactory(address _contentFactory) external onlyOwner {
+        contentFactory = _contentFactory;
+        emit WaveFront__ContentFactorySet(_contentFactory);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
+    function setRewarderFactory(address _rewarderFactory) external onlyOwner {
+        rewarderFactory = _rewarderFactory;
+        emit WaveFront__RewarderFactorySet(_rewarderFactory);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function addContentReward(
+        address token,
+        address rewardToken
+    ) external onlyOwner {
+        address rewarder = IToken(token).rewarder();
+        IRewarder(rewarder).addReward(rewardToken);
     }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
-    }
-
 }

@@ -4,8 +4,7 @@ require("@nomiclabs/hardhat-waffle");
 require("@nomicfoundation/hardhat-verify");
 require("solidity-coverage");
 
-const CHAIN_ID = 80069; // Berachain Bepolia chain id
-// const CHAIN_ID = 80094; // Berachain Mainnet chain id
+const CHAIN_ID = 84532; // base sepolia chain id
 
 config();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
@@ -35,20 +34,11 @@ module.exports = {
     apiKey: SCAN_API_KEY,
     customChains: [
       {
-        network: "berachain",
-        chainId: 80094,
+        network: "base_sepolia",
+        chainId: 84532,
         urls: {
-          apiURL: "https://api.berascan.com/api",
-          browserURL: "https://berascan.com/",
-        },
-      },
-      {
-        network: "berachain_bepolia",
-        chainId: 80069,
-        urls: {
-          apiURL:
-            "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan",
-          browserURL: "https://bepolia.beratrail.io",
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org/",
         },
       },
     ],
