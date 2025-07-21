@@ -13,11 +13,20 @@ interface IWaveFront {
 }
 
 interface ISaleFactory {
-    function create(address token, address quote) external returns (address saleAddress);
+    function create(
+        address token,
+        address quote
+    ) external returns (address saleAddress);
 }
 
 interface IContentFactory {
-    function create(string memory _name, string memory _symbol, address _token, address _quote, address rewarderFactory) external returns (address, address);
+    function create(
+        string memory _name,
+        string memory _symbol,
+        address _token,
+        address _quote,
+        address rewarderFactory
+    ) external returns (address, address);
 }
 
 contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
@@ -69,15 +78,35 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         uint256 tokenOut,
         address indexed to
     );
-    event Token__ProviderFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
-    event Token__TreasuryFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
-    event Token__ContentFee(address indexed to, uint256 quoteRaw, uint256 tokenAmt);
+    event Token__ProviderFee(
+        address indexed to,
+        uint256 quoteRaw,
+        uint256 tokenAmt
+    );
+    event Token__TreasuryFee(
+        address indexed to,
+        uint256 quoteRaw,
+        uint256 tokenAmt
+    );
+    event Token__ContentFee(
+        address indexed to,
+        uint256 quoteRaw,
+        uint256 tokenAmt
+    );
     event Token__Burn(address indexed who, uint256 tokenAmt);
     event Token__Heal(address indexed who, uint256 quoteRaw);
     event Token__ReserveTokenBurn(uint256 tokenAmt);
     event Token__ReserveQuoteHeal(uint256 quoteRaw);
-    event Token__Borrow(address indexed who, address indexed to, uint256 quoteRaw);
-    event Token__Repay(address indexed who, address indexed to, uint256 quoteRaw);
+    event Token__Borrow(
+        address indexed who,
+        address indexed to,
+        uint256 quoteRaw
+    );
+    event Token__Repay(
+        address indexed who,
+        address indexed to,
+        uint256 quoteRaw
+    );
     event Token__MarketOpened();
 
     modifier notZero(uint256 amount) {
@@ -86,7 +115,8 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     }
 
     modifier notExpired(uint256 expireTimestamp) {
-        if (expireTimestamp != 0 && expireTimestamp < block.timestamp) revert Token__Expired();
+        if (expireTimestamp != 0 && expireTimestamp < block.timestamp)
+            revert Token__Expired();
         _;
     }
 
@@ -100,10 +130,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         address saleFactory,
         address contentFactory,
         address rewarderFactory
-    )
-        ERC20(_name, _symbol)
-        ERC20Permit(_name)
-    {
+    ) ERC20(_name, _symbol) ERC20Permit(_name) {
         wavefront = _wavefront;
         quote = _quote;
 
@@ -117,7 +144,13 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         reserveVirtQuoteWad = rawToWad(_virtQuoteRaw);
 
         sale = ISaleFactory(saleFactory).create(address(this), _quote);
-        (content, rewarder) = IContentFactory(contentFactory).create(_name, _symbol, address(this), _quote, rewarderFactory);
+        (content, rewarder) = IContentFactory(contentFactory).create(
+            _name,
+            _symbol,
+            address(this),
+            _quote,
+            rewarderFactory
+        );
     }
 
     function buy(
@@ -135,7 +168,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         if (!open && msg.sender != sale) revert Token__MarketClosed();
 
-        uint256 feeRaw = quoteRawIn * FEE / DIVISOR;
+        uint256 feeRaw = (quoteRawIn * FEE) / DIVISOR;
         uint256 netRaw = quoteRawIn - feeRaw;
         uint256 netWad = rawToWad(netRaw);
 
@@ -175,7 +208,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     {
         if (!open) revert Token__MarketClosed();
 
-        uint256 feeAmt = tokenAmtIn * FEE / DIVISOR;
+        uint256 feeAmt = (tokenAmtIn * FEE) / DIVISOR;
         uint256 netAmt = tokenAmtIn - feeAmt;
 
         uint256 x0 = reserveVirtQuoteWad + reserveRealQuoteWad;
@@ -202,11 +235,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(quote).safeTransfer(to, quoteRawOut);
     }
 
-    function borrow(address to, uint256 quoteRaw)
-        external
-        nonReentrant
-        notZero(quoteRaw)
-    {
+    function borrow(
+        address to,
+        uint256 quoteRaw
+    ) external nonReentrant notZero(quoteRaw) {
         uint256 credit = getAccountCredit(msg.sender);
         if (quoteRaw > credit) revert Token__CreditExceeded();
 
@@ -217,11 +249,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(quote).safeTransfer(to, quoteRaw);
     }
 
-    function repay(address to, uint256 quoteRaw)
-        external
-        nonReentrant
-        notZero(quoteRaw)
-    {
+    function repay(
+        address to,
+        uint256 quoteRaw
+    ) external nonReentrant notZero(quoteRaw) {
         totalDebtRaw -= quoteRaw;
         account_DebtRaw[to] -= quoteRaw;
 
@@ -229,49 +260,43 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         IERC20(quote).safeTransferFrom(msg.sender, address(this), quoteRaw);
     }
 
-    function heal(uint256 quoteRaw)
-        external
-        nonReentrant
-        notZero(quoteRaw)
-    {
+    function heal(uint256 quoteRaw) external nonReentrant notZero(quoteRaw) {
         IERC20(quote).safeTransferFrom(msg.sender, address(this), quoteRaw);
         _healQuoteReserves(quoteRaw);
     }
 
-    function burn(uint256 tokenAmt)
-        external
-        nonReentrant
-        notZero(tokenAmt)
-    {
+    function burn(uint256 tokenAmt) external nonReentrant notZero(tokenAmt) {
         _burn(msg.sender, tokenAmt);
         _burnTokenReserves(tokenAmt);
     }
 
-    function openMarket()
-        external
-    {
+    function openMarket() external {
         if (msg.sender != sale) revert Token__NotAuthorized();
         open = true;
         emit Token__MarketOpened();
     }
 
     function rawToWad(uint256 raw) public view returns (uint256) {
-        unchecked { return raw * quoteScale; }
+        unchecked {
+            return raw * quoteScale;
+        }
     }
 
     function wadToRaw(uint256 wad) public view returns (uint256) {
         return wad / quoteScale;
     }
 
-    function _processBuyFees(uint256 quoteRaw, address provider)
-        internal
-        returns (uint256 remainingRaw)
-    {
+    function _processBuyFees(
+        uint256 quoteRaw,
+        address provider
+    ) internal returns (uint256 remainingRaw) {
         remainingRaw = quoteRaw;
-        uint256 shareRaw = quoteRaw * FEE_AMOUNT / DIVISOR;
+        uint256 shareRaw = (quoteRaw * FEE_AMOUNT) / DIVISOR;
 
         if (provider != address(0) && shareRaw > 0) {
-            uint256 providerFee = shareRaw <= remainingRaw ? shareRaw : remainingRaw;
+            uint256 providerFee = shareRaw <= remainingRaw
+                ? shareRaw
+                : remainingRaw;
             if (providerFee > 0) {
                 IERC20(quote).safeTransfer(provider, providerFee);
                 emit Token__ProviderFee(provider, providerFee, 0);
@@ -280,7 +305,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
 
         if (remainingRaw > 0) {
-            uint256 contentFee = shareRaw <= remainingRaw ? shareRaw : remainingRaw;
+            uint256 contentFee = shareRaw <= remainingRaw
+                ? shareRaw
+                : remainingRaw;
             if (contentFee > 0) {
                 IERC20(quote).safeTransfer(content, contentFee);
                 emit Token__ContentFee(content, contentFee, 0);
@@ -290,7 +317,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
         address treasury = IWaveFront(wavefront).treasury();
         if (treasury != address(0) && remainingRaw > 0) {
-            uint256 treasuryFee = shareRaw <= remainingRaw ? shareRaw : remainingRaw;
+            uint256 treasuryFee = shareRaw <= remainingRaw
+                ? shareRaw
+                : remainingRaw;
             if (treasuryFee > 0) {
                 IERC20(quote).safeTransfer(treasury, treasuryFee);
                 emit Token__TreasuryFee(treasury, treasuryFee, 0);
@@ -300,15 +329,17 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return remainingRaw;
     }
 
-    function _processSellFees(uint256 tokenAmt, address provider)
-        internal
-        returns (uint256 remainingAmt)
-    {
+    function _processSellFees(
+        uint256 tokenAmt,
+        address provider
+    ) internal returns (uint256 remainingAmt) {
         remainingAmt = tokenAmt;
-        uint256 shareAmt = tokenAmt * FEE_AMOUNT / DIVISOR;
+        uint256 shareAmt = (tokenAmt * FEE_AMOUNT) / DIVISOR;
 
         if (provider != address(0) && shareAmt > 0) {
-            uint256 providerFee = shareAmt <= remainingAmt ? shareAmt : remainingAmt;
+            uint256 providerFee = shareAmt <= remainingAmt
+                ? shareAmt
+                : remainingAmt;
             if (providerFee > 0) {
                 _mint(provider, providerFee);
                 emit Token__ProviderFee(provider, 0, providerFee);
@@ -317,7 +348,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
 
         if (remainingAmt > 0) {
-            uint256 contentFee = shareAmt <= remainingAmt ? shareAmt : remainingAmt;
+            uint256 contentFee = shareAmt <= remainingAmt
+                ? shareAmt
+                : remainingAmt;
             if (contentFee > 0) {
                 _mint(content, contentFee);
                 emit Token__ContentFee(content, 0, contentFee);
@@ -327,7 +360,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
         address treasury = IWaveFront(wavefront).treasury();
         if (treasury != address(0) && remainingAmt > 0) {
-            uint256 treasuryFee = shareAmt <= remainingAmt ? shareAmt : remainingAmt;
+            uint256 treasuryFee = shareAmt <= remainingAmt
+                ? shareAmt
+                : remainingAmt;
             if (treasuryFee > 0) {
                 _mint(treasury, treasuryFee);
                 emit Token__TreasuryFee(treasury, 0, treasuryFee);
@@ -338,9 +373,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return remainingAmt;
     }
 
-    function _healQuoteReserves(uint256 quoteRaw)
-        internal
-    {
+    function _healQuoteReserves(uint256 quoteRaw) internal {
         uint256 quoteWad = rawToWad(quoteRaw);
         uint256 m = maxSupply;
         uint256 y = reserveTokenAmt;
@@ -355,9 +388,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__Heal(msg.sender, quoteRaw);
     }
 
-    function _burnTokenReserves(uint256 tokenAmt)
-        internal
-    {
+    function _burnTokenReserves(uint256 tokenAmt) internal {
         uint256 m = maxSupply;
         uint256 y = reserveTokenAmt;
         if (m <= y) revert Token__InvalidShift();
@@ -371,17 +402,19 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         emit Token__Burn(msg.sender, tokenAmt);
     }
 
-    function _afterTokenTransfer(address from, address to, uint256 amount)
-        internal
-        override(ERC20, ERC20Votes)
-    {
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20, ERC20Votes) {
         super._afterTokenTransfer(from, to, amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        override(ERC20)
-    {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
 
         if (from != address(0) && account_DebtRaw[from] > 0) {
@@ -392,44 +425,34 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         }
     }
 
-    function _mint(address to, uint256 amount)
-        internal
-        override(ERC20, ERC20Votes)
-    {
+    function _mint(
+        address to,
+        uint256 amount
+    ) internal override(ERC20, ERC20Votes) {
         super._mint(to, amount);
     }
 
-    function _burn(address account, uint256 amount)
-        internal
-        override(ERC20, ERC20Votes)
-    {
+    function _burn(
+        address account,
+        uint256 amount
+    ) internal override(ERC20, ERC20Votes) {
         super._burn(account, amount);
     }
 
-    function getMarketPrice()
-        external
-        view
-        returns (uint256 price)
-    {
+    function getMarketPrice() external view returns (uint256 price) {
         if (reserveTokenAmt == 0) return 0;
         uint256 totalQuoteWad = reserveVirtQuoteWad + reserveRealQuoteWad;
         return totalQuoteWad.mulWadDown(PRECISION).divWadDown(reserveTokenAmt);
     }
 
-    function getFloorPrice()
-        external
-        view
-        returns (uint256 price)
-    {
+    function getFloorPrice() external view returns (uint256 price) {
         if (maxSupply == 0) return 0;
         return reserveVirtQuoteWad.mulWadDown(PRECISION).divWadDown(maxSupply);
     }
 
-    function getAccountCredit(address account)
-        public
-        view
-        returns (uint256 creditRaw)
-    {
+    function getAccountCredit(
+        address account
+    ) public view returns (uint256 creditRaw) {
         uint256 balance = balanceOf(account);
         if (balance == 0) return 0;
 
@@ -446,11 +469,9 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return creditRaw;
     }
 
-    function getAccountTransferrable(address account)
-        public
-        view
-        returns (uint256 tokenAmt)
-    {
+    function getAccountTransferrable(
+        address account
+    ) public view returns (uint256 tokenAmt) {
         uint256 debtRaw = account_DebtRaw[account];
         uint256 balance = balanceOf(account);
         if (debtRaw == 0) return balance;
@@ -470,7 +491,6 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     }
 }
 
-
 contract TokenFactory {
     address public lastToken;
 
@@ -487,19 +507,20 @@ contract TokenFactory {
         address contentFactory,
         address rewarderFactory
     ) external returns (address token) {
-        token = address(new Token(
-            name,
-            symbol,
-            wavefront,
-            quote,
-            initialSupply,
-            reserveVirtQuoteRaw,
-            saleFactory,
-            contentFactory,
-            rewarderFactory
-        ));
+        token = address(
+            new Token(
+                name,
+                symbol,
+                wavefront,
+                quote,
+                initialSupply,
+                reserveVirtQuoteRaw,
+                saleFactory,
+                contentFactory,
+                rewarderFactory
+            )
+        );
         lastToken = token;
         emit TokenFactory__Created(token);
     }
-    
 }
