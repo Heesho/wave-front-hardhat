@@ -42,7 +42,6 @@ contract Content is
     address public immutable quote;
 
     uint256 public nextTokenId;
-    uint256 public initialPrice = 1e6;
 
     mapping(uint256 => uint256) public id_Price;
     mapping(uint256 => address) public id_Creator;
@@ -82,17 +81,10 @@ contract Content is
         if (account == address(0)) revert Content__InvalidAccount();
 
         tokenId = ++nextTokenId;
-        id_Price[tokenId] = initialPrice;
         id_Creator[tokenId] = account;
 
         _safeMint(account, tokenId);
         _setTokenURI(tokenId, _uri);
-
-        IERC20(quote).safeTransferFrom(msg.sender, address(this), initialPrice);
-        IERC20(quote).safeApprove(token, 0);
-        IERC20(quote).safeApprove(token, initialPrice);
-        IToken(token).heal(initialPrice);
-        IRewarder(rewarder).deposit(account, initialPrice);
 
         emit Content__Created(account, tokenId, _uri);
     }
@@ -119,7 +111,9 @@ contract Content is
         IERC20(quote).safeApprove(token, (surplus * 3) / 9);
         IToken(token).heal((surplus * 3) / 9);
 
-        IRewarder(rewarder).withdraw(prevOwner, prevPrice);
+        if (prevPrice > 0) {
+            IRewarder(rewarder).withdraw(prevOwner, prevPrice);
+        }
         IRewarder(rewarder).deposit(account, nextPrice);
 
         emit Content__Curated(account, tokenId, nextPrice);
@@ -173,10 +167,10 @@ contract Content is
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 firsTokenId,
+        uint256 firstTokenId,
         uint256 batchSize
     ) internal override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, firsTokenId, batchSize);
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
     function supportsInterface(
@@ -203,7 +197,7 @@ contract Content is
     }
 
     function getNextPrice(uint256 tokenId) public view returns (uint256) {
-        return (id_Price[tokenId] * 11) / 10;
+        return (id_Price[tokenId] * 11) / 10 + 1e6;
     }
 }
 

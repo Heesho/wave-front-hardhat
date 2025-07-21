@@ -55,8 +55,6 @@ interface ISale {
 }
 
 interface IContent {
-    function initialPrice() external view returns (uint256);
-
     function getNextPrice(uint256 tokenId) external view returns (uint256);
 
     function create(
@@ -117,7 +115,6 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         address indexed token,
         address indexed content,
         address indexed account,
-        uint256 price,
         uint256 tokenId
     );
     event WaveFrontRouter__ContentCurated(
@@ -273,19 +270,12 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         string calldata uri
     ) external nonReentrant {
         address content = IToken(token).content();
-        address quote = IWaveFront(wavefront).quote();
-        uint256 price = IContent(content).initialPrice();
-
-        IERC20(quote).safeTransferFrom(msg.sender, address(this), price);
-        _safeApprove(quote, content, price);
-
         uint256 tokenId = IContent(content).create(msg.sender, uri);
 
         emit WaveFrontRouter__ContentCreated(
             token,
             content,
             msg.sender,
-            price,
             tokenId
         );
     }

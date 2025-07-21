@@ -978,8 +978,6 @@ describe("local: test1", function () {
   it("User0 creates content", async function () {
     console.log("******************************************************");
     const uri = "https://wavefront.io/content1";
-    const amount = await multicall.contentPrice(wft.address, 0);
-    await usdc.connect(user0).approve(router.address, amount);
     await router.connect(user0).createContent(wft.address, uri);
     console.log("- content created");
   });
