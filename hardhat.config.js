@@ -37,7 +37,7 @@ module.exports = {
         network: "base_sepolia",
         chainId: 84532,
         urls: {
-          apiURL: "https://api.etherscan.io/v2/api?chainid=84532",
+          apiURL: "https://api-sepolia.basescan.org/api",
           browserURL: "https://sepolia.basescan.org/",
         },
       },

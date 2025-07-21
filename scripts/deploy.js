@@ -26,37 +26,37 @@ let wavefront, multicall, router;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x54cCcf999B5bd3Ea12c52810fA60BB0eB41d109c"
+    "0x8d97b0B334EB5076F2CE66a7B7ffAc1931622022"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x6A6A9AEeF062ce48Ec115182820415aC086FE139"
+    "0xEB4b7929A5E084b2817Ee0085F9A2B94e2f4F226"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0x22Fdd0Ef9bf2773B0C91BaE0fe421a5fC8a8b4ea"
+    "0xd7ea36ECA1cA3E73bC262A6D05DB01E60AE4AD47"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0xA4710B90d207b5aEC7561a279bf63c9D217ae5d1"
+    "0xe2719e4C3AC97890b2AF3783A3B892c3a6FF041C"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x23Fb1d34eaF824Ba9DE57D46aAa4a533E1fc527b"
+    "0x6DE64633c9a5beCDde6c5Dc27dfF308F05F56665"
   );
 
   wavefront = await ethers.getContractAt(
     "contracts/WaveFront.sol:WaveFront",
-    "0x40207f0D1AFb226CB441d1Ef1f7fD56bF51EBAC0"
+    "0xA431bA493D5A63Fa77c69284535E105fB98f0472"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x112313C87bF34c8EA5A63e590f8EdC0159a085B0"
+    "0x65e3249EccD38aD841345dA5beBBebE3a73a596C"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x156b7C62430bEE28b1d78F7804D48a67D9E1A23C"
+    "0xCF39871EB8bB0a14951b7590482a6914b8D2A5E6"
   );
 
   console.log("Contracts Retrieved");
@@ -101,6 +101,13 @@ async function verifyTokenFactory() {
   await hre.run("verify:verify", {
     address: tokenFactory.address,
     contract: "contracts/TokenFactory.sol:TokenFactory",
+    settings: {
+      viaIR: true,
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
   });
   console.log("TokenFactory Verified");
 }
@@ -289,13 +296,20 @@ async function main() {
 
   console.log("Starting System Verificatrion Deployment");
   // await verifyUsdc();
+  // await sleep(5000);
   await verifyTokenFactory();
-  await verifySaleFactory();
-  await verifyContentFactory();
-  await verifyRewarderFactory();
-  await verifyWaveFront();
-  await verifyMulticall();
-  await verifyRouter();
+  // await sleep(5000);
+  // await verifySaleFactory();
+  // await sleep(5000);
+  // await verifyContentFactory();
+  // await sleep(5000);
+  // await verifyRewarderFactory();
+  // await sleep(5000);
+  // await verifyWaveFront();
+  // await sleep(5000);
+  // await verifyMulticall();
+  // await sleep(5000);
+  // await verifyRouter();
 
   //===================================================================
   // Deploy wft
