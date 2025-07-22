@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface IContent {
     function token() external view returns (address);
@@ -16,7 +16,7 @@ interface IToken {
 contract Rewarder is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public constant DURATION = 7 days;
+    uint256 private constant DURATION = 7 days;
 
     address public immutable content;
 
@@ -153,6 +153,10 @@ contract Rewarder is ReentrancyGuard {
         token_IsReward[token] = true;
         rewardTokens.push(token);
         emit Rewarder__RewardAdded(token);
+    }
+
+    function duration() external pure returns (uint256) {
+        return DURATION;
     }
 
     function left(address token) public view returns (uint256 leftover) {

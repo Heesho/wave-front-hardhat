@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IWaveFront {
     function quote() external view returns (address);
@@ -353,9 +352,7 @@ contract WaveFrontRouter is ReentrancyGuard, Ownable {
         address _token,
         address _to
     ) external onlyOwner {
-        require(_to != address(0), "Router: Invalid recipient");
         uint256 balance = IERC20(_token).balanceOf(address(this));
-        require(balance > 0, "Router: No balance");
         IERC20(_token).safeTransfer(_to, balance);
     }
 }

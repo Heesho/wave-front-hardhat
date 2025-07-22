@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./library/FixedPointMathLib.sol";
+import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {FixedPointMathLib} from "./library/FixedPointMathLib.sol";
 
 interface ISale {
     function endTime() external view returns (uint256);

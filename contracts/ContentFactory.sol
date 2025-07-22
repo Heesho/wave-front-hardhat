@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ERC721, ERC721Enumerable, IERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IRewarderFactory {
     function create(address _content) external returns (address);
 }
 
 interface IRewarder {
-    function DURATION() external view returns (uint256);
+    function duration() external view returns (uint256);
 
     function left(address token) external view returns (uint256);
 
@@ -118,7 +117,7 @@ contract Content is
     }
 
     function distribute() external {
-        uint256 duration = IRewarder(rewarder).DURATION();
+        uint256 duration = IRewarder(rewarder).duration();
 
         uint256 balanceQuote = IERC20(quote).balanceOf(address(this));
         uint256 leftQuote = IRewarder(rewarder).left(quote);
