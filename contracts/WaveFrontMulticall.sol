@@ -72,8 +72,6 @@ interface IRewarder {
 }
 
 interface IContent {
-    function initialPrice() external view returns (uint256);
-
     function getNextPrice(uint256 tokenId) external view returns (uint256);
 }
 
@@ -470,10 +468,6 @@ contract WaveFrontMulticall {
         uint256 tokenId
     ) external view returns (uint256) {
         address content = IToken(token).content();
-        if (tokenId == 0) {
-            return IContent(content).initialPrice();
-        } else {
-            return IContent(content).getNextPrice(tokenId);
-        }
+        return IContent(content).getNextPrice(tokenId);
     }
 }
