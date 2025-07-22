@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface IRewarderFactory {
     function create(address _content) external returns (address);
@@ -35,7 +34,6 @@ contract Content is
     ReentrancyGuard
 {
     using SafeERC20 for IERC20;
-    using Math for uint256;
 
     address public immutable rewarder;
     address public immutable token;
@@ -140,26 +138,26 @@ contract Content is
     }
 
     function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
+        address,
+        address,
+        uint256
     ) public virtual override(ERC721, IERC721) {
         revert Content__TransferDisabled();
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
+        address,
+        address,
+        uint256
     ) public virtual override(ERC721, IERC721) {
         revert Content__TransferDisabled();
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
+        address,
+        address,
+        uint256,
+        bytes memory
     ) public virtual override(ERC721, IERC721) {
         revert Content__TransferDisabled();
     }
