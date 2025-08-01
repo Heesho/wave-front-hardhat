@@ -83,7 +83,7 @@ describe("local: test1", function () {
     const wftSymbol = "wft";
     const wftUri = "https://wavefront.io/wft";
 
-    await router.connect(user0).createToken(wftName, wftSymbol, wftUri);
+    await router.connect(user0).createToken(wftName, wftSymbol, wftUri, false);
     wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft created");
   });
@@ -108,7 +108,7 @@ describe("local: test1", function () {
     await usdc.connect(user1).approve(router.address, amount);
     await expect(
       router.connect(user1).contribute(wft.address, amount)
-    ).to.be.revertedWith("Sale__ZeroInput");
+    ).to.be.revertedWith("Sale__ZeroQuoteRaw");
     console.log("- 0 usdc contributed to wft sale failed");
   });
 
@@ -183,7 +183,7 @@ describe("local: test1", function () {
   it("User0 redeems again wft contribution and fails", async function () {
     console.log("******************************************************");
     await expect(router.connect(user0).redeem(wft.address)).to.be.revertedWith(
-      "Sale__NothingToRedeem"
+      "Sale__ZeroQuoteRaw"
     );
     console.log("- wft contribution redemption failed");
   });
@@ -191,7 +191,7 @@ describe("local: test1", function () {
   it("User3 redeems wft contribution but fails", async function () {
     console.log("******************************************************");
     await expect(router.connect(user3).redeem(wft.address)).to.be.revertedWith(
-      "Sale__NothingToRedeem"
+      "Sale__ZeroQuoteRaw"
     );
     console.log("- wft contribution redemption failed");
   });

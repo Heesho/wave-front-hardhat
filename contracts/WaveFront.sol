@@ -13,7 +13,9 @@ interface ITokenFactory {
         uint256 reserveVirtQuoteRaw,
         address saleFactory,
         address contentFactory,
-        address rewarderFactory
+        address rewarderFactory,
+        address owner,
+        bool isPrivate
     ) external returns (address token);
 }
 
@@ -23,10 +25,6 @@ interface IToken {
     function content() external view returns (address);
 
     function rewarder() external view returns (address);
-}
-
-interface IRewarder {
-    function addReward(address token) external;
 }
 
 contract WaveFront is Ownable {
@@ -76,11 +74,10 @@ contract WaveFront is Ownable {
         rewarderFactory = _rewarderFactory;
     }
 
-    function create(
-        string memory name,
-        string memory symbol,
-        string memory uri
-    ) external returns (address token) {
+    function create(string memory name, string memory symbol, string memory uri, address owner, bool isPrivate)
+        external
+        returns (address token)
+    {
         index++;
 
         token = ITokenFactory(tokenFactory).create(
@@ -92,26 +89,17 @@ contract WaveFront is Ownable {
             RESERVE_VIRT_QUOTE_RAW,
             saleFactory,
             contentFactory,
-            rewarderFactory
+            rewarderFactory,
+            owner,
+            isPrivate
         );
 
         index_Token[index] = token;
         token_Index[token] = index;
         token_Uri[token] = uri;
 
-        address rewarder = IToken(token).rewarder();
-        IRewarder(rewarder).addReward(quote);
-        IRewarder(rewarder).addReward(token);
-
         emit WaveFront__TokenCreated(
-            index,
-            token,
-            IToken(token).sale(),
-            IToken(token).content(),
-            rewarder,
-            name,
-            symbol,
-            uri
+            index, token, IToken(token).sale(), IToken(token).content(), IToken(token).rewarder(), name, symbol, uri
         );
     }
 
@@ -138,13 +126,5 @@ contract WaveFront is Ownable {
     function setRewarderFactory(address _rewarderFactory) external onlyOwner {
         rewarderFactory = _rewarderFactory;
         emit WaveFront__RewarderFactorySet(_rewarderFactory);
-    }
-
-    function addContentReward(
-        address token,
-        address rewardToken
-    ) external onlyOwner {
-        address rewarder = IToken(token).rewarder();
-        IRewarder(rewarder).addReward(rewardToken);
     }
 }

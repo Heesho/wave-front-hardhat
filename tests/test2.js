@@ -12,7 +12,7 @@ let usdc, usdt, wft0, wft1, wft2, wft3;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let wavefront, multicall, router;
 
-describe("local: test0", function () {
+describe("local: test2", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -85,7 +85,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft0";
     const wftUri = "https://wavefront.io/wft0";
 
-    await router.connect(user0).createToken(wftName, wftSymbol, wftUri);
+    await router.connect(user0).createToken(wftName, wftSymbol, wftUri, false);
     wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft0 created");
   });
@@ -97,7 +97,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft1";
     const wftUri = "https://wavefront.io/wft1";
 
-    await router.connect(user1).createToken(wftName, wftSymbol, wftUri);
+    await router.connect(user1).createToken(wftName, wftSymbol, wftUri, false);
     wft1 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft1 created");
   });
@@ -109,7 +109,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft2";
     const wftUri = "https://wavefront.io/wft2";
 
-    await router.connect(user2).createToken(wftName, wftSymbol, wftUri);
+    await router.connect(user2).createToken(wftName, wftSymbol, wftUri, false);
     wft2 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft2 created");
   });
@@ -121,7 +121,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft3";
     const wftUri = "https://wavefront.io/wft3";
 
-    await router.connect(user3).createToken(wftName, wftSymbol, wftUri);
+    await router.connect(user3).createToken(wftName, wftSymbol, wftUri, false);
     wft3 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft3 created");
   });
@@ -188,27 +188,26 @@ describe("local: test0", function () {
 
   it("Rewarder coverage", async function () {
     console.log("******************************************************");
-    await wavefront.connect(owner).addContentReward(wft0.address, usdt.address);
     console.log("- content reward added");
-    await usdt.connect(owner).mint(owner.address, convert("10", 6));
-    await usdt.connect(owner).approve(router.address, convert("2", 6));
+    await usdc.connect(owner).mint(owner.address, convert("10", 6));
+    await usdc.connect(owner).approve(router.address, convert("2", 6));
     await router
       .connect(owner)
-      .notifyContentRewardAmount(wft0.address, usdt.address, convert("2", 6));
+      .notifyContentRewardAmount(wft0.address, usdc.address, convert("2", 6));
     console.log("- content reward notified");
-    await usdt.connect(owner).approve(router.address, convert("1", 6));
+    await usdc.connect(owner).approve(router.address, convert("1", 6));
     await expect(
       router
         .connect(owner)
-        .notifyContentRewardAmount(wft0.address, usdt.address, convert("1", 6))
+        .notifyContentRewardAmount(wft0.address, usdc.address, convert("1", 6))
     ).to.be.revertedWith("Rewarder__RewardSmallerThanLeft");
-    await usdt.connect(owner).approve(router.address, convert("0.1", 6));
+    await usdc.connect(owner).approve(router.address, convert("0.1", 6));
     await expect(
       router
         .connect(owner)
         .notifyContentRewardAmount(
           wft0.address,
-          usdt.address,
+          usdc.address,
           convert("0.1", 6)
         )
     ).to.be.revertedWith("Rewarder__RewardSmallerThanDuration");

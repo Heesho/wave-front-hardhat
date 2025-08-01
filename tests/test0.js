@@ -83,7 +83,7 @@ describe("local: test0", function () {
     const wftSymbol = "wft";
     const wftUri = "https://wavefront.io/wft";
 
-    await router.connect(user0).createToken(wftName, wftSymbol, wftUri);
+    await router.connect(user0).createToken(wftName, wftSymbol, wftUri, false);
     wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft created");
   });
@@ -168,9 +168,9 @@ describe("local: test0", function () {
     console.log("- 0.01 wft sold");
   });
 
-  it("User0 buys wft with 0.00001 usdc", async function () {
+  it("User0 buys wft with 0.001 usdc", async function () {
     console.log("******************************************************");
-    const amount = convert("0.00001", 6);
+    const amount = convert("1000", 0);
     await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
@@ -178,9 +178,9 @@ describe("local: test0", function () {
     console.log("- 0.00001 usdc bought wft");
   });
 
-  it("User0 buys wft with 0.000001 usdc", async function () {
+  it("User0 buys wft with 0.001 usdc", async function () {
     console.log("******************************************************");
-    const amount = convert("0.000001", 6);
+    const amount = convert("1000", 6);
     await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
@@ -188,9 +188,9 @@ describe("local: test0", function () {
     console.log("- 0.000001 usdc bought wft");
   });
 
-  it("User0 buys wft with 0.000001 usdc", async function () {
+  it("User0 buys wft with 0.001 usdc", async function () {
     console.log("******************************************************");
-    const amount = convert("0.000001", 6);
+    const amount = convert("1000", 0);
     await usdc.connect(user0).approve(router.address, amount);
     await router
       .connect(user0)
