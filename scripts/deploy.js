@@ -16,9 +16,10 @@ const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
 const convert = (amount, decimals) => ethers.utils.parseUnits(amount, decimals);
 
 // Contract Variables
-let usdc, wft0, wft1, wft2;
+let usdc;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let wavefront, multicall, router;
+let token0, sale0, content0, rewarder0;
 
 /*===================================================================*/
 /*===========================  CONTRACT DATA  =======================*/
@@ -26,37 +27,54 @@ let wavefront, multicall, router;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x8d97b0B334EB5076F2CE66a7B7ffAc1931622022"
+    "0x4293476Ee8D814F29917A23cEeF2653f6cC48ed6"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0xEB4b7929A5E084b2817Ee0085F9A2B94e2f4F226"
+    "0x4232d1F05a4EBce7c42DD1EC82dc2b2A8e025ED4"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0xd7ea36ECA1cA3E73bC262A6D05DB01E60AE4AD47"
+    "0x3E5b9a5D7D73D8781c4782910523b942dB831ef8"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0xe2719e4C3AC97890b2AF3783A3B892c3a6FF041C"
+    "0x2FB9b9aA581c4a9e2314329A93C0cD1a8C152827"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x6DE64633c9a5beCDde6c5Dc27dfF308F05F56665"
+    "0xcD4aE9b8ddaA57B8aDd77fA3193dA12B3b6765b3"
   );
 
   wavefront = await ethers.getContractAt(
     "contracts/WaveFront.sol:WaveFront",
-    "0xA431bA493D5A63Fa77c69284535E105fB98f0472"
+    "0xe6e41bd765Ff3103fC3332F3E4f592C50AA5B37C"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x65e3249EccD38aD841345dA5beBBebE3a73a596C"
+    "0x5A472F4e2999d391f32A985C655eC745658D31Ce"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0xCF39871EB8bB0a14951b7590482a6914b8D2A5E6"
+    "0x08ec71e3b7A87d78e89d765e10eAe345419aFf9a"
+  );
+
+  token0 = await ethers.getContractAt(
+    "contracts/TokenFactory.sol:Token",
+    "0x044B15F5C6775d75797C221a173CBd94230C539A"
+  );
+  sale0 = await ethers.getContractAt(
+    "contracts/SaleFactory.sol:Sale",
+    "0xAC5922bccb16A0213684427F0412fCf8F9500171"
+  );
+  content0 = await ethers.getContractAt(
+    "contracts/ContentFactory.sol:Content",
+    "0x42a73ED7a7B3e4e76F175e7a6F054Fbd7c63DffD"
+  );
+  rewarder0 = await ethers.getContractAt(
+    "contracts/RewarderFactory.sol:Rewarder",
+    "0xB8fE8F6f289f80B2007CdF365C22C4A0AD75187E"
   );
 
   console.log("Contracts Retrieved");
@@ -101,13 +119,6 @@ async function verifyTokenFactory() {
   await hre.run("verify:verify", {
     address: tokenFactory.address,
     contract: "contracts/TokenFactory.sol:TokenFactory",
-    settings: {
-      viaIR: true,
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-    },
   });
   console.log("TokenFactory Verified");
 }
@@ -294,10 +305,10 @@ async function main() {
   // Verify System
   //===================================================================
 
-  console.log("Starting System Verificatrion Deployment");
+  // console.log("Starting System Verificatrion Deployment");
   // await verifyUsdc();
   // await sleep(5000);
-  await verifyTokenFactory();
+  // await verifyTokenFactory();
   // await sleep(5000);
   // await verifySaleFactory();
   // await sleep(5000);
@@ -312,18 +323,45 @@ async function main() {
   // await verifyRouter();
 
   //===================================================================
-  // Deploy wft
-  //===================================================================
-
-  //===================================================================
-  // Verify wft
-  //===================================================================
-
-  //===================================================================
   // Transactions
   //===================================================================
 
   console.log("Starting Transactions");
+
+  // console.log("Deploy Token0");
+  // token0 = await router.createToken("Token0", "TOK0", "ipfs://token0", false);
+  // console.log("Token0 Deployed at:", await wavefront.index_Token(1));
+
+  // console.log("Sale0 Deployed at: ", await token0.sale());
+  // console.log("Content0 Deployed at: ", await token0.content());
+  // console.log("Rewarder0 Deployed at: ", await token0.rewarder());
+
+  // console.log("Mint USDC to wallet");
+  // await usdc.mint(wallet.address, convert("10000", 6));
+
+  // console.log("Contribute 100 USDC to Token0");
+  // const contributionAmount = convert("100", 6);
+  // const approveTx = await usdc
+  //   .connect(wallet)
+  //   .approve(router.address, contributionAmount, { gasPrice: ethers.gasPrice });
+  // await approveTx.wait();
+  // const contributeTx = await router
+  //   .connect(wallet)
+  //   .contribute(token0.address, contributionAmount, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await contributeTx.wait();
+  // console.log("Sale0 contribution: ", await sale0.totalQuoteRaw());
+
+  // console.log("Redeem contribution");
+  // const redeemTx = await router.connect(wallet).redeem(token0.address, {
+  //   gasPrice: ethers.gasPrice,
+  // });
+  // await redeemTx.wait();
+  // console.log(
+  //   "User contribution: ",
+  //   await sale0.account_QuoteRaw(wallet.address)
+  // );
 }
 
 main()
