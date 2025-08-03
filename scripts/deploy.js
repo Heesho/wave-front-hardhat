@@ -7,6 +7,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
+const TOKEN0 = "0x044B15F5C6775d75797C221a173CBd94230C539A"; // Token0 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -19,7 +20,7 @@ const convert = (amount, decimals) => ethers.utils.parseUnits(amount, decimals);
 let usdc;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let wavefront, multicall, router;
-let token0, sale0, content0, rewarder0;
+let token, sale, content, rewarder;
 
 /*===================================================================*/
 /*===========================  CONTRACT DATA  =======================*/
@@ -60,21 +61,21 @@ async function getContracts() {
     "0x08ec71e3b7A87d78e89d765e10eAe345419aFf9a"
   );
 
-  token0 = await ethers.getContractAt(
+  token = await ethers.getContractAt(
     "contracts/TokenFactory.sol:Token",
     "0x044B15F5C6775d75797C221a173CBd94230C539A"
   );
-  sale0 = await ethers.getContractAt(
+  sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
-    "0xAC5922bccb16A0213684427F0412fCf8F9500171"
+    await token.sale()
   );
-  content0 = await ethers.getContractAt(
+  content = await ethers.getContractAt(
     "contracts/ContentFactory.sol:Content",
-    "0x42a73ED7a7B3e4e76F175e7a6F054Fbd7c63DffD"
+    await token.content()
   );
-  rewarder0 = await ethers.getContractAt(
+  rewarder = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:Rewarder",
-    "0xB8fE8F6f289f80B2007CdF365C22C4A0AD75187E"
+    await token.rewarder()
   );
 
   console.log("Contracts Retrieved");
@@ -328,18 +329,17 @@ async function main() {
 
   console.log("Starting Transactions");
 
-  // console.log("Deploy Token0");
-  // token0 = await router.createToken("Token0", "TOK0", "ipfs://token0", false);
-  // console.log("Token0 Deployed at:", await wavefront.index_Token(1));
+  // console.log("Deploy Token");
+  // token = await router.createToken("Token0", "TOK0", "ipfs://token0", false);
+  // console.log("Token Deployed at:", await wavefront.index_Token(1));
+  // console.log("Sale Deployed at: ", await token.sale());
+  // console.log("Content Deployed at: ", await token.content());
+  // console.log("Rewarder Deployed at: ", await token.rewarder());
 
-  // console.log("Sale0 Deployed at: ", await token0.sale());
-  // console.log("Content0 Deployed at: ", await token0.content());
-  // console.log("Rewarder0 Deployed at: ", await token0.rewarder());
-
-  // console.log("Mint USDC to wallet");
+  // console.log("Mint USDC");
   // await usdc.mint(wallet.address, convert("10000", 6));
 
-  // console.log("Contribute 100 USDC to Token0");
+  // console.log("Contribute");
   // const contributionAmount = convert("100", 6);
   // const approveTx = await usdc
   //   .connect(wallet)
@@ -347,21 +347,135 @@ async function main() {
   // await approveTx.wait();
   // const contributeTx = await router
   //   .connect(wallet)
-  //   .contribute(token0.address, contributionAmount, {
+  //   .contribute(token.address, contributionAmount, {
   //     gasPrice: ethers.gasPrice,
   //   });
   // await contributeTx.wait();
-  // console.log("Sale0 contribution: ", await sale0.totalQuoteRaw());
+  // console.log("Sale contribution: ", await sale.totalQuoteRaw());
 
-  // console.log("Redeem contribution");
-  // const redeemTx = await router.connect(wallet).redeem(token0.address, {
+  // console.log("Redeem");
+  // const redeemTx = await router.connect(wallet).redeem(token.address, {
   //   gasPrice: ethers.gasPrice,
   // });
   // await redeemTx.wait();
   // console.log(
   //   "User contribution: ",
-  //   await sale0.account_QuoteRaw(wallet.address)
+  //   await sale.account_QuoteRaw(wallet.address)
   // );
+
+  // console.log("Buy Token");
+  // const buyAmount = convert("1000", 6);
+  // const approveTx = await usdc
+  //   .connect(wallet)
+  //   .approve(router.address, buyAmount, { gasPrice: ethers.gasPrice });
+  // await approveTx.wait();
+  // const buyTx = await router
+  //   .connect(wallet)
+  //   .buy(token.address, AddressZero, buyAmount, 0, 0, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await buyTx.wait();
+  // console.log(
+  //   "Token bought: ",
+  //   ethers.utils.formatUnits(await token.balanceOf(wallet.address), 18)
+  // );
+
+  // console.log("Sell Token");
+  // const sellAmount = convert("1000", 18);
+  // const approveTx = await token
+  //   .connect(wallet)
+  //   .approve(router.address, sellAmount, { gasPrice: ethers.gasPrice });
+  // await approveTx.wait();
+  // const sellTx = await router
+  //   .connect(wallet)
+  //   .sell(token.address, AddressZero, sellAmount, 0, 0, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await sellTx.wait();
+  // console.log("Token sold: ", await token.balanceOf(wallet.address));
+
+  // console.log("Borrow Credit");
+  // const borrowAmount = convert("1", 6);
+  // const borrowTx = await token
+  //   .connect(wallet)
+  //   .borrow(wallet.address, borrowAmount, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await borrowTx.wait();
+  // console.log(
+  //   "Token borrowed: ",
+  //   await token.account_DebtRaw(wallet.address)
+  // );
+
+  // console.log("Repay Debt");
+  // const repayAmount = convert("0.5", 6);
+  // const approveTx = await usdc
+  //   .connect(wallet)
+  //   .approve(token.address, repayAmount, { gasPrice: ethers.gasPrice });
+  // await approveTx.wait();
+  // const repayTx = await token
+  //   .connect(wallet)
+  //   .repay(wallet.address, repayAmount, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await repayTx.wait();
+  // console.log("Token debt: ", await token.account_DebtRaw(wallet.address));
+
+  // console.log("Heal Token");
+  // const healAmount = convert("1000", 6);
+  // const approveTx = await usdc
+  //   .connect(wallet)
+  //   .approve(token.address, healAmount, { gasPrice: ethers.gasPrice });
+  // await approveTx.wait();
+  // const healTx = await token.connect(wallet).heal(healAmount, {
+  //   gasPrice: ethers.gasPrice,
+  // });
+  // await healTx.wait();
+  // console.log("Token price: ", await token.getMarketPrice());
+
+  // console.log("Burn Token");
+  // const burnAmount = convert("1000", 18);
+  // const burnTx = await token.connect(wallet).burn(burnAmount, {
+  //   gasPrice: ethers.gasPrice,
+  // });
+  // await burnTx.wait();
+  // console.log("Token price: ", await token.getMarketPrice());
+
+  // console.log("Create Content");
+  // const contentTx = await router
+  //   .connect(wallet)
+  //   .createContent(token.address, "ipfs://token0/content0", {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await contentTx.wait();
+  // console.log("Content created: ", await content.tokenURI(1));
+
+  // console.log("Curate Content");
+  // const contentPrice = await content.getNextPrice(1);
+  // const approveTx = await usdc
+  //   .connect(wallet)
+  //   .approve(router.address, contentPrice, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await approveTx.wait();
+  // const curateTx = await router
+  //   .connect(wallet)
+  //   .curateContent(token.address, 1, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await curateTx.wait();
+  // console.log("Content price: ", await content.getNextPrice(1));
+
+  // console.log("Transfer Token");
+  // const targetAddress = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712";
+  // const transferAmount = convert("1000", 18);
+  // const transferTx = await token
+  //   .connect(wallet)
+  //   .transfer(targetAddress, transferAmount, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await transferTx.wait();
+  // console.log("Token transferred: ", await token.balanceOf(targetAddress));
 }
 
 main()

@@ -19,6 +19,7 @@ interface IContentFactory {
     function create(
         string memory name,
         string memory symbol,
+        string memory coverUri,
         address _token,
         address _quote,
         address rewarderFactory,
@@ -109,6 +110,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     constructor(
         string memory name,
         string memory symbol,
+        string memory coverUri,
         address _wavefront,
         address _quote,
         uint256 _initialSupply,
@@ -133,7 +135,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
 
         sale = ISaleFactory(saleFactory).create(address(this), _quote);
         (content, rewarder) = IContentFactory(contentFactory).create(
-            name, symbol, address(this), _quote, rewarderFactory, owner, isPrivate
+            name, symbol, coverUri, address(this), _quote, rewarderFactory, owner, isPrivate
         );
     }
 
@@ -222,7 +224,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         return wad / quoteScale;
     }
 
-    function _processBuy(uint256 quoteRawIn, uint256 minTokenAmtOut) internal returns (uint256 tokenAmtOut, uint256 feeRaw) {
+    function _processBuy(uint256 quoteRawIn, uint256 minTokenAmtOut)
+        internal
+        returns (uint256 tokenAmtOut, uint256 feeRaw)
+    {
         feeRaw = (quoteRawIn * FEE) / DIVISOR;
         uint256 netRaw = quoteRawIn - feeRaw;
         uint256 netWad = rawToWad(netRaw);
@@ -240,7 +245,10 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         reserveTokenAmt = y1;
     }
 
-    function _processSell(uint256 tokenAmtIn, uint256 minQuoteRawOut) internal returns (uint256 quoteRawOut, uint256 feeAmt) {
+    function _processSell(uint256 tokenAmtIn, uint256 minQuoteRawOut)
+        internal
+        returns (uint256 quoteRawOut, uint256 feeAmt)
+    {
         feeAmt = (tokenAmtIn * FEE) / DIVISOR;
         uint256 netAmt = tokenAmtIn - feeAmt;
 
@@ -416,6 +424,7 @@ contract TokenFactory {
     function create(
         string memory name,
         string memory symbol,
+        string memory coverUri,
         address wavefront,
         address quote,
         uint256 initialSupply,
@@ -430,6 +439,7 @@ contract TokenFactory {
             new Token(
                 name,
                 symbol,
+                coverUri,
                 wavefront,
                 quote,
                 initialSupply,

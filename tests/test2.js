@@ -155,10 +155,6 @@ describe("local: test2", function () {
       "token_Index[wft3]: ",
       await wavefront.token_Index(wft3.address)
     );
-    console.log("token_Uri[wft0]: ", await wavefront.token_Uri(wft0.address));
-    console.log("token_Uri[wft1]: ", await wavefront.token_Uri(wft1.address));
-    console.log("token_Uri[wft2]: ", await wavefront.token_Uri(wft2.address));
-    console.log("token_Uri[wft3]: ", await wavefront.token_Uri(wft3.address));
 
     await wavefront.connect(owner).setTreasury(AddressZero);
     await wavefront.connect(owner).setTreasury(treasury.address);
