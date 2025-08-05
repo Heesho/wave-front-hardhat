@@ -7,9 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const WFT1 = "0xD2fA2544A74e3b79a15bE32d3E9625988d2B2781"; // WFT1 Address
-const WFT2 = "0xf4Acee3a483ad17dDA666E03B5D9b09D11d3B0d9"; // WFT2 Address
-const WFT3 = "0x4Ab904D391b5D939054F9b62e1982F8249c8Be29"; // WFT3 Address
+const WFT1 = "0x5519afeBE88238A1adA6A5C1585f71a8DF9934c9"; // WFT1 Address
+const WFT2 = "0x74114523AcdDa8547b71bf734546D6959D4f6597"; // WFT2 Address
+const WFT3 = "0xca0Bc7bbf5F40DdcfE52D8d01BF3a35E347B4b58"; // WFT3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -30,37 +30,37 @@ let token, sale, content, rewarder;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x436B9a684b6f26B34E9c353De05A0454b7996900"
+    "0x6FAB98871CB914718294072C944bCF0d9bD4C080"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x57d24e1dbc6c0A9c76A97c6605b8d028BFeFC5c3"
+    "0x622777bF29b5808C744be4E15d321F7320B74218"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0x612F60F54078b9A96480De849c405fE4064093c2"
+    "0xAFD0e84046A337cBAc43DE3f499c3B56B2B29b70"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0x5A13cdD022D6B22a728b8CbCdd104e9970C1F801"
+    "0xB017A3e0E614336E72A380B2647FBE5aE3AEB2c8"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x91B761a6D90eEEE72e57b23cdE275D3eDC083Df2"
+    "0x65654BDe0e02f3c46222d297fe155Bf67C33166F"
   );
 
   wavefront = await ethers.getContractAt(
     "contracts/WaveFront.sol:WaveFront",
-    "0xb578cD56B8a0E5c8C746a8D80142AbB59e8c93Eb"
+    "0x3ea169bc579bF24673428bC710b22F06a8F4ff60"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x0fb3a5d03a566AF5d075EDfeBF14E10a3f0dfbe0"
+    "0x6bb6CfE7398ac70d6fF6abEAD3aBa4D2162009e4"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x5b3C7dDe7cE2251079f8D6FB130fe9Dc1167582c"
+    "0xfc93cd79BFEb8aCc279c43a99F82297fdC83822d"
   );
 
   token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", WFT1);
@@ -400,13 +400,13 @@ async function main() {
 
   // console.log("Deploy Token");
   // const createTokenTx = await router.createToken(
-  //   "WFT3",
-  //   "WFT3",
-  //   "ipfs://wft3",
+  //   "WFT1",
+  //   "WFT1",
+  //   "ipfs://wft1",
   //   false
   // );
   // await createTokenTx.wait();
-  // console.log("Token Deployed at:", await wavefront.index_Token(3));
+  // console.log("Token Deployed at:", await wavefront.index_Token(1));
 
   // console.log("Mint USDC");
   // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
@@ -476,10 +476,7 @@ async function main() {
   //     gasPrice: ethers.gasPrice,
   //   });
   // await borrowTx.wait();
-  // console.log(
-  //   "Token borrowed: ",
-  //   await token.account_DebtRaw(wallet.address)
-  // );
+  // console.log("Token borrowed: ", await token.account_DebtRaw(wallet.address));
 
   // console.log("Repay Debt");
   // const repayAmount = convert("0.5", 6);
@@ -518,7 +515,7 @@ async function main() {
   // console.log("Create Content");
   // const contentTx = await router
   //   .connect(wallet)
-  //   .createContent(token.address, "ipfs://token0/content0", {
+  //   .createContent(token.address, "ipfs://wft1/content1", {
   //     gasPrice: ethers.gasPrice,
   //   });
   // await contentTx.wait();

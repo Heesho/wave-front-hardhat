@@ -53,7 +53,8 @@ contract WaveFront is Ownable {
         address sale,
         address content,
         address rewarder,
-        address indexed owner
+        address indexed owner,
+        bool isPrivate
     );
     event WaveFront__TreasurySet(address newTreasury);
     event WaveFront__TokenFactorySet(address newTokenFactory);
@@ -108,7 +109,8 @@ contract WaveFront is Ownable {
             IToken(token).sale(),
             IToken(token).content(),
             IToken(token).rewarder(),
-            owner
+            owner,
+            isPrivate
         );
     }
 
