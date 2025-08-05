@@ -7,7 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const TOKEN0 = "0x044B15F5C6775d75797C221a173CBd94230C539A"; // Token0 Address
+const WFT1 = "0xD2fA2544A74e3b79a15bE32d3E9625988d2B2781"; // WFT1 Address
+const WFT2 = "0xf4Acee3a483ad17dDA666E03B5D9b09D11d3B0d9"; // WFT2 Address
+const WFT3 = "0x4Ab904D391b5D939054F9b62e1982F8249c8Be29"; // WFT3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -28,43 +30,40 @@ let token, sale, content, rewarder;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x4293476Ee8D814F29917A23cEeF2653f6cC48ed6"
+    "0x436B9a684b6f26B34E9c353De05A0454b7996900"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x4232d1F05a4EBce7c42DD1EC82dc2b2A8e025ED4"
+    "0x57d24e1dbc6c0A9c76A97c6605b8d028BFeFC5c3"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0x3E5b9a5D7D73D8781c4782910523b942dB831ef8"
+    "0x612F60F54078b9A96480De849c405fE4064093c2"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0x2FB9b9aA581c4a9e2314329A93C0cD1a8C152827"
+    "0x5A13cdD022D6B22a728b8CbCdd104e9970C1F801"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0xcD4aE9b8ddaA57B8aDd77fA3193dA12B3b6765b3"
+    "0x91B761a6D90eEEE72e57b23cdE275D3eDC083Df2"
   );
 
   wavefront = await ethers.getContractAt(
     "contracts/WaveFront.sol:WaveFront",
-    "0xe6e41bd765Ff3103fC3332F3E4f592C50AA5B37C"
+    "0xb578cD56B8a0E5c8C746a8D80142AbB59e8c93Eb"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x5A472F4e2999d391f32A985C655eC745658D31Ce"
+    "0x0fb3a5d03a566AF5d075EDfeBF14E10a3f0dfbe0"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x08ec71e3b7A87d78e89d765e10eAe345419aFf9a"
+    "0x5b3C7dDe7cE2251079f8D6FB130fe9Dc1167582c"
   );
 
-  token = await ethers.getContractAt(
-    "contracts/TokenFactory.sol:Token",
-    "0x044B15F5C6775d75797C221a173CBd94230C539A"
-  );
+  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", WFT1);
   sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
     await token.sale()
@@ -279,6 +278,67 @@ async function printDeployment() {
   console.log("**************************************************************");
 }
 
+async function verifyToken(wallet) {
+  console.log("Starting Token Verification");
+  await hre.run("verify:verify", {
+    address: token.address,
+    contract: "contracts/TokenFactory.sol:Token",
+    constructorArguments: [
+      await token.name(),
+      await token.symbol(),
+      await content.coverUri(),
+      wavefront.address,
+      usdc.address,
+      await wavefront.INITIAL_SUPPLY(),
+      await wavefront.RESERVE_VIRT_QUOTE_RAW(),
+      saleFactory.address,
+      contentFactory.address,
+      rewarderFactory.address,
+      wallet.address,
+      false,
+    ],
+  });
+  console.log("Token Verified");
+}
+
+async function verifySale() {
+  console.log("Starting Sale Verification");
+  await hre.run("verify:verify", {
+    address: sale.address,
+    contract: "contracts/SaleFactory.sol:Sale",
+    constructorArguments: [token.address, usdc.address],
+  });
+  console.log("Sale Verified");
+}
+
+async function verifyContent() {
+  console.log("Starting Content Verification");
+  await hre.run("verify:verify", {
+    address: content.address,
+    contract: "contracts/ContentFactory.sol:Content",
+    constructorArguments: [
+      await token.name(),
+      await token.symbol(),
+      await content.coverUri(),
+      token.address,
+      usdc.address,
+      rewarderFactory.address,
+      false,
+    ],
+  });
+  console.log("Content Verified");
+}
+
+async function verifyRewarder() {
+  console.log("Starting Rewarder Verification");
+  await hre.run("verify:verify", {
+    address: rewarder.address,
+    contract: "contracts/RewarderFactory.sol:Rewarder",
+    constructorArguments: [content.address],
+  });
+  console.log("Rewarder Verified");
+}
+
 async function main() {
   const [wallet] = await ethers.getSigners();
   console.log("Using wallet: ", wallet.address);
@@ -323,6 +383,15 @@ async function main() {
   // await sleep(5000);
   // await verifyRouter();
 
+  // console.log("Verify Token");
+  // await verifyToken(wallet);
+  // await sleep(5000);
+  // await verifySale();
+  // await sleep(5000);
+  // await verifyContent();
+  // await sleep(5000);
+  // await verifyRewarder();
+
   //===================================================================
   // Transactions
   //===================================================================
@@ -330,14 +399,19 @@ async function main() {
   console.log("Starting Transactions");
 
   // console.log("Deploy Token");
-  // token = await router.createToken("Token0", "TOK0", "ipfs://token0", false);
-  // console.log("Token Deployed at:", await wavefront.index_Token(1));
-  // console.log("Sale Deployed at: ", await token.sale());
-  // console.log("Content Deployed at: ", await token.content());
-  // console.log("Rewarder Deployed at: ", await token.rewarder());
+  // const createTokenTx = await router.createToken(
+  //   "WFT3",
+  //   "WFT3",
+  //   "ipfs://wft3",
+  //   false
+  // );
+  // await createTokenTx.wait();
+  // console.log("Token Deployed at:", await wavefront.index_Token(3));
 
   // console.log("Mint USDC");
-  // await usdc.mint(wallet.address, convert("10000", 6));
+  // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
+  // await mintTx.wait();
+  // console.log("USDC Balance: ", await usdc.balanceOf(wallet.address));
 
   // console.log("Contribute");
   // const contributionAmount = convert("100", 6);
