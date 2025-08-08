@@ -7,9 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const WFT1 = "0x5519afeBE88238A1adA6A5C1585f71a8DF9934c9"; // WFT1 Address
-const WFT2 = "0x74114523AcdDa8547b71bf734546D6959D4f6597"; // WFT2 Address
-const WFT3 = "0xca0Bc7bbf5F40DdcfE52D8d01BF3a35E347B4b58"; // WFT3 Address
+const WFT1 = "0xCe4AB1FDD8abA56Dd1A41bC96fafE9647A5C0e50"; // WFT1 Address
+const WFT2 = "0xb0F199a30d189959Cc93661EEC7B2e804969c3a7"; // WFT2 Address
+const WFT3 = "0xFeF337d37f5523ea44A1EA1e88E839fa6A9347b7"; // WFT3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -30,37 +30,37 @@ let token, sale, content, rewarder;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x6FAB98871CB914718294072C944bCF0d9bD4C080"
+    "0x12e122fe10F367c522a854c02aE2d4680f2bC5a3"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x622777bF29b5808C744be4E15d321F7320B74218"
+    "0xf69c7E8F7B3806aE89c01888742e0a15E6aD6912"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0xAFD0e84046A337cBAc43DE3f499c3B56B2B29b70"
+    "0x76B6F565974840C4Aeb9cA92EcEdD6b3AdD046AA"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0xB017A3e0E614336E72A380B2647FBE5aE3AEB2c8"
+    "0xB2a70ff3d2AA4Ffe4bCF8e075870FAc727c08776"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x65654BDe0e02f3c46222d297fe155Bf67C33166F"
+    "0xbB517FE4862c007B446dA89ba018c3a45Fab8917"
   );
 
   wavefront = await ethers.getContractAt(
     "contracts/WaveFront.sol:WaveFront",
-    "0x3ea169bc579bF24673428bC710b22F06a8F4ff60"
+    "0xB1e7fAec47EddC3E9996Bf01488B409D0A853DE8"
   );
   multicall = await ethers.getContractAt(
     "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x6bb6CfE7398ac70d6fF6abEAD3aBa4D2162009e4"
+    "0x5Fd179B11359681e1bd39B8cb0bA623834613a64"
   );
   router = await ethers.getContractAt(
     "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0xfc93cd79BFEb8aCc279c43a99F82297fdC83822d"
+    "0x4BD9B91c5c178968197CEE16d6440310b16fc0aB"
   );
 
   token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", WFT1);
@@ -366,7 +366,7 @@ async function main() {
   // Verify System
   //===================================================================
 
-  // console.log("Starting System Verificatrion Deployment");
+  // console.log("Starting System Verification");
   // await verifyUsdc();
   // await sleep(5000);
   // await verifyTokenFactory();
@@ -400,13 +400,13 @@ async function main() {
 
   // console.log("Deploy Token");
   // const createTokenTx = await router.createToken(
-  //   "WFT1",
-  //   "WFT1",
-  //   "ipfs://wft1",
+  //   "WFT3",
+  //   "WFT3",
+  //   "ipfs://wft3",
   //   false
   // );
   // await createTokenTx.wait();
-  // console.log("Token Deployed at:", await wavefront.index_Token(1));
+  // console.log("Token Deployed at:", await wavefront.index_Token(3));
 
   // console.log("Mint USDC");
   // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
@@ -515,11 +515,11 @@ async function main() {
   // console.log("Create Content");
   // const contentTx = await router
   //   .connect(wallet)
-  //   .createContent(token.address, "ipfs://wft1/content1", {
+  //   .createContent(token.address, "ipfs://wft1/content3", {
   //     gasPrice: ethers.gasPrice,
   //   });
   // await contentTx.wait();
-  // console.log("Content created: ", await content.tokenURI(1));
+  // console.log("Content created: ", await content.tokenURI(3));
 
   // console.log("Curate Content");
   // const contentPrice = await content.getNextPrice(1);
@@ -547,6 +547,13 @@ async function main() {
   //   });
   // await transferTx.wait();
   // console.log("Token transferred: ", await token.balanceOf(targetAddress));
+
+  // console.log("Claim Reward");
+  // const claimTx = await router.connect(wallet).getContentReward(token.address, {
+  //   gasPrice: ethers.gasPrice,
+  // });
+  // await claimTx.wait();
+  // console.log("Reward claimed: ");
 }
 
 main()
