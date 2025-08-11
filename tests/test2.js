@@ -10,7 +10,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, usdt, wft0, wft1, wft2, wft3;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
-let wavefront, multicall, router;
+let core, multicall, router;
 
 describe("local: test2", function () {
   before("Initial set up", async function () {
@@ -47,24 +47,22 @@ describe("local: test2", function () {
     rewarderFactory = await rewarderFactoryArtifact.deploy();
     console.log("- RewarderFactory Initialized");
 
-    const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
-    wavefront = await wavefrontArtifact.deploy(
+    const coreArtifact = await ethers.getContractFactory("Core");
+    core = await coreArtifact.deploy(
       usdc.address,
       tokenFactory.address,
       saleFactory.address,
       contentFactory.address,
       rewarderFactory.address
     );
-    console.log("- WaveFront Initialized");
+    console.log("- Core Initialized");
 
-    const multicallArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticall"
-    );
-    multicall = await multicallArtifact.deploy(wavefront.address);
+    const multicallArtifact = await ethers.getContractFactory("Multicall");
+    multicall = await multicallArtifact.deploy(core.address);
     console.log("- Multicall Initialized");
 
-    const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(wavefront.address);
+    const routerArtifact = await ethers.getContractFactory("Router");
+    router = await routerArtifact.deploy(core.address);
     console.log("- Router Initialized");
 
     const amount = convert("100000", 6);
@@ -126,59 +124,47 @@ describe("local: test2", function () {
     console.log("- wft3 created");
   });
 
-  it("wavefront coverage", async function () {
+  it("core coverage", async function () {
     console.log("******************************************************");
-    console.log("quote: ", await wavefront.quote());
-    console.log("tokenFactory: ", await wavefront.tokenFactory());
-    console.log("saleFactory: ", await wavefront.saleFactory());
-    console.log("contentFactory: ", await wavefront.contentFactory());
-    console.log("rewarderFactory: ", await wavefront.rewarderFactory());
-    console.log("treasury: ", await wavefront.treasury());
-    console.log("index: ", await wavefront.index());
-    console.log("index_Token[0]: ", await wavefront.index_Token(0));
-    console.log("index_Token[1]: ", await wavefront.index_Token(1));
-    console.log("index_Token[2]: ", await wavefront.index_Token(2));
-    console.log("index_Token[3]: ", await wavefront.index_Token(3));
-    console.log(
-      "token_Index[wft0]: ",
-      await wavefront.token_Index(wft0.address)
-    );
-    console.log(
-      "token_Index[wft1]: ",
-      await wavefront.token_Index(wft1.address)
-    );
-    console.log(
-      "token_Index[wft2]: ",
-      await wavefront.token_Index(wft2.address)
-    );
-    console.log(
-      "token_Index[wft3]: ",
-      await wavefront.token_Index(wft3.address)
-    );
+    console.log("quote: ", await core.quote());
+    console.log("tokenFactory: ", await core.tokenFactory());
+    console.log("saleFactory: ", await core.saleFactory());
+    console.log("contentFactory: ", await core.contentFactory());
+    console.log("rewarderFactory: ", await core.rewarderFactory());
+    console.log("treasury: ", await core.treasury());
+    console.log("index: ", await core.index());
+    console.log("index_Token[0]: ", await core.index_Token(0));
+    console.log("index_Token[1]: ", await core.index_Token(1));
+    console.log("index_Token[2]: ", await core.index_Token(2));
+    console.log("index_Token[3]: ", await core.index_Token(3));
+    console.log("token_Index[wft0]: ", await core.token_Index(wft0.address));
+    console.log("token_Index[wft1]: ", await core.token_Index(wft1.address));
+    console.log("token_Index[wft2]: ", await core.token_Index(wft2.address));
+    console.log("token_Index[wft3]: ", await core.token_Index(wft3.address));
 
-    await wavefront.connect(owner).setTreasury(AddressZero);
-    await wavefront.connect(owner).setTreasury(treasury.address);
-    await expect(wavefront.connect(user0).setTreasury(treasury.address)).to.be
+    await core.connect(owner).setTreasury(AddressZero);
+    await core.connect(owner).setTreasury(treasury.address);
+    await expect(core.connect(user0).setTreasury(treasury.address)).to.be
       .reverted;
 
-    await wavefront.connect(owner).setTokenFactory(AddressZero);
-    await wavefront.connect(owner).setTokenFactory(tokenFactory.address);
-    await expect(wavefront.connect(user0).setTokenFactory(AddressZero)).to.be
+    await core.connect(owner).setTokenFactory(AddressZero);
+    await core.connect(owner).setTokenFactory(tokenFactory.address);
+    await expect(core.connect(user0).setTokenFactory(AddressZero)).to.be
       .reverted;
 
-    await wavefront.connect(owner).setSaleFactory(AddressZero);
-    await wavefront.connect(owner).setSaleFactory(saleFactory.address);
-    await expect(wavefront.connect(user0).setSaleFactory(AddressZero)).to.be
+    await core.connect(owner).setSaleFactory(AddressZero);
+    await core.connect(owner).setSaleFactory(saleFactory.address);
+    await expect(core.connect(user0).setSaleFactory(AddressZero)).to.be
       .reverted;
 
-    await wavefront.connect(owner).setContentFactory(AddressZero);
-    await wavefront.connect(owner).setContentFactory(contentFactory.address);
-    await expect(wavefront.connect(user0).setContentFactory(AddressZero)).to.be
+    await core.connect(owner).setContentFactory(AddressZero);
+    await core.connect(owner).setContentFactory(contentFactory.address);
+    await expect(core.connect(user0).setContentFactory(AddressZero)).to.be
       .reverted;
 
-    await wavefront.connect(owner).setRewarderFactory(AddressZero);
-    await wavefront.connect(owner).setRewarderFactory(rewarderFactory.address);
-    await expect(wavefront.connect(user0).setRewarderFactory(AddressZero)).to.be
+    await core.connect(owner).setRewarderFactory(AddressZero);
+    await core.connect(owner).setRewarderFactory(rewarderFactory.address);
+    await expect(core.connect(user0).setRewarderFactory(AddressZero)).to.be
       .reverted;
   });
 

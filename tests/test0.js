@@ -10,7 +10,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, wft;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
-let wavefront, multicall, router;
+let core, multicall, router;
 
 describe("local: test0", function () {
   before("Initial set up", async function () {
@@ -45,24 +45,22 @@ describe("local: test0", function () {
     rewarderFactory = await rewarderFactoryArtifact.deploy();
     console.log("- RewarderFactory Initialized");
 
-    const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
-    wavefront = await wavefrontArtifact.deploy(
+    const coreArtifact = await ethers.getContractFactory("Core");
+    core = await coreArtifact.deploy(
       usdc.address,
       tokenFactory.address,
       saleFactory.address,
       contentFactory.address,
       rewarderFactory.address
     );
-    console.log("- WaveFront Initialized");
+    console.log("- Core Initialized");
 
-    const multicallArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticall"
-    );
-    multicall = await multicallArtifact.deploy(wavefront.address);
+    const multicallArtifact = await ethers.getContractFactory("Multicall");
+    multicall = await multicallArtifact.deploy(core.address);
     console.log("- Multicall Initialized");
 
-    const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(wavefront.address);
+    const routerArtifact = await ethers.getContractFactory("Router");
+    router = await routerArtifact.deploy(core.address);
     console.log("- Router Initialized");
 
     const amount = convert("100000", 6);

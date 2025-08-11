@@ -10,7 +10,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, wft;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
-let wavefront, multicall, router;
+let core, multicall, router;
 
 describe("local: test1", function () {
   before("Initial set up", async function () {
@@ -45,24 +45,22 @@ describe("local: test1", function () {
     rewarderFactory = await rewarderFactoryArtifact.deploy();
     console.log("- RewarderFactory Initialized");
 
-    const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
-    wavefront = await wavefrontArtifact.deploy(
+    const coreArtifact = await ethers.getContractFactory("Core");
+    core = await coreArtifact.deploy(
       usdc.address,
       tokenFactory.address,
       saleFactory.address,
       contentFactory.address,
       rewarderFactory.address
     );
-    console.log("- WaveFront Initialized");
+    console.log("- Core Initialized");
 
-    const multicallArtifact = await ethers.getContractFactory(
-      "WaveFrontMulticall"
-    );
-    multicall = await multicallArtifact.deploy(wavefront.address);
+    const multicallArtifact = await ethers.getContractFactory("Multicall");
+    multicall = await multicallArtifact.deploy(core.address);
     console.log("- Multicall Initialized");
 
-    const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-    router = await routerArtifact.deploy(wavefront.address);
+    const routerArtifact = await ethers.getContractFactory("Router");
+    router = await routerArtifact.deploy(core.address);
     console.log("- Router Initialized");
 
     const amount = convert("10000000", 6);
@@ -840,14 +838,14 @@ describe("local: test1", function () {
     expect(usdcRemaining).to.be.at.least(await wft.reserveVirtQuoteWad());
   });
 
-  it("Set wavefront treasury to treasury", async function () {
+  it("Set core treasury to treasury", async function () {
     console.log("******************************************************");
-    await expect(wavefront.connect(user0).setTreasury(treasury.address)).to.be
+    await expect(core.connect(user0).setTreasury(treasury.address)).to.be
       .reverted;
-    await wavefront.connect(owner).setTreasury(treasury.address);
-    await wavefront.connect(owner).setTreasury(AddressZero);
-    await wavefront.connect(owner).setTreasury(treasury.address);
-    console.log("- wavefront treasury set to treasury");
+    await core.connect(owner).setTreasury(treasury.address);
+    await core.connect(owner).setTreasury(AddressZero);
+    await core.connect(owner).setTreasury(treasury.address);
+    console.log("- core treasury set to treasury");
   });
 
   it("Token Data", async function () {

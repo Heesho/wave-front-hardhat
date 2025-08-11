@@ -7,9 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const WFT1 = "0xCe4AB1FDD8abA56Dd1A41bC96fafE9647A5C0e50"; // WFT1 Address
-const WFT2 = "0xb0F199a30d189959Cc93661EEC7B2e804969c3a7"; // WFT2 Address
-const WFT3 = "0xFeF337d37f5523ea44A1EA1e88E839fa6A9347b7"; // WFT3 Address
+const SN1 = "0xD43cd79e4FC35669e853Ac77eF16b965d6cfae03"; // SN1 Address
+const SN2 = "0x852454819FFC4CD466da7f5B355e392F59dF1d92"; // SN2 Address
+const SN3 = ""; // SN3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -21,7 +21,7 @@ const convert = (amount, decimals) => ethers.utils.parseUnits(amount, decimals);
 // Contract Variables
 let usdc;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
-let wavefront, multicall, router;
+let core, multicall, router;
 let token, sale, content, rewarder;
 
 /*===================================================================*/
@@ -30,40 +30,40 @@ let token, sale, content, rewarder;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x12e122fe10F367c522a854c02aE2d4680f2bC5a3"
+    "0x5AaA726fa1d844D71Ebe0757705b86fAb8041526"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0xf69c7E8F7B3806aE89c01888742e0a15E6aD6912"
+    "0xa4Fcf5232Ad35c99449244427E308e6cf48FFf3D"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0x76B6F565974840C4Aeb9cA92EcEdD6b3AdD046AA"
+    "0x74Ea8f0fE0b6Ab5EbFA2d2F2907DAd5aB58d8D53"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0xB2a70ff3d2AA4Ffe4bCF8e075870FAc727c08776"
+    "0x819e166848DB0370fc2BedBC22437C131F2c03d1"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0xbB517FE4862c007B446dA89ba018c3a45Fab8917"
+    "0x23eA1dCd55F2ceaD68e4aC208662843f12CE66a6"
   );
 
-  wavefront = await ethers.getContractAt(
-    "contracts/WaveFront.sol:WaveFront",
-    "0xB1e7fAec47EddC3E9996Bf01488B409D0A853DE8"
+  core = await ethers.getContractAt(
+    "contracts/Core.sol:Core",
+    "0x20eFec197f8Dc18F57f1040effC56D7FbFEEc30d"
   );
   multicall = await ethers.getContractAt(
-    "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    "0x5Fd179B11359681e1bd39B8cb0bA623834613a64"
+    "contracts/Multicall.sol:Multicall",
+    "0x2C4815b8D48B32146cA2bf89E94b11915686C053"
   );
   router = await ethers.getContractAt(
-    "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    "0x4BD9B91c5c178968197CEE16d6440310b16fc0aB"
+    "contracts/Router.sol:Router",
+    "0x205BAF322597c9B07217d8791AB48641793c594f"
   );
 
-  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", WFT1);
+  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
   sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
     await token.sale()
@@ -187,10 +187,10 @@ async function verifyRewarderFactory() {
   console.log("RewarderFactory Verified");
 }
 
-async function deployWaveFront() {
-  console.log("Starting WaveFront Deployment");
-  const wavefrontArtifact = await ethers.getContractFactory("WaveFront");
-  const wavefrontContract = await wavefrontArtifact.deploy(
+async function deployCore() {
+  console.log("Starting Core Deployment");
+  const coreArtifact = await ethers.getContractFactory("Core");
+  const coreContract = await coreArtifact.deploy(
     usdc.address,
     tokenFactory.address,
     saleFactory.address,
@@ -200,16 +200,16 @@ async function deployWaveFront() {
       gasPrice: ethers.gasPrice,
     }
   );
-  wavefront = await wavefrontContract.deployed();
+  core = await coreContract.deployed();
   await sleep(5000);
-  console.log("WaveFront Deployed at:", wavefront.address);
+  console.log("Core Deployed at:", core.address);
 }
 
-async function verifyWaveFront() {
-  console.log("Starting WaveFront Verification");
+async function verifyCore() {
+  console.log("Starting Core Verification");
   await hre.run("verify:verify", {
-    address: wavefront.address,
-    contract: "contracts/WaveFront.sol:WaveFront",
+    address: core.address,
+    contract: "contracts/Core.sol:Core",
     constructorArguments: [
       usdc.address,
       tokenFactory.address,
@@ -218,15 +218,13 @@ async function verifyWaveFront() {
       rewarderFactory.address,
     ],
   });
-  console.log("WaveFront Verified");
+  console.log("Core Verified");
 }
 
 async function deployMulticall() {
   console.log("Starting Multicall Deployment");
-  const multicallArtifact = await ethers.getContractFactory(
-    "WaveFrontMulticall"
-  );
-  const multicallContract = await multicallArtifact.deploy(wavefront.address, {
+  const multicallArtifact = await ethers.getContractFactory("Multicall");
+  const multicallContract = await multicallArtifact.deploy(core.address, {
     gasPrice: ethers.gasPrice,
   });
   multicall = await multicallContract.deployed();
@@ -238,16 +236,16 @@ async function verifyMulticall() {
   console.log("Starting Multicall Verification");
   await hre.run("verify:verify", {
     address: multicall.address,
-    contract: "contracts/WaveFrontMulticall.sol:WaveFrontMulticall",
-    constructorArguments: [wavefront.address],
+    contract: "contracts/Multicall.sol:Multicall",
+    constructorArguments: [core.address],
   });
   console.log("Multicall Verified");
 }
 
 async function deployRouter() {
   console.log("Starting Router Deployment");
-  const routerArtifact = await ethers.getContractFactory("WaveFrontRouter");
-  const routerContract = await routerArtifact.deploy(wavefront.address, {
+  const routerArtifact = await ethers.getContractFactory("Router");
+  const routerContract = await routerArtifact.deploy(core.address, {
     gasPrice: ethers.gasPrice,
   });
   router = await routerContract.deployed();
@@ -259,8 +257,8 @@ async function verifyRouter() {
   console.log("Starting Router Verification");
   await hre.run("verify:verify", {
     address: router.address,
-    contract: "contracts/WaveFrontRouter.sol:WaveFrontRouter",
-    constructorArguments: [wavefront.address],
+    contract: "contracts/Router.sol:Router",
+    constructorArguments: [core.address],
   });
   console.log("Router Verified");
 }
@@ -272,7 +270,7 @@ async function printDeployment() {
   console.log("SaleFactory: ", saleFactory.address);
   console.log("ContentFactory: ", contentFactory.address);
   console.log("RewarderFactory: ", rewarderFactory.address);
-  console.log("WaveFront: ", wavefront.address);
+  console.log("Core: ", core.address);
   console.log("Multicall: ", multicall.address);
   console.log("Router: ", router.address);
   console.log("**************************************************************");
@@ -287,10 +285,10 @@ async function verifyToken(wallet) {
       await token.name(),
       await token.symbol(),
       await content.coverUri(),
-      wavefront.address,
+      core.address,
       usdc.address,
-      await wavefront.INITIAL_SUPPLY(),
-      await wavefront.RESERVE_VIRT_QUOTE_RAW(),
+      await core.INITIAL_SUPPLY(),
+      await core.RESERVE_VIRT_QUOTE_RAW(),
       saleFactory.address,
       contentFactory.address,
       rewarderFactory.address,
@@ -355,7 +353,7 @@ async function main() {
   // await deploySaleFactory();
   // await deployContentFactory();
   // await deployRewarderFactory();
-  // await deployWaveFront();
+  // await deployCore();
   // await deployMulticall();
   // await deployRouter();
   // await printDeployment();
@@ -377,7 +375,7 @@ async function main() {
   // await sleep(5000);
   // await verifyRewarderFactory();
   // await sleep(5000);
-  // await verifyWaveFront();
+  // await verifyCore();
   // await sleep(5000);
   // await verifyMulticall();
   // await sleep(5000);
@@ -400,13 +398,13 @@ async function main() {
 
   // console.log("Deploy Token");
   // const createTokenTx = await router.createToken(
-  //   "WFT3",
-  //   "WFT3",
-  //   "ipfs://wft3",
+  //   "Pepe",
+  //   "PEPE",
+  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/02069990-70b9-4b84-407e-0f2f249edb00/public",
   //   false
   // );
   // await createTokenTx.wait();
-  // console.log("Token Deployed at:", await wavefront.index_Token(3));
+  // console.log("Token Deployed at:", await core.index_Token(2));
 
   // console.log("Mint USDC");
   // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
@@ -554,6 +552,18 @@ async function main() {
   // });
   // await claimTx.wait();
   // console.log("Reward claimed: ");
+
+  // console.log("Update coverUri");
+  // const updateCoverUriTx = await content
+  //   .connect(wallet)
+  //   .setCoverUri(
+  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/a6763307-44b2-4579-275a-50f27f2de700/public",
+  //     {
+  //       gasPrice: ethers.gasPrice,
+  //     }
+  //   );
+  // await updateCoverUriTx.wait();
+  // console.log("CoverUri updated: ", await content.coverUri());
 }
 
 main()
