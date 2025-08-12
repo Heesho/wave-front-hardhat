@@ -7,8 +7,8 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const SN1 = "0xD43cd79e4FC35669e853Ac77eF16b965d6cfae03"; // SN1 Address
-const SN2 = "0x852454819FFC4CD466da7f5B355e392F59dF1d92"; // SN2 Address
+const SN1 = "0xC29c9084747b46f24b6B96BbAbfE4632fD6134F2"; // SN1 Address
+const SN2 = "0xDC40dCBc27F13f0D1476959Db5fa87D00CCA1477"; // SN2 Address
 const SN3 = ""; // SN3 Address
 
 /*===========================  END SETTINGS  ========================*/
@@ -30,37 +30,37 @@ let token, sale, content, rewarder;
 async function getContracts() {
   usdc = await ethers.getContractAt(
     "contracts/mocks/USDC.sol:USDC",
-    "0x5AaA726fa1d844D71Ebe0757705b86fAb8041526"
+    "0x0113A749d4c3cb85ea0Bf3062b41C63acA669d2f"
   );
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0xa4Fcf5232Ad35c99449244427E308e6cf48FFf3D"
+    "0x3d504459499aa238bCd539f431AC1D3978167a8b"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0x74Ea8f0fE0b6Ab5EbFA2d2F2907DAd5aB58d8D53"
+    "0x5D21c60eC22F8A7eB4e4097b15fEe53c4B1f117e"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0x819e166848DB0370fc2BedBC22437C131F2c03d1"
+    "0x2bEf61DA946B7496a7b5A4E840103A5ee6eef5bD"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x23eA1dCd55F2ceaD68e4aC208662843f12CE66a6"
+    "0xbB8582607EA5e91E3d4B736133Adb5940Fa6dF9f"
   );
 
   core = await ethers.getContractAt(
     "contracts/Core.sol:Core",
-    "0x20eFec197f8Dc18F57f1040effC56D7FbFEEc30d"
+    "0xDAd4AC347c08e05365f10Fd9B4CCD137bA18a39D"
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x2C4815b8D48B32146cA2bf89E94b11915686C053"
+    "0x823084E81516Eed61af0d6E9cb44c6E1cB70c7e7"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0x205BAF322597c9B07217d8791AB48641793c594f"
+    "0xe475BcD039795aBdd5086F492198879FA6068938"
   );
 
   token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN2);
@@ -398,9 +398,9 @@ async function main() {
 
   // console.log("Deploy Token");
   // const createTokenTx = await router.createToken(
-  //   "Pepe",
-  //   "PEPE",
-  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/02069990-70b9-4b84-407e-0f2f249edb00/public",
+  //   "Pudgy Penguins",
+  //   "PENGU",
+  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/a6763307-44b2-4579-275a-50f27f2de700/public",
   //   false
   // );
   // await createTokenTx.wait();
@@ -411,19 +411,19 @@ async function main() {
   // await mintTx.wait();
   // console.log("USDC Balance: ", await usdc.balanceOf(wallet.address));
 
-  console.log("Contribute");
-  const contributionAmount = convert("100", 6);
+  // console.log("Contribute");
+  // const contributionAmount = convert("100", 6);
   // const approveTx = await usdc
   //   .connect(wallet)
   //   .approve(router.address, contributionAmount, { gasPrice: ethers.gasPrice });
   // await approveTx.wait();
-  const contributeTx = await router
-    .connect(wallet)
-    .contribute(token.address, contributionAmount, {
-      gasPrice: ethers.gasPrice,
-    });
-  await contributeTx.wait();
-  console.log("Sale contribution: ", await sale.totalQuoteRaw());
+  // const contributeTx = await router
+  //   .connect(wallet)
+  //   .contribute(token.address, contributionAmount, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await contributeTx.wait();
+  // console.log("Sale contribution: ", await sale.totalQuoteRaw());
 
   // console.log("Redeem");
   // const redeemTx = await router.connect(wallet).redeem(token.address, {
@@ -515,16 +515,16 @@ async function main() {
   //   .connect(wallet)
   //   .createContent(
   //     token.address,
-  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/8d0019d8-1e8b-43cf-ecee-1a87b46a5c00/public",
+  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/d1fec65a-e2cd-4f53-6e82-36a963165a00/public",
   //     {
   //       gasPrice: ethers.gasPrice,
   //     }
   //   );
   // await contentTx.wait();
-  // console.log("Content created: ", await content.tokenURI(3));
+  // console.log("Content created: ", await content.tokenURI(1));
 
   // console.log("Curate Content");
-  // const contentPrice = await content.getNextPrice(1);
+  // const contentPrice = await content.getNextPrice(3);
   // const approveTx = await usdc
   //   .connect(wallet)
   //   .approve(router.address, contentPrice, {
@@ -533,7 +533,7 @@ async function main() {
   // await approveTx.wait();
   // const curateTx = await router
   //   .connect(wallet)
-  //   .curateContent(token.address, 1, {
+  //   .curateContent(token.address, 3, {
   //     gasPrice: ethers.gasPrice,
   //   });
   // await curateTx.wait();
