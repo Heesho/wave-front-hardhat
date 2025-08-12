@@ -63,7 +63,7 @@ async function getContracts() {
     "0x205BAF322597c9B07217d8791AB48641793c594f"
   );
 
-  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
+  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN2);
   sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
     await token.sale()
@@ -411,19 +411,19 @@ async function main() {
   // await mintTx.wait();
   // console.log("USDC Balance: ", await usdc.balanceOf(wallet.address));
 
-  // console.log("Contribute");
-  // const contributionAmount = convert("100", 6);
+  console.log("Contribute");
+  const contributionAmount = convert("100", 6);
   // const approveTx = await usdc
   //   .connect(wallet)
   //   .approve(router.address, contributionAmount, { gasPrice: ethers.gasPrice });
   // await approveTx.wait();
-  // const contributeTx = await router
-  //   .connect(wallet)
-  //   .contribute(token.address, contributionAmount, {
-  //     gasPrice: ethers.gasPrice,
-  //   });
-  // await contributeTx.wait();
-  // console.log("Sale contribution: ", await sale.totalQuoteRaw());
+  const contributeTx = await router
+    .connect(wallet)
+    .contribute(token.address, contributionAmount, {
+      gasPrice: ethers.gasPrice,
+    });
+  await contributeTx.wait();
+  console.log("Sale contribution: ", await sale.totalQuoteRaw());
 
   // console.log("Redeem");
   // const redeemTx = await router.connect(wallet).redeem(token.address, {
@@ -513,9 +513,13 @@ async function main() {
   // console.log("Create Content");
   // const contentTx = await router
   //   .connect(wallet)
-  //   .createContent(token.address, "ipfs://wft1/content3", {
-  //     gasPrice: ethers.gasPrice,
-  //   });
+  //   .createContent(
+  //     token.address,
+  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/8d0019d8-1e8b-43cf-ecee-1a87b46a5c00/public",
+  //     {
+  //       gasPrice: ethers.gasPrice,
+  //     }
+  //   );
   // await contentTx.wait();
   // console.log("Content created: ", await content.tokenURI(3));
 
