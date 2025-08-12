@@ -56,14 +56,14 @@ async function getContracts() {
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x823084E81516Eed61af0d6E9cb44c6E1cB70c7e7"
+    "0x614C63de3909038D74afAF831D11440eD41602b1"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
     "0xe475BcD039795aBdd5086F492198879FA6068938"
   );
 
-  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN2);
+  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
   sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
     await token.sale()
@@ -378,7 +378,7 @@ async function main() {
   // await verifyCore();
   // await sleep(5000);
   // await verifyMulticall();
-  // await sleep(5000);
+  // // await sleep(5000);
   // await verifyRouter();
 
   // console.log("Verify Token");
@@ -537,7 +537,7 @@ async function main() {
   //     gasPrice: ethers.gasPrice,
   //   });
   // await curateTx.wait();
-  // console.log("Content price: ", await content.getNextPrice(1));
+  // console.log("Content price: ", await content.getNextPrice(3));
 
   // console.log("Transfer Token");
   // const targetAddress = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712";

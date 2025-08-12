@@ -96,7 +96,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user1.address);
+    let res = await multicall.getTokenData(wft.address, user1.address);
     console.log(res);
   });
 
@@ -136,7 +136,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
@@ -150,7 +150,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
@@ -162,13 +162,13 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user3.address);
+    let res = await multicall.getTokenData(wft.address, user3.address);
     console.log(res);
   });
 
@@ -196,7 +196,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
@@ -218,7 +218,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
@@ -304,13 +304,13 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user1.address);
+    let res = await multicall.getTokenData(wft.address, user1.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user2.address);
+    let res = await multicall.getTokenData(wft.address, user2.address);
     console.log(res);
   });
 
@@ -454,7 +454,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user2.address);
+    let res = await multicall.getTokenData(wft.address, user2.address);
     console.log(res);
   });
 
@@ -577,13 +577,13 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user3.address);
+    let res = await multicall.getTokenData(wft.address, user3.address);
     console.log(res);
   });
 
@@ -701,7 +701,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user3.address);
+    let res = await multicall.getTokenData(wft.address, user3.address);
     console.log(res);
   });
 
@@ -795,7 +795,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user3.address);
+    let res = await multicall.getTokenData(wft.address, user3.address);
     console.log(res);
   });
 
@@ -850,7 +850,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, treasury.address);
+    let res = await multicall.getTokenData(wft.address, treasury.address);
     console.log(res);
   });
 
@@ -916,7 +916,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, treasury.address);
+    let res = await multicall.getTokenData(wft.address, treasury.address);
     console.log(res);
   });
 
@@ -932,7 +932,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, treasury.address);
+    let res = await multicall.getTokenData(wft.address, treasury.address);
     console.log(res);
   });
 
@@ -969,7 +969,7 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, AddressZero);
+    let res = await multicall.getTokenData(wft.address, AddressZero);
     console.log(res);
   });
 
@@ -982,7 +982,9 @@ describe("local: test1", function () {
 
   it("User1 curates content", async function () {
     console.log("******************************************************");
-    const amount = await multicall.contentPrice(wft.address, 1);
+    const res = await multicall.getContentData(wft.address, 1);
+    console.log(res);
+    const amount = res.nextPrice;
     await usdc.connect(user1).approve(router.address, amount);
     await router.connect(user1).curateContent(wft.address, 1);
     console.log("- content curated");
@@ -990,7 +992,9 @@ describe("local: test1", function () {
 
   it("User1 curates content", async function () {
     console.log("******************************************************");
-    const amount = await multicall.contentPrice(wft.address, 1);
+    const res = await multicall.getContentData(wft.address, 1);
+    console.log(res);
+    const amount = res.nextPrice;
     await usdc.connect(user1).approve(router.address, amount);
     await router.connect(user1).curateContent(wft.address, 1);
     console.log("- content curated");
@@ -998,7 +1002,9 @@ describe("local: test1", function () {
 
   it("User2 curates content", async function () {
     console.log("******************************************************");
-    const amount = await multicall.contentPrice(wft.address, 1);
+    const res = await multicall.getContentData(wft.address, 1);
+    console.log(res);
+    const amount = res.nextPrice;
     await usdc.connect(user2).approve(router.address, amount);
     await router.connect(user2).curateContent(wft.address, 1);
     console.log("- content curated");
@@ -1006,7 +1012,9 @@ describe("local: test1", function () {
 
   it("User0 curates content", async function () {
     console.log("******************************************************");
-    const amount = await multicall.contentPrice(wft.address, 1);
+    const res = await multicall.getContentData(wft.address, 1);
+    console.log(res);
+    const amount = res.nextPrice;
     await usdc.connect(user0).approve(router.address, amount);
     await router.connect(user0).curateContent(wft.address, 1);
     console.log("- content curated");
@@ -1014,13 +1022,15 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
   it("User1 curates content", async function () {
     console.log("******************************************************");
-    const amount = await multicall.contentPrice(wft.address, 1);
+    const res = await multicall.getContentData(wft.address, 1);
+    console.log(res);
+    const amount = res.nextPrice;
     await usdc.connect(user1).approve(router.address, amount);
     await router.connect(user1).curateContent(wft.address, 1);
     console.log("- content curated");
@@ -1028,13 +1038,13 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user1.address);
+    let res = await multicall.getTokenData(wft.address, user1.address);
     console.log(res);
   });
 
@@ -1052,13 +1062,13 @@ describe("local: test1", function () {
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user0.address);
+    let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
   it("Token Data", async function () {
     console.log("******************************************************");
-    let res = await multicall.getData(wft.address, user1.address);
+    let res = await multicall.getTokenData(wft.address, user1.address);
     console.log(res);
   });
 });

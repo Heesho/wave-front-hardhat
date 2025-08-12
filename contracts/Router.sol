@@ -91,9 +91,7 @@ contract Router is ReentrancyGuard, Ownable {
         uint256 amountTokenIn,
         uint256 amountQuoteOut
     );
-    event Router__Contribute(
-        address indexed token, address quote, address indexed account, uint256 amountQuote
-    );
+    event Router__Contribute(address indexed token, address quote, address indexed account, uint256 amountQuote);
     event Router__Redeem(address indexed token, address indexed account);
     event Router__ContentCreated(
         address indexed token, address indexed content, address indexed account, uint256 tokenId
