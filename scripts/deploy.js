@@ -56,14 +56,14 @@ async function getContracts() {
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x614C63de3909038D74afAF831D11440eD41602b1"
+    "0x3161BeEc360162c6dda803f7F4BC59Fc92117642"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
     "0xe475BcD039795aBdd5086F492198879FA6068938"
   );
 
-  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
+  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN2);
   sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
     await token.sale()
@@ -568,6 +568,14 @@ async function main() {
   //   );
   // await updateCoverUriTx.wait();
   // console.log("CoverUri updated: ", await content.coverUri());
+
+  // console.log("Token Data");
+  // const res = await multicall.getTokenData(token.address, AddressZero);
+  // console.log(res);
+
+  // console.log("Content Data");
+  // const res = await multicall.getContentData(token.address, 1);
+  // console.log(res);
 }
 
 main()
