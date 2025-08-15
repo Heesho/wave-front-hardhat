@@ -7,9 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const SN1 = "0xC29c9084747b46f24b6B96BbAbfE4632fD6134F2"; // SN1 Address
-const SN2 = "0xDC40dCBc27F13f0D1476959Db5fa87D00CCA1477"; // SN2 Address
-const SN3 = ""; // SN3 Address
+const SN1 = "0xA47B1336Bb25d1A27F63022E65F5897De6ce542f"; // SN1 Address
+const SN2 = "0xf53B355b07C4cA3E21CB7Bf7FF662470c7f8C975"; // SN2 Address
+const SN3 = "0x512d87dea8217Bda1587Fa41025e3AD2e60038eE"; // SN3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -35,35 +35,35 @@ async function getContracts() {
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x3d504459499aa238bCd539f431AC1D3978167a8b"
+    "0x7815Ee82d1ae5C421173bf34aeABEA8f20Cb784e"
   );
   saleFactory = await ethers.getContractAt(
     "contracts/SaleFactory.sol:SaleFactory",
-    "0x5D21c60eC22F8A7eB4e4097b15fEe53c4B1f117e"
+    "0x85441fA528c781658B296c9e5654557bd83023ED"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0x2bEf61DA946B7496a7b5A4E840103A5ee6eef5bD"
+    "0x63956a77d4507c43e8fb80d104d6d5a2dE734d26"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0xbB8582607EA5e91E3d4B736133Adb5940Fa6dF9f"
+    "0x125512A5a2984df96A3DbF993f39AB8c3283E56D"
   );
 
   core = await ethers.getContractAt(
     "contracts/Core.sol:Core",
-    "0xDAd4AC347c08e05365f10Fd9B4CCD137bA18a39D"
+    "0x82bFDeb5C5E4d15331973744A070400292579D75"
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x3161BeEc360162c6dda803f7F4BC59Fc92117642"
+    "0x699ce67D64b4A62EADAdfA40196FFdFF31B63dBe"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0xe475BcD039795aBdd5086F492198879FA6068938"
+    "0xa54D15bD0D3Dd39C1Cfa05C6Cd285A34B4a69BE7"
   );
 
-  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN2);
+  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN3);
   sale = await ethers.getContractAt(
     "contracts/SaleFactory.sol:Sale",
     await token.sale()
@@ -378,7 +378,7 @@ async function main() {
   // await verifyCore();
   // await sleep(5000);
   // await verifyMulticall();
-  // // await sleep(5000);
+  // await sleep(5000);
   // await verifyRouter();
 
   // console.log("Verify Token");
@@ -398,13 +398,13 @@ async function main() {
 
   // console.log("Deploy Token");
   // const createTokenTx = await router.createToken(
-  //   "Pudgy Penguins",
-  //   "PENGU",
-  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/a6763307-44b2-4579-275a-50f27f2de700/public",
+  //   "Milady",
+  //   "MILADY",
+  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/b070a67d-db1b-421b-6047-6bc2b1f57200/public",
   //   false
   // );
   // await createTokenTx.wait();
-  // console.log("Token Deployed at:", await core.index_Token(2));
+  // console.log("Token Deployed at:", await core.index_Token(3));
 
   // console.log("Mint USDC");
   // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
@@ -515,7 +515,7 @@ async function main() {
   //   .connect(wallet)
   //   .createContent(
   //     token.address,
-  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/d1fec65a-e2cd-4f53-6e82-36a963165a00/public",
+  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/7973769e-0ac1-43b4-4a11-5c4d25ae7200/public",
   //     {
   //       gasPrice: ethers.gasPrice,
   //     }
