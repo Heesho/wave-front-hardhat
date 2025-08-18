@@ -56,7 +56,7 @@ async function getContracts() {
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x699ce67D64b4A62EADAdfA40196FFdFF31B63dBe"
+    "0x5A4E59AD2A964c1452C279C0c14b2bf9477342FC"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
@@ -523,21 +523,21 @@ async function main() {
   // await contentTx.wait();
   // console.log("Content created: ", await content.tokenURI(1));
 
-  console.log("Curate Content");
-  const contentPrice = await content.getNextPrice(1);
-  const approveTx = await usdc
-    .connect(wallet)
-    .approve(router.address, contentPrice, {
-      gasPrice: ethers.gasPrice,
-    });
-  await approveTx.wait();
-  const curateTx = await router
-    .connect(wallet)
-    .curateContent(token.address, 1, {
-      gasPrice: ethers.gasPrice,
-    });
-  await curateTx.wait();
-  console.log("Content price: ", await content.getNextPrice(1));
+  // console.log("Curate Content");
+  // const contentPrice = await content.getNextPrice(1);
+  // const approveTx = await usdc
+  //   .connect(wallet)
+  //   .approve(router.address, contentPrice, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await approveTx.wait();
+  // const curateTx = await router
+  //   .connect(wallet)
+  //   .curateContent(token.address, 1, {
+  //     gasPrice: ethers.gasPrice,
+  //   });
+  // await curateTx.wait();
+  // console.log("Content price: ", await content.getNextPrice(1));
 
   // console.log("Transfer Token");
   // const targetAddress = "0x19858F6c29eA886853dc97D1a68ABf8d4Cb07712";

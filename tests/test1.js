@@ -12,7 +12,7 @@ let usdc, wft;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let core, multicall, router;
 
-describe.only("local: test1", function () {
+describe("local: test1", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
