@@ -102,9 +102,10 @@ contract Router is ReentrancyGuard, Ownable {
         string calldata uri,
         bool isModerated,
         uint256 amountQuoteIn
-    ) external nonReentrant returns (address token, uint256 amountTokenOut) {
+    ) external nonReentrant returns (address token) {
         token = ICore(core).create(name, symbol, uri, msg.sender, isModerated);
 
+        uint256 amountTokenOut;
         if (amountQuoteIn > 0) {
             address quote = ICore(core).quote();
             IERC20(quote).safeTransferFrom(msg.sender, address(this), amountQuoteIn);
