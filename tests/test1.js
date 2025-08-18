@@ -12,7 +12,7 @@ let usdc, wft;
 let tokenFactory, saleFactory, contentFactory, rewarderFactory;
 let core, multicall, router;
 
-describe("local: test1", function () {
+describe.only("local: test1", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -352,7 +352,7 @@ describe("local: test1", function () {
 
   it("Quote Buy In", async function () {
     console.log("******************************************************");
-    const amount = convert("10", 6);
+    const amount = convert("100", 6);
     await multicall.buyQuoteIn(wft.address, 0, 9800);
     let res = await multicall
       .connect(owner)
@@ -364,7 +364,7 @@ describe("local: test1", function () {
     console.log("WFT0 out", divDec(res.tokenAmtOut));
     console.log("slippage", divDec(res.slippage));
     console.log("min WFT0 out", divDec(res.minTokenAmtOut));
-    console.log("min USDC out", divDec6(res.autoMinTokenAmtOut));
+    console.log("auto min WFT0 out", divDec(res.autoMinTokenAmtOut));
   });
 
   it("User0 buys wft with 10 usdc", async function () {

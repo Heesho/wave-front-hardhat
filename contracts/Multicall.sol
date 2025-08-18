@@ -308,7 +308,7 @@ contract Multicall {
         if (y1 >= y0) return (0, 0, 0, 0);
 
         tokenAmtOut = y0 - y1;
-        slippage = PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn));
+        slippage = 100 * (PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn)));
         minTokenAmtOut =
             quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown(slippageTolerance, DIVISOR);
         autoMinTokenAmtOut = quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown(
@@ -336,7 +336,7 @@ contract Multicall {
 
         if (quoteRawIn == 0) return (0, 0, 0, 0);
 
-        slippage = PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn));
+        slippage = 100 * (PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn)));
         minTokenAmtOut = tokenAmtOut.mulDivDown(slippageTolerance, DIVISOR);
         autoMinTokenAmtOut =
             tokenAmtOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
@@ -368,8 +368,8 @@ contract Multicall {
 
         if (quoteRawOut == 0) return (0, 0, 0, 0);
 
-        slippage = PRECISION
-            - (quoteWadOut.mulDivDown(PRECISION, tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION)));
+        slippage = 100 * (PRECISION
+            - (quoteWadOut.mulDivDown(PRECISION, tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION))));
         uint256 minQuoteWadOut =
             tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION).mulDivDown(slippageTolerance, DIVISOR);
         minQuoteRawOut = IToken(token).wadToRaw(minQuoteWadOut);
@@ -397,8 +397,8 @@ contract Multicall {
 
         if (tokenAmtIn < MIN_TRADE_AMOUNT) return (0, 0, 0, 0);
 
-        slippage = PRECISION
-            - (quoteWadOut.mulDivDown(PRECISION, (tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION))));
+        slippage = 100 * (PRECISION
+            - (quoteWadOut.mulDivDown(PRECISION, (tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION)))));
         uint256 minQuoteWadIn = quoteWadOut.mulDivDown(slippageTolerance, DIVISOR);
         minQuoteRawOut = IToken(token).wadToRaw(minQuoteWadIn);
         uint256 autoMinQuoteWadIn =
