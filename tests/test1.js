@@ -9,7 +9,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, wft;
-let tokenFactory, saleFactory, contentFactory, rewarderFactory;
+let tokenFactory, contentFactory, rewarderFactory;
 let core, multicall, router;
 
 describe("local: test1", function () {
@@ -29,10 +29,6 @@ describe("local: test1", function () {
     tokenFactory = await tokenFactoryArtifact.deploy();
     console.log("- TokenFactory Initialized");
 
-    const saleFactoryArtifact = await ethers.getContractFactory("SaleFactory");
-    saleFactory = await saleFactoryArtifact.deploy();
-    console.log("- SaleFactory Initialized");
-
     const contentFactoryArtifact = await ethers.getContractFactory(
       "ContentFactory"
     );
@@ -49,7 +45,6 @@ describe("local: test1", function () {
     core = await coreArtifact.deploy(
       usdc.address,
       tokenFactory.address,
-      saleFactory.address,
       contentFactory.address,
       rewarderFactory.address
     );
@@ -81,17 +76,13 @@ describe("local: test1", function () {
     const wftSymbol = "wft";
     const wftUri = "https://wavefront.io/wft";
 
-    await router.connect(user0).createToken(wftName, wftSymbol, wftUri, false);
+    const amount = convert("100", 6);
+    await usdc.connect(user0).approve(router.address, amount);
+    await router
+      .connect(user0)
+      .createToken(wftName, wftSymbol, wftUri, false, amount);
     wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft created");
-  });
-
-  it("User0 contributes 10 usdc to wft", async function () {
-    console.log("******************************************************");
-    const amount = convert("10", 6);
-    await usdc.connect(user0).approve(router.address, amount);
-    await router.connect(user0).contribute(wft.address, amount);
-    console.log("- 10 usdc contributed to wft sale");
   });
 
   it("Token Data", async function () {
@@ -100,64 +91,16 @@ describe("local: test1", function () {
     console.log(res);
   });
 
-  it("User1 contributes 0 usdc to wft and fails", async function () {
-    console.log("******************************************************");
-    const amount = convert("0", 6);
-    await usdc.connect(user1).approve(router.address, amount);
-    await expect(
-      router.connect(user1).contribute(wft.address, amount)
-    ).to.be.revertedWith("Sale__ZeroQuoteRaw");
-    console.log("- 0 usdc contributed to wft sale failed");
-  });
-
-  it("User1 contributes 100 usdc to wft", async function () {
-    console.log("******************************************************");
-    const amount = convert("100", 6);
-    await usdc.connect(user1).approve(router.address, amount);
-    await router.connect(user1).contribute(wft.address, amount);
-    console.log("- 100 usdc contributed to wft sale");
-  });
-
-  it("User1 contributes 100 usdc to wft", async function () {
-    console.log("******************************************************");
-    const amount = convert("100", 6);
-    await usdc.connect(user1).approve(router.address, amount);
-    await router.connect(user1).contribute(wft.address, amount);
-    console.log("- 100 usdc contributed to wft sale");
-  });
-
-  it("User2 contributes 1000 usdc to wft", async function () {
-    console.log("******************************************************");
-    const amount = convert("1000", 6);
-    await usdc.connect(user2).approve(router.address, amount);
-    await router.connect(user2).contribute(wft.address, amount);
-    console.log("- 1000 usdc contributed to wft sale");
-  });
-
   it("Token Data", async function () {
     console.log("******************************************************");
     let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
   });
 
-  it("User0 redeems wft and fails", async function () {
-    console.log("******************************************************");
-    await expect(router.connect(user0).redeem(wft.address)).to.be.revertedWith(
-      "Sale__Open"
-    );
-    console.log("- wft redemption failed");
-  });
-
   it("Token Data", async function () {
     console.log("******************************************************");
     let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
-  });
-
-  it("Forward 2 hour", async function () {
-    console.log("******************************************************");
-    await network.provider.send("evm_increaseTime", [7200]);
-    await network.provider.send("evm_mine");
   });
 
   it("Token Data", async function () {
@@ -172,48 +115,10 @@ describe("local: test1", function () {
     console.log(res);
   });
 
-  it("User0 redeems wft contribution", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).redeem(wft.address);
-    console.log("- wft contribution redeemed");
-  });
-
-  it("User0 redeems again wft contribution and fails", async function () {
-    console.log("******************************************************");
-    await expect(router.connect(user0).redeem(wft.address)).to.be.revertedWith(
-      "Sale__ZeroQuoteRaw"
-    );
-    console.log("- wft contribution redemption failed");
-  });
-
-  it("User3 redeems wft contribution but fails", async function () {
-    console.log("******************************************************");
-    await expect(router.connect(user3).redeem(wft.address)).to.be.revertedWith(
-      "Sale__ZeroQuoteRaw"
-    );
-    console.log("- wft contribution redemption failed");
-  });
-
   it("Token Data", async function () {
     console.log("******************************************************");
     let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
-  });
-
-  it("User1 redeems wft contribution", async function () {
-    console.log("******************************************************");
-    await router.connect(user1).redeem(wft.address);
-    console.log("- wft contribution redeemed");
-  });
-
-  it("User0 tries to contribute 1000 usdc to wft and fails", async function () {
-    console.log("******************************************************");
-    const amount = convert("1000", 6);
-    await usdc.connect(user0).approve(router.address, amount);
-    await expect(
-      router.connect(user0).contribute(wft.address, amount)
-    ).to.be.revertedWith("Sale__Closed");
-    console.log("- 1000 usdc contribution failed");
   });
 
   it("Token Data", async function () {
@@ -314,12 +219,6 @@ describe("local: test1", function () {
     console.log(res);
   });
 
-  it("User2 redeems wft contribution", async function () {
-    console.log("******************************************************");
-    await router.connect(user2).redeem(wft.address);
-    console.log("- wft contribution redeemed");
-  });
-
   it("User0 sells all wft", async function () {
     console.log("******************************************************");
     const amount = await wft.balanceOf(user0.address);
@@ -344,9 +243,11 @@ describe("local: test1", function () {
     console.log("******************************************************");
     const amount = await wft.balanceOf(user2.address);
     await wft.connect(user2).approve(router.address, amount);
-    await router
-      .connect(user2)
-      .sell(wft.address, AddressZero, amount, 0, 2000000000);
+    await expect(
+      router
+        .connect(user2)
+        .sell(wft.address, AddressZero, amount, 0, 2000000000)
+    ).to.be.revertedWith("Token__MinTradeSize");
     console.log("- all wft sold");
   });
 

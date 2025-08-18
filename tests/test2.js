@@ -9,7 +9,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, usdt, wft0, wft1, wft2, wft3;
-let tokenFactory, saleFactory, contentFactory, rewarderFactory;
+let tokenFactory, contentFactory, rewarderFactory;
 let core, multicall, router;
 
 describe("local: test2", function () {
@@ -31,10 +31,6 @@ describe("local: test2", function () {
     tokenFactory = await tokenFactoryArtifact.deploy();
     console.log("- TokenFactory Initialized");
 
-    const saleFactoryArtifact = await ethers.getContractFactory("SaleFactory");
-    saleFactory = await saleFactoryArtifact.deploy();
-    console.log("- SaleFactory Initialized");
-
     const contentFactoryArtifact = await ethers.getContractFactory(
       "ContentFactory"
     );
@@ -51,7 +47,6 @@ describe("local: test2", function () {
     core = await coreArtifact.deploy(
       usdc.address,
       tokenFactory.address,
-      saleFactory.address,
       contentFactory.address,
       rewarderFactory.address
     );
@@ -83,7 +78,9 @@ describe("local: test2", function () {
     const wftSymbol = "wft0";
     const wftUri = "https://wavefront.io/wft0";
 
-    await router.connect(user0).createToken(wftName, wftSymbol, wftUri, false);
+    await router
+      .connect(user0)
+      .createToken(wftName, wftSymbol, wftUri, false, 0);
     wft0 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft0 created");
   });
@@ -95,7 +92,11 @@ describe("local: test2", function () {
     const wftSymbol = "wft1";
     const wftUri = "https://wavefront.io/wft1";
 
-    await router.connect(user1).createToken(wftName, wftSymbol, wftUri, false);
+    const amount = convert("1000", 6);
+    await usdc.connect(user1).approve(router.address, amount);
+    await router
+      .connect(user1)
+      .createToken(wftName, wftSymbol, wftUri, false, amount);
     wft1 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft1 created");
   });
@@ -107,7 +108,11 @@ describe("local: test2", function () {
     const wftSymbol = "wft2";
     const wftUri = "https://wavefront.io/wft2";
 
-    await router.connect(user2).createToken(wftName, wftSymbol, wftUri, false);
+    let amount = convert("1", 6);
+    await usdc.connect(user2).approve(router.address, amount);
+    await router
+      .connect(user2)
+      .createToken(wftName, wftSymbol, wftUri, false, amount);
     wft2 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft2 created");
   });
@@ -119,7 +124,11 @@ describe("local: test2", function () {
     const wftSymbol = "wft3";
     const wftUri = "https://wavefront.io/wft3";
 
-    await router.connect(user3).createToken(wftName, wftSymbol, wftUri, false);
+    let amount = convert("100000", 6);
+    await usdc.connect(user3).approve(router.address, amount);
+    await router
+      .connect(user3)
+      .createToken(wftName, wftSymbol, wftUri, false, amount);
     wft3 = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft3 created");
   });
@@ -128,7 +137,6 @@ describe("local: test2", function () {
     console.log("******************************************************");
     console.log("quote: ", await core.quote());
     console.log("tokenFactory: ", await core.tokenFactory());
-    console.log("saleFactory: ", await core.saleFactory());
     console.log("contentFactory: ", await core.contentFactory());
     console.log("rewarderFactory: ", await core.rewarderFactory());
     console.log("treasury: ", await core.treasury());
@@ -150,11 +158,6 @@ describe("local: test2", function () {
     await core.connect(owner).setTokenFactory(AddressZero);
     await core.connect(owner).setTokenFactory(tokenFactory.address);
     await expect(core.connect(user0).setTokenFactory(AddressZero)).to.be
-      .reverted;
-
-    await core.connect(owner).setSaleFactory(AddressZero);
-    await core.connect(owner).setSaleFactory(saleFactory.address);
-    await expect(core.connect(user0).setSaleFactory(AddressZero)).to.be
       .reverted;
 
     await core.connect(owner).setContentFactory(AddressZero);

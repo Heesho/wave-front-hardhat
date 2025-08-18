@@ -9,7 +9,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 let owner, multisig, treasury, user0, user1, user2, user3;
 let usdc, wft;
-let tokenFactory, saleFactory, contentFactory, rewarderFactory;
+let tokenFactory, contentFactory, rewarderFactory;
 let core, multicall, router;
 
 describe("local: test0", function () {
@@ -29,10 +29,6 @@ describe("local: test0", function () {
     tokenFactory = await tokenFactoryArtifact.deploy();
     console.log("- TokenFactory Initialized");
 
-    const saleFactoryArtifact = await ethers.getContractFactory("SaleFactory");
-    saleFactory = await saleFactoryArtifact.deploy();
-    console.log("- SaleFactory Initialized");
-
     const contentFactoryArtifact = await ethers.getContractFactory(
       "ContentFactory"
     );
@@ -49,7 +45,6 @@ describe("local: test0", function () {
     core = await coreArtifact.deploy(
       usdc.address,
       tokenFactory.address,
-      saleFactory.address,
       contentFactory.address,
       rewarderFactory.address
     );
@@ -81,7 +76,9 @@ describe("local: test0", function () {
     const wftSymbol = "wft";
     const wftUri = "https://wavefront.io/wft";
 
-    await router.connect(user0).createToken(wftName, wftSymbol, wftUri, false);
+    await router
+      .connect(user0)
+      .createToken(wftName, wftSymbol, wftUri, false, 0);
     wft = await ethers.getContractAt("Token", await tokenFactory.lastToken());
     console.log("- wft created");
   });
@@ -92,32 +89,10 @@ describe("local: test0", function () {
     console.log(res);
   });
 
-  it("User0 contributes 10 usdc to wft sale", async function () {
-    console.log("******************************************************");
-
-    const amount = convert("10", 6);
-    await usdc.connect(user0).approve(router.address, amount);
-    await router.connect(user0).contribute(wft.address, amount);
-    console.log("- 10 usdc contributed to wft sale");
-  });
-
   it("Token Data", async function () {
     console.log("******************************************************");
     let res = await multicall.getTokenData(wft.address, user0.address);
     console.log(res);
-  });
-
-  it("Forward 2 hour", async function () {
-    console.log("******************************************************");
-    await network.provider.send("evm_increaseTime", [7200]);
-    await network.provider.send("evm_mine");
-    console.log("- 2 hours forwarded");
-  });
-
-  it("User0 redeems wft contribution", async function () {
-    console.log("******************************************************");
-    await router.connect(user0).redeem(wft.address);
-    console.log("- wft contribution redeemed");
   });
 
   it("Token Data", async function () {
