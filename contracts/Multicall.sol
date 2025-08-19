@@ -55,6 +55,8 @@ interface IRewarder {
 interface IContent {
     function owner() external view returns (address);
 
+    function balanceOf(address account) external view returns (uint256);
+
     function id_Creator(uint256 tokenId) external view returns (address);
 
     function id_Price(uint256 tokenId) external view returns (uint256);
@@ -103,6 +105,7 @@ contract Multicall {
         uint256 accountDebt;
         uint256 accountCredit;
         uint256 accountTransferrable;
+        uint256 accountContentOwned;
         uint256 accountContentStaked;
         uint256 accountQuoteEarned;
         uint256 accountTokenEarned;
@@ -178,7 +181,7 @@ contract Multicall {
             data.accountDebt = IToken(token).account_DebtRaw(account);
             data.accountCredit = IToken(token).getAccountCredit(account);
             data.accountTransferrable = IToken(token).getAccountTransferrable(account);
-
+            data.accountContentOwned = IContent(content).balanceOf(account);
             data.accountContentStaked = accountContentStaked;
             data.accountQuoteEarned = IRewarder(rewarder).earned(account, quote);
             data.accountTokenEarned = IRewarder(rewarder).earned(account, token);

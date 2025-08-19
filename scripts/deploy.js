@@ -7,9 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const SN1 = "0xA47B1336Bb25d1A27F63022E65F5897De6ce542f"; // SN1 Address
-const SN2 = "0xf53B355b07C4cA3E21CB7Bf7FF662470c7f8C975"; // SN2 Address
-const SN3 = "0x512d87dea8217Bda1587Fa41025e3AD2e60038eE"; // SN3 Address
+const SN1 = "0x2a44f91B9b27DC8479B07C11C746BA9933025E73"; // SN1 Address
+const SN2 = "0x99F6cd5E4494aA3CF49c88F602D88d7e1296EAC1"; // SN2 Address
+const SN3 = "0xa7310d5cf59dDDB7f40849328B149D32605457b2"; // SN3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -20,9 +20,9 @@ const convert = (amount, decimals) => ethers.utils.parseUnits(amount, decimals);
 
 // Contract Variables
 let usdc;
-let tokenFactory, saleFactory, contentFactory, rewarderFactory;
+let tokenFactory, contentFactory, rewarderFactory;
 let core, multicall, router;
-let token, sale, content, rewarder;
+let token, content, rewarder;
 
 /*===================================================================*/
 /*===========================  CONTRACT DATA  =======================*/
@@ -35,39 +35,31 @@ async function getContracts() {
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0x7815Ee82d1ae5C421173bf34aeABEA8f20Cb784e"
-  );
-  saleFactory = await ethers.getContractAt(
-    "contracts/SaleFactory.sol:SaleFactory",
-    "0x85441fA528c781658B296c9e5654557bd83023ED"
+    "0xbF10F2Bb3e4b59c46f9C5BF451B6946A4229824b"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0x63956a77d4507c43e8fb80d104d6d5a2dE734d26"
+    "0x3d1f8DA4fcc342032A73cF33f79CcdFa29144e73"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x125512A5a2984df96A3DbF993f39AB8c3283E56D"
+    "0x851f2b7CCbd2C97f1949c77031417312A7f26fdF"
   );
 
   core = await ethers.getContractAt(
     "contracts/Core.sol:Core",
-    "0x82bFDeb5C5E4d15331973744A070400292579D75"
+    "0x0fa2D324581c32F175eaB95C5CAB7D8E9b54Db68"
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x5A4E59AD2A964c1452C279C0c14b2bf9477342FC"
+    "0x9ACFf17Dc507DB58fc0d964ab10f7e0031dB44b5"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0xa54D15bD0D3Dd39C1Cfa05C6Cd285A34B4a69BE7"
+    "0xeC6860553ABF0a9c4428edC9e1B280D3945cDfC2"
   );
 
   token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
-  sale = await ethers.getContractAt(
-    "contracts/SaleFactory.sol:Sale",
-    await token.sale()
-  );
   content = await ethers.getContractAt(
     "contracts/ContentFactory.sol:Content",
     await token.content()
@@ -123,26 +115,6 @@ async function verifyTokenFactory() {
   console.log("TokenFactory Verified");
 }
 
-async function deploySaleFactory() {
-  console.log("Starting SaleFactory Deployment");
-  const saleFactoryArtifact = await ethers.getContractFactory("SaleFactory");
-  const saleFactoryContract = await saleFactoryArtifact.deploy({
-    gasPrice: ethers.gasPrice,
-  });
-  saleFactory = await saleFactoryContract.deployed();
-  await sleep(5000);
-  console.log("SaleFactory Deployed at:", saleFactory.address);
-}
-
-async function verifySaleFactory() {
-  console.log("Starting SaleFactory Verification");
-  await hre.run("verify:verify", {
-    address: saleFactory.address,
-    contract: "contracts/SaleFactory.sol:SaleFactory",
-  });
-  console.log("SaleFactory Verified");
-}
-
 async function deployContentFactory() {
   console.log("Starting ContentFactory Deployment");
   const contentFactoryArtifact = await ethers.getContractFactory(
@@ -193,7 +165,6 @@ async function deployCore() {
   const coreContract = await coreArtifact.deploy(
     usdc.address,
     tokenFactory.address,
-    saleFactory.address,
     contentFactory.address,
     rewarderFactory.address,
     {
@@ -213,7 +184,6 @@ async function verifyCore() {
     constructorArguments: [
       usdc.address,
       tokenFactory.address,
-      saleFactory.address,
       contentFactory.address,
       rewarderFactory.address,
     ],
@@ -267,7 +237,6 @@ async function printDeployment() {
   console.log("**************************************************************");
   console.log("USDC: ", usdc.address);
   console.log("TokenFactory: ", tokenFactory.address);
-  console.log("SaleFactory: ", saleFactory.address);
   console.log("ContentFactory: ", contentFactory.address);
   console.log("RewarderFactory: ", rewarderFactory.address);
   console.log("Core: ", core.address);
@@ -289,7 +258,6 @@ async function verifyToken(wallet) {
       usdc.address,
       await core.INITIAL_SUPPLY(),
       await core.RESERVE_VIRT_QUOTE_RAW(),
-      saleFactory.address,
       contentFactory.address,
       rewarderFactory.address,
       wallet.address,
@@ -297,16 +265,6 @@ async function verifyToken(wallet) {
     ],
   });
   console.log("Token Verified");
-}
-
-async function verifySale() {
-  console.log("Starting Sale Verification");
-  await hre.run("verify:verify", {
-    address: sale.address,
-    contract: "contracts/SaleFactory.sol:Sale",
-    constructorArguments: [token.address, usdc.address],
-  });
-  console.log("Sale Verified");
 }
 
 async function verifyContent() {
@@ -350,7 +308,6 @@ async function main() {
   // console.log("Starting System Deployment");
   // await deployUsdc();
   // await deployTokenFactory();
-  // await deploySaleFactory();
   // await deployContentFactory();
   // await deployRewarderFactory();
   // await deployCore();
@@ -369,8 +326,6 @@ async function main() {
   // await sleep(5000);
   // await verifyTokenFactory();
   // await sleep(5000);
-  // await verifySaleFactory();
-  // await sleep(5000);
   // await verifyContentFactory();
   // await sleep(5000);
   // await verifyRewarderFactory();
@@ -384,8 +339,6 @@ async function main() {
   // console.log("Verify Token");
   // await verifyToken(wallet);
   // await sleep(5000);
-  // await verifySale();
-  // await sleep(5000);
   // await verifyContent();
   // await sleep(5000);
   // await verifyRewarder();
@@ -398,10 +351,14 @@ async function main() {
 
   // console.log("Deploy Token");
   // const createTokenTx = await router.createToken(
-  //   "Milady",
-  //   "MILADY",
-  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/b070a67d-db1b-421b-6047-6bc2b1f57200/public",
-  //   false
+  //   "Pepe",
+  //   "PEPE",
+  //   "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/02069990-70b9-4b84-407e-0f2f249edb00/public",
+  //   false,
+  //   0,
+  //   {
+  //     gasPrice: ethers.gasPrice,
+  //   }
   // );
   // await createTokenTx.wait();
   // console.log("Token Deployed at:", await core.index_Token(3));
@@ -410,30 +367,6 @@ async function main() {
   // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
   // await mintTx.wait();
   // console.log("USDC Balance: ", await usdc.balanceOf(wallet.address));
-
-  // console.log("Contribute");
-  // const contributionAmount = convert("100", 6);
-  // const approveTx = await usdc
-  //   .connect(wallet)
-  //   .approve(router.address, contributionAmount, { gasPrice: ethers.gasPrice });
-  // await approveTx.wait();
-  // const contributeTx = await router
-  //   .connect(wallet)
-  //   .contribute(token.address, contributionAmount, {
-  //     gasPrice: ethers.gasPrice,
-  //   });
-  // await contributeTx.wait();
-  // console.log("Sale contribution: ", await sale.totalQuoteRaw());
-
-  // console.log("Redeem");
-  // const redeemTx = await router.connect(wallet).redeem(token.address, {
-  //   gasPrice: ethers.gasPrice,
-  // });
-  // await redeemTx.wait();
-  // console.log(
-  //   "User contribution: ",
-  //   await sale.account_QuoteRaw(wallet.address)
-  // );
 
   // console.log("Buy Token");
   // const buyAmount = convert("1000", 6);
@@ -515,7 +448,7 @@ async function main() {
   //   .connect(wallet)
   //   .createContent(
   //     token.address,
-  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/7973769e-0ac1-43b4-4a11-5c4d25ae7200/public",
+  //     "https://memedepot.com/cdn-cgi/imagedelivery/naCPMwxXX46-hrE49eZovw/e3ad8257-5543-453a-10ce-6e928130d800/public",
   //     {
   //       gasPrice: ethers.gasPrice,
   //     }
