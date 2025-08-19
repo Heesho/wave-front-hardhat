@@ -247,7 +247,7 @@ contract Multicall {
         minTokenAmtOut =
             quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown(slippageTolerance, DIVISOR);
         autoMinTokenAmtOut = quoteWadIn.mulDivDown(PRECISION, IToken(token).getMarketPrice()).mulDivDown(
-            (DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION
+            (DIVISOR * PRECISION) - ((slippage + PRECISION / 10) * 100), DIVISOR * PRECISION
         );
     }
 
@@ -274,7 +274,7 @@ contract Multicall {
         slippage = 100 * (PRECISION - (tokenAmtOut.mulDivDown(IToken(token).getMarketPrice(), quoteWadIn)));
         minTokenAmtOut = tokenAmtOut.mulDivDown(slippageTolerance, DIVISOR);
         autoMinTokenAmtOut =
-            tokenAmtOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
+            tokenAmtOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION / 10) * 100), DIVISOR * PRECISION);
     }
 
     function sellTokenIn(address token, uint256 tokenAmtIn, uint256 slippageTolerance)
@@ -312,7 +312,7 @@ contract Multicall {
             tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION).mulDivDown(slippageTolerance, DIVISOR);
         minQuoteRawOut = IToken(token).wadToRaw(minQuoteWadOut);
         uint256 autoMinQuoteWadOut = tokenAmtIn.mulDivDown(IToken(token).getMarketPrice(), PRECISION).mulDivDown(
-            (DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION
+            (DIVISOR * PRECISION) - ((slippage + PRECISION / 10) * 100), DIVISOR * PRECISION
         );
         autoMinQuoteRawOut = IToken(token).wadToRaw(autoMinQuoteWadOut);
     }
@@ -343,7 +343,7 @@ contract Multicall {
         uint256 minQuoteWadIn = quoteWadOut.mulDivDown(slippageTolerance, DIVISOR);
         minQuoteRawOut = IToken(token).wadToRaw(minQuoteWadIn);
         uint256 autoMinQuoteWadIn =
-            quoteWadOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION) * 100), DIVISOR * PRECISION);
+            quoteWadOut.mulDivDown((DIVISOR * PRECISION) - ((slippage + PRECISION / 10) * 100), DIVISOR * PRECISION);
         autoMinQuoteRawOut = IToken(token).wadToRaw(autoMinQuoteWadIn);
     }
 }

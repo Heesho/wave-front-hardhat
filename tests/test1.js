@@ -253,7 +253,7 @@ describe("local: test1", function () {
 
   it("Quote Buy In", async function () {
     console.log("******************************************************");
-    const amount = convert("100", 6);
+    const amount = convert("10000000", 6);
     await multicall.buyQuoteIn(wft.address, 0, 9800);
     let res = await multicall
       .connect(owner)
