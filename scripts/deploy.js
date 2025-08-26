@@ -7,9 +7,9 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 /*===========================  SETTINGS  ============================*/
 
 const TREASURY_ADDRESS = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Treasury Address
-const SN1 = "0x2a44f91B9b27DC8479B07C11C746BA9933025E73"; // SN1 Address
-const SN2 = "0x99F6cd5E4494aA3CF49c88F602D88d7e1296EAC1"; // SN2 Address
-const SN3 = "0xa7310d5cf59dDDB7f40849328B149D32605457b2"; // SN3 Address
+const SN1 = ""; // SN1 Address
+const SN2 = ""; // SN2 Address
+const SN3 = ""; // SN3 Address
 
 /*===========================  END SETTINGS  ========================*/
 /*===================================================================*/
@@ -35,39 +35,39 @@ async function getContracts() {
 
   tokenFactory = await ethers.getContractAt(
     "contracts/TokenFactory.sol:TokenFactory",
-    "0xbF10F2Bb3e4b59c46f9C5BF451B6946A4229824b"
+    "0x65A6f40279778Fc57A7B3Abc8fc746Ba3A37e3F9"
   );
   contentFactory = await ethers.getContractAt(
     "contracts/ContentFactory.sol:ContentFactory",
-    "0x3d1f8DA4fcc342032A73cF33f79CcdFa29144e73"
+    "0x31b682ECBA89701d18374b49ac1CE013F6268BDc"
   );
   rewarderFactory = await ethers.getContractAt(
     "contracts/RewarderFactory.sol:RewarderFactory",
-    "0x851f2b7CCbd2C97f1949c77031417312A7f26fdF"
+    "0x2435f1fD55ECEE748BD22F075C63Be6084ca5D4F"
   );
 
   core = await ethers.getContractAt(
     "contracts/Core.sol:Core",
-    "0x0fa2D324581c32F175eaB95C5CAB7D8E9b54Db68"
+    "0x4b3cB040f1cC63972A73a2e9763fA2EA6bC3E214"
   );
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x9ACFf17Dc507DB58fc0d964ab10f7e0031dB44b5"
+    "0x17A3EB8be921858957cDd9BC7Fa047F1356aaa4E"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0xeC6860553ABF0a9c4428edC9e1B280D3945cDfC2"
+    "0xaa6cfA6685254E94A9E03F5EAd15d3f4777f898c"
   );
 
-  token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
-  content = await ethers.getContractAt(
-    "contracts/ContentFactory.sol:Content",
-    await token.content()
-  );
-  rewarder = await ethers.getContractAt(
-    "contracts/RewarderFactory.sol:Rewarder",
-    await token.rewarder()
-  );
+  // token = await ethers.getContractAt("contracts/TokenFactory.sol:Token", SN1);
+  // content = await ethers.getContractAt(
+  //   "contracts/ContentFactory.sol:Content",
+  //   await token.content()
+  // );
+  // rewarder = await ethers.getContractAt(
+  //   "contracts/RewarderFactory.sol:Rewarder",
+  //   await token.rewarder()
+  // );
 
   console.log("Contracts Retrieved");
 }
@@ -321,7 +321,7 @@ async function main() {
   // Verify System
   //===================================================================
 
-  // console.log("Starting System Verification");
+  console.log("Starting System Verification");
   // await verifyUsdc();
   // await sleep(5000);
   // await verifyTokenFactory();
@@ -361,7 +361,7 @@ async function main() {
   //   }
   // );
   // await createTokenTx.wait();
-  // console.log("Token Deployed at:", await core.index_Token(3));
+  // console.log("Token Deployed at:", await core.index_Token(1));
 
   // console.log("Mint USDC");
   // const mintTx = await usdc.mint(wallet.address, convert("10000", 6));
