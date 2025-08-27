@@ -15,9 +15,9 @@ interface IContentFactory {
     function create(
         string memory name,
         string memory symbol,
-        string memory coverUri,
-        address _token,
-        address _quote,
+        string memory uri,
+        address token,
+        address quote,
         address rewarderFactory,
         address owner,
         bool isModerated
@@ -101,7 +101,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     constructor(
         string memory name,
         string memory symbol,
-        string memory coverUri,
+        string memory uri,
         address _core,
         address _quote,
         uint256 _initialSupply,
@@ -124,7 +124,7 @@ contract Token is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
         reserveVirtQuoteWad = rawToWad(_virtQuoteRaw);
 
         (content, rewarder) = IContentFactory(contentFactory).create(
-            name, symbol, coverUri, address(this), _quote, rewarderFactory, owner, isModerated
+            name, symbol, uri, address(this), _quote, rewarderFactory, owner, isModerated
         );
     }
 
@@ -409,7 +409,7 @@ contract TokenFactory {
     function create(
         string memory name,
         string memory symbol,
-        string memory coverUri,
+        string memory uri,
         address core,
         address quote,
         uint256 initialSupply,
@@ -423,7 +423,7 @@ contract TokenFactory {
             new Token(
                 name,
                 symbol,
-                coverUri,
+                uri,
                 core,
                 quote,
                 initialSupply,

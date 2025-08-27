@@ -36,7 +36,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard,
     address public immutable token;
     address public immutable quote;
 
-    string public coverUri;
+    string public uri;
 
     bool public isModerated;
     mapping(address => bool) public account_IsModerator;
@@ -57,7 +57,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard,
 
     event Content__Created(address indexed who, address indexed to, uint256 indexed tokenId, string uri);
     event Content__Curated(address indexed who, address indexed to, uint256 indexed tokenId, uint256 price);
-    event Content__CoverUriSet(string coverUri);
+    event Content__UriSet(string uri);
     event Content__IsModeratedSet(bool isModerated);
     event Content__ModeratorsSet(address indexed account, bool isModerator);
     event Content__Approved(address indexed moderator, uint256 indexed tokenId);
@@ -66,13 +66,13 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard,
     constructor(
         string memory name,
         string memory symbol,
-        string memory _coverUri,
+        string memory _uri,
         address _token,
         address _quote,
         address rewarderFactory,
         bool _isModerated
     ) ERC721(name, symbol) {
-        coverUri = _coverUri;
+        uri = _uri;
         token = _token;
         quote = _quote;
         isModerated = _isModerated;
@@ -81,7 +81,7 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard,
         IRewarder(rewarder).addReward(token);
     }
 
-    function create(address to, string memory uri) external nonReentrant returns (uint256 tokenId) {
+    function create(address to, string memory tokenUri) external nonReentrant returns (uint256 tokenId) {
         if (to == address(0)) revert Content__ZeroTo();
 
         tokenId = ++nextTokenId;
@@ -89,9 +89,9 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard,
         if (!isModerated) id_IsApproved[tokenId] = true;
 
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
+        _setTokenURI(tokenId, tokenUri);
 
-        emit Content__Created(msg.sender, to, tokenId, uri);
+        emit Content__Created(msg.sender, to, tokenId, tokenUri);
     }
 
     function curate(address to, uint256 tokenId) external nonReentrant {
@@ -164,9 +164,9 @@ contract Content is ERC721, ERC721Enumerable, ERC721URIStorage, ReentrancyGuard,
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
-    function setCoverUri(string memory _coverUri) external onlyOwner {
-        coverUri = _coverUri;
-        emit Content__CoverUriSet(_coverUri);
+    function setUri(string memory _uri) external onlyOwner {
+        uri = _uri;
+        emit Content__UriSet(_uri);
     }
 
     function setIsModerated(bool _isModerated) external onlyOwner {
@@ -226,14 +226,14 @@ contract ContentFactory {
     function create(
         string memory name,
         string memory symbol,
-        string memory coverUri,
+        string memory uri,
         address token,
         address quote,
         address rewarderFactory,
         address owner,
         bool isModerated
     ) external returns (address, address) {
-        Content content = new Content(name, symbol, coverUri, token, quote, rewarderFactory, isModerated);
+        Content content = new Content(name, symbol, uri, token, quote, rewarderFactory, isModerated);
         lastContent = address(content);
         content.transferOwnership(owner);
         emit ContentFactory__Created(lastContent);

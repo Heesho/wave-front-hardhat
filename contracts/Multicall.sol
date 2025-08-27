@@ -65,7 +65,7 @@ interface IContent {
 
     function getNextPrice(uint256 tokenId) external view returns (uint256);
 
-    function coverUri() external view returns (string memory);
+    function uri() external view returns (string memory);
 
     function isModerated() external view returns (bool);
 
@@ -133,7 +133,7 @@ contract Multicall {
         address rewarder = IToken(token).rewarder();
 
         uint256 index = ICore(core).token_Index(token);
-        string memory uri = IContent(content).coverUri();
+        string memory uri = IContent(content).uri();
 
         data.index = index;
 
@@ -218,7 +218,7 @@ contract Multicall {
             : rewardForDuration * IContent(content).id_Price(tokenId) / totalContentStaked;
         data.creator = IContent(content).id_Creator(tokenId);
         data.owner = IContent(content).owner();
-        data.uri = IContent(content).coverUri();
+        data.uri = IContent(content).uri();
         data.isApproved = IContent(content).id_IsApproved(tokenId);
 
         return data;

@@ -7,7 +7,7 @@ interface ITokenFactory {
     function create(
         string memory name,
         string memory symbol,
-        string memory coverUri,
+        string memory uri,
         address core,
         address quote,
         uint256 initialSupply,
